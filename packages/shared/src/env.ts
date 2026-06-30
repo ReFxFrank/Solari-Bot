@@ -56,6 +56,12 @@ export const webEnvSchema = baseEnvSchema.extend({
   /** Shared HMAC secret for the inbound ReFx webhook. Unset => receiver
    *  returns 503 (fails closed). Must match the ReFx backend's value. */
   REFX_WEBHOOK_SECRET: z.string().min(16).optional(),
+  /** Stripe premium billing (§3). All optional — unset disables the upgrade
+   *  flow and the dashboard shows "billing not configured". */
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  /** The recurring Price the per-server Premium subscription checks out against. */
+  STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;

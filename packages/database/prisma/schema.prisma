@@ -91,8 +91,29 @@ model Guild {
   afkUsers          Afk[]
   birthdays         Birthday[]
   inviteUses        InviteUse[]
+  subscription      GuildSubscription?
 
   @@index([ownerId])
+}
+
+/// Per-server premium subscription (§3). One row per guild. The bot reads the
+/// fast `Guild.premiumTier` flag; this table holds the Stripe billing details
+/// and the authoritative `status`, kept in sync by the Stripe webhook. Billing
+/// is per-server (a subscription upgrades a single guild).
+model GuildSubscription {
+  guildId              String    @id
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  /// Mirrors the Stripe subscription status: active, trialing, past_due,
+  /// canceled, incomplete, etc. `inactive` = never subscribed.
+  status               String    @default("inactive")
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 }
 
 /// One row per (guild, module). `config` is a JSON blob validated by the
