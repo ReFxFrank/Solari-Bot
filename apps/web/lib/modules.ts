@@ -103,6 +103,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Tags, auto-responders, embed builder.',
     icon: MessageSquareCode,
     category: 'core',
+    configSlug: 'commands',
   },
   {
     module: 'STARBOARD',

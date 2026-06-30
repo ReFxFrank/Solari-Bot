@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import type {
   AutoroleConfig,
+  CustomCommandsConfig,
   LevelingConfig,
   LoggingConfig,
   Module,
@@ -107,6 +108,13 @@ export async function saveRefxAlertsConfig(
   input: RefxAlertsConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'REFX_ALERTS', input, 'refx-alerts');
+}
+
+export async function saveCustomCommandsConfig(
+  guildId: string,
+  input: CustomCommandsConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'CUSTOM_COMMANDS', input, 'commands');
 }
 
 export async function saveGuildSettings(

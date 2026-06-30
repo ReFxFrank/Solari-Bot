@@ -83,6 +83,7 @@ model Guild {
   reminders         Reminder[]
   scheduledMessages ScheduledMessage[]
   tickets           Ticket[]
+  customCommands    CustomCommand[]
 
   @@index([ownerId])
 }
@@ -338,4 +339,24 @@ model Ticket {
 
   @@unique([guildId, number])
   @@index([guildId, status])
+}
+
+/// A custom command / tag (§8). Invoked by `{prefix}{name}` or `/tag show`.
+/// `content` is optional text and `embed` an optional EmbedSpec JSON — at least
+/// one is present (enforced at the dashboard/command boundary).
+model CustomCommand {
+  id        String   @id @default(cuid())
+  guildId   String
+  name      String // stored lowercased
+  content   String?
+  embed     Json?
+  uses      Int      @default(0)
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, name])
+  @@index([guildId])
 }
