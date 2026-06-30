@@ -28,7 +28,8 @@ export type LiveCommandType =
   | 'END_GIVEAWAY'
   | 'REROLL_GIVEAWAY'
   | 'SCHEDULE_MESSAGE'
-  | 'CANCEL_SCHEDULED_MESSAGE';
+  | 'CANCEL_SCHEDULED_MESSAGE'
+  | 'DEPLOY_TICKET_PANEL';
 
 export interface LiveCommandMessage<TPayload = unknown> {
   type: LiveCommandType;
@@ -51,6 +52,10 @@ export interface GiveawayActionPayload {
 
 export interface ScheduledMessagePayload {
   scheduledMessageId: string;
+}
+
+export interface DeployTicketPanelPayload {
+  channelId: string;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */

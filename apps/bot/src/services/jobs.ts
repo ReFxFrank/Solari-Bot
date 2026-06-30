@@ -208,3 +208,8 @@ export function reminderJobId(reminderId: string): string {
 export function scheduledMessageJobId(scheduledMessageId: string): string {
   return `scheduledmsg-${scheduledMessageId}`;
 }
+
+/** Stable job id for a ticket's inactivity auto-close. */
+export function ticketJobId(ticketId: string): string {
+  return `ticket-${ticketId}`;
+}

@@ -67,6 +67,8 @@ model Guild {
   /// atomically (incremented in a single UPDATE — collision-safe under
   /// concurrency, unlike a global serial).
   caseCounter  Int         @default(0)
+  /// Same atomic-increment scheme for per-guild ticket numbers.
+  ticketCounter Int        @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -79,6 +81,7 @@ model Guild {
   giveaways     Giveaway[]
   reminders         Reminder[]
   scheduledMessages ScheduledMessage[]
+  tickets           Ticket[]
 
   @@index([ownerId])
 }
@@ -308,4 +311,30 @@ model ScheduledMessage {
 
   @@index([guildId])
   @@index([enabled, nextRunAt])
+}
+
+enum TicketStatus {
+  OPEN
+  CLOSED
+}
+
+/// A support ticket (§8 Tickets). Backed by a private channel; closed by a
+/// user/command or the durable `ticketAutoClose` job after inactivity. The
+/// channel is deleted on close after a transcript is archived.
+model Ticket {
+  id             String       @id @default(cuid())
+  guildId        String
+  channelId      String       @unique
+  number         Int
+  openerId       String
+  status         TicketStatus @default(OPEN)
+  closedById     String?
+  closedAt       DateTime?
+  lastActivityAt DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, number])
+  @@index([guildId, status])
 }

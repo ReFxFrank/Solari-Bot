@@ -6,6 +6,7 @@ import {
   type DeletePanelPayload,
   type DeployPanelPayload,
   type GiveawayActionPayload,
+  type DeployTicketPanelPayload,
   type LiveCommandMessage,
   type RolePanelOption,
   type ScheduledMessagePayload,
@@ -15,6 +16,7 @@ import { subscriber } from './redis';
 import { buildPanelMessage } from '../modules/roles';
 import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 import { armScheduledMessage } from '../modules/scheduledMessages';
+import { buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
 import { scheduledMessageJobId, type JobService } from './jobs';
 
 /**
@@ -75,6 +77,12 @@ export class LiveCommandService {
           scheduledMessageJobId((message.payload as ScheduledMessagePayload).scheduledMessageId),
         );
         return;
+      case 'DEPLOY_TICKET_PANEL':
+        await this.deployTicketPanel(
+          message.guildId,
+          (message.payload as DeployTicketPanelPayload).channelId,
+        );
+        return;
       default:
         return;
     }
@@ -115,6 +123,20 @@ export class LiveCommandService {
     } catch (err) {
       this.logger.warn({ err, panelId: panel.id }, 'Deploy panel failed');
     }
+  }
+
+  private async deployTicketPanel(guildId: string, channelId: string): Promise<void> {
+    const guild = this.client.guilds.cache.get(guildId);
+    const channel =
+      guild?.channels.cache.get(channelId) ??
+      (await guild?.channels.fetch(channelId).catch(() => null));
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
+    const config = await getTicketsConfig(guildId);
+    await channel
+      .send(buildTicketPanelMessage(config))
+      .catch((err: unknown) =>
+        this.logger.warn({ err, guildId, channelId }, 'Deploy ticket panel failed'),
+      );
   }
 
   private async deletePanel(guildId: string, payload: DeletePanelPayload): Promise<void> {

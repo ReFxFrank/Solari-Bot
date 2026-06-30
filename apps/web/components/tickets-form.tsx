@@ -1,0 +1,160 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { Send } from 'lucide-react';
+import type { TicketsConfig } from '@helios/shared';
+import { saveTicketsConfig } from '../lib/config-actions';
+import { deployTicketPanel } from '../lib/tickets-actions';
+import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
+
+const toList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+export function TicketsForm({ guildId, initial }: { guildId: string; initial: TicketsConfig }) {
+  const [config, setConfig] = useState<TicketsConfig>(initial);
+  const [status, setStatus] = useState<SaveStatus>('idle');
+  const [deployMsg, setDeployMsg] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function update<K extends keyof TicketsConfig>(key: K, value: TicketsConfig[K]): void {
+    setConfig((prev) => ({ ...prev, [key]: value }));
+    setStatus('idle');
+  }
+
+  function save(): void {
+    startTransition(async () => {
+      const result = await saveTicketsConfig(guildId, config);
+      setStatus(result.ok ? 'saved' : 'error');
+    });
+  }
+
+  function deploy(): void {
+    setDeployMsg(null);
+    startTransition(async () => {
+      const result = await deployTicketPanel(guildId);
+      setDeployMsg(result.ok ? 'Panel deployed.' : (result.error ?? 'Could not deploy.'));
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Field label="Ticket category ID" hint="New ticket channels are created under this category.">
+        <input
+          className={monoInputClass}
+          value={config.categoryId ?? ''}
+          onChange={(e) => update('categoryId', e.target.value.trim() || null)}
+          placeholder="category channel ID"
+        />
+      </Field>
+      <Field label="Support role IDs" hint="Comma-separated. These roles see and manage tickets.">
+        <input
+          className={monoInputClass}
+          value={config.supportRoleIds.join(', ')}
+          onChange={(e) => update('supportRoleIds', toList(e.target.value))}
+        />
+      </Field>
+      <Field
+        label="Transcript channel ID"
+        hint="Where closed-ticket transcripts are posted. Blank to disable."
+      >
+        <input
+          className={monoInputClass}
+          value={config.transcriptChannelId ?? ''}
+          onChange={(e) => update('transcriptChannelId', e.target.value.trim() || null)}
+          placeholder="optional"
+        />
+      </Field>
+
+      <Field label="Opening message" hint="Posted in every new ticket.">
+        <textarea
+          className={`${inputClass} min-h-20 resize-y`}
+          value={config.openMessage}
+          onChange={(e) => update('openMessage', e.target.value)}
+          maxLength={1500}
+        />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Max open per user">
+          <input
+            type="number"
+            min={1}
+            max={10}
+            className={inputClass}
+            value={config.maxOpenPerUser}
+            onChange={(e) => update('maxOpenPerUser', Math.max(1, Number(e.target.value) || 1))}
+          />
+        </Field>
+        <Field label="Auto-close after (hours)" hint="0 disables inactivity auto-close.">
+          <input
+            type="number"
+            min={0}
+            max={720}
+            className={inputClass}
+            value={config.autoCloseHours}
+            onChange={(e) => update('autoCloseHours', Math.max(0, Number(e.target.value) || 0))}
+          />
+        </Field>
+      </div>
+
+      <div className="border-t border-white/5 pt-5">
+        <h3 className="mb-3 text-sm font-semibold text-white/80">Panel</h3>
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Panel title">
+              <input
+                className={inputClass}
+                value={config.panelTitle}
+                onChange={(e) => update('panelTitle', e.target.value)}
+                maxLength={256}
+              />
+            </Field>
+            <Field label="Button label">
+              <input
+                className={inputClass}
+                value={config.buttonLabel}
+                onChange={(e) => update('buttonLabel', e.target.value)}
+                maxLength={80}
+              />
+            </Field>
+          </div>
+          <Field label="Panel description">
+            <textarea
+              className={`${inputClass} min-h-16 resize-y`}
+              value={config.panelDescription}
+              onChange={(e) => update('panelDescription', e.target.value)}
+              maxLength={2000}
+            />
+          </Field>
+          <Field
+            label="Panel channel ID"
+            hint="Where the panel is deployed. Save first, then deploy."
+          >
+            <input
+              className={monoInputClass}
+              value={config.panelChannelId ?? ''}
+              onChange={(e) => update('panelChannelId', e.target.value.trim() || null)}
+              placeholder="channel ID"
+            />
+          </Field>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={deploy}
+              disabled={pending || !config.panelChannelId}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-white/80 hover:text-white disabled:opacity-40"
+            >
+              <Send className="h-4 w-4" /> Deploy panel
+            </button>
+            {deployMsg && <span className="text-sm text-white/60">{deployMsg}</span>}
+          </div>
+        </div>
+      </div>
+
+      <SaveBar pending={pending} status={status} onSave={save} />
+    </div>
+  );
+}

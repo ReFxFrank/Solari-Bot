@@ -9,6 +9,7 @@ import type {
   ModerationConfig,
   ModuleWithSchema,
   StarboardConfig,
+  TicketsConfig,
   WelcomeConfig,
 } from '@helios/shared';
 import { assertCanManage, requireSession } from './auth-guards';
@@ -91,6 +92,13 @@ export async function saveStarboardConfig(
   input: StarboardConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'STARBOARD', input, 'starboard');
+}
+
+export async function saveTicketsConfig(
+  guildId: string,
+  input: TicketsConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'TICKETS', input, 'tickets');
 }
 
 export async function saveGuildSettings(

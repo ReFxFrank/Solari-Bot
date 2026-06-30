@@ -154,6 +154,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Support panels, transcripts, auto-close.',
     icon: Ticket,
     category: 'core',
+    configSlug: 'tickets',
   },
   {
     module: 'STATS_COUNTERS',
