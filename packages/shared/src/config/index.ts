@@ -3,10 +3,12 @@ import type { Module } from '../enums';
 import { moderationConfigSchema } from './moderation';
 import { levelingConfigSchema } from './leveling';
 import { welcomeConfigSchema } from './welcome';
+import { autoroleConfigSchema } from './autorole';
 
 export * from './moderation';
 export * from './leveling';
 export * from './welcome';
+export * from './autorole';
 
 /**
  * Registry mapping a module to the zod schema that validates its `config` JSON
@@ -19,6 +21,7 @@ export const MODULE_CONFIG_SCHEMAS = {
   MODERATION: moderationConfigSchema,
   LEVELING: levelingConfigSchema,
   WELCOME: welcomeConfigSchema,
+  AUTOROLE: autoroleConfigSchema,
 } satisfies Partial<Record<Module, z.ZodTypeAny>>;
 
 export type ModuleWithSchema = keyof typeof MODULE_CONFIG_SCHEMAS;

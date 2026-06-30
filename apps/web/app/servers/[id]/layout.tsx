@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { prisma } from '@helios/database';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { guildIconUrl } from '../../../lib/discord';
+import { MODULE_META } from '../../../lib/modules';
 import { NavLink } from '../../../components/nav-link';
 import { SignOutButton } from '../../../components/auth-buttons';
 
@@ -24,9 +25,14 @@ export default async function GuildLayout({
   if (!guild) notFound();
 
   const icon = guildIconUrl(id, guild.icon, 48);
+  // Module links derive from MODULE_META so the sidebar grows as config pages land.
+  const moduleNav = MODULE_META.filter((m) => m.configSlug).map((m) => ({
+    href: `/servers/${id}/${m.configSlug}`,
+    label: m.name,
+  }));
   const nav = [
     { href: `/servers/${id}`, label: 'Overview' },
-    { href: `/servers/${id}/moderation`, label: 'Moderation' },
+    ...moduleNav,
     { href: `/servers/${id}/settings`, label: 'Settings' },
     { href: `/servers/${id}/audit`, label: 'Audit log' },
   ];

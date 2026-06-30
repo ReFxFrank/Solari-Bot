@@ -1,5 +1,5 @@
 import { type Prisma, prisma } from '@helios/database';
-import { moderationConfigSchema, type Module, type ModerationConfig } from '@helios/shared';
+import { parseModuleConfig, type Module, type ModuleWithSchema } from '@helios/shared';
 import { writeAuditLog } from './audit';
 import { publishConfigUpdate } from './redis';
 
@@ -53,39 +53,43 @@ export async function applyModuleEnabled(
   await publishConfigUpdate(guildId, module);
 }
 
-export async function applyModerationConfig(
+/**
+ * Validate (via the module's shared zod schema) and persist a module's config
+ * blob, audit it, and publish the live invalidation. Enabled state is preserved
+ * — the grid toggle owns it.
+ */
+export async function applyModuleConfig<M extends ModuleWithSchema>(
   guildId: string,
-  input: ModerationConfig,
+  module: M,
+  input: unknown,
   userId: string,
 ): Promise<ActionResult> {
-  const parsed = moderationConfigSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: 'Invalid configuration.' };
+  let parsed: unknown;
+  try {
+    parsed = parseModuleConfig(module, input);
+  } catch {
+    return { ok: false, error: 'Invalid configuration.' };
+  }
 
   await ensureGuild(guildId);
   const before = await prisma.guildModuleConfig.findUnique({
-    where: { guildId_module: { guildId, module: 'MODERATION' } },
+    where: { guildId_module: { guildId, module } },
     select: { config: true },
   });
   await prisma.guildModuleConfig.upsert({
-    where: { guildId_module: { guildId, module: 'MODERATION' } },
-    update: { config: asJson(parsed.data), updatedBy: userId },
-    create: {
-      guildId,
-      module: 'MODERATION',
-      enabled: true,
-      config: asJson(parsed.data),
-      updatedBy: userId,
-    },
+    where: { guildId_module: { guildId, module } },
+    update: { config: asJson(parsed), updatedBy: userId },
+    create: { guildId, module, config: asJson(parsed), updatedBy: userId },
   });
   await writeAuditLog({
     guildId,
     userId,
-    action: 'MODERATION_CONFIG_UPDATED',
-    module: 'MODERATION',
+    action: `${module}_CONFIG_UPDATED`,
+    module,
     before: before?.config ?? null,
-    after: parsed.data,
+    after: asJson(parsed),
   });
-  await publishConfigUpdate(guildId, 'MODERATION');
+  await publishConfigUpdate(guildId, module);
   return { ok: true };
 }
 

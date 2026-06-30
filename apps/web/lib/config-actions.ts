@@ -1,11 +1,17 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import type { Module, ModerationConfig } from '@helios/shared';
+import type {
+  AutoroleConfig,
+  Module,
+  ModerationConfig,
+  ModuleWithSchema,
+  WelcomeConfig,
+} from '@helios/shared';
 import { assertCanManage, requireSession } from './auth-guards';
 import {
   applyGuildSettings,
-  applyModerationConfig,
+  applyModuleConfig,
   applyModuleEnabled,
   type ActionResult,
   type GuildSettingsInput,
@@ -29,15 +35,38 @@ export async function setModuleEnabled(
   revalidatePath(`/servers/${guildId}`);
 }
 
+async function saveConfig(
+  guildId: string,
+  module: ModuleWithSchema,
+  input: unknown,
+  slug: string,
+): Promise<ActionResult> {
+  const session = await requireSession();
+  await assertCanManage(session, guildId);
+  const result = await applyModuleConfig(guildId, module, input, session.user.id);
+  if (result.ok) revalidatePath(`/servers/${guildId}/${slug}`);
+  return result;
+}
+
 export async function saveModerationConfig(
   guildId: string,
   input: ModerationConfig,
 ): Promise<ActionResult> {
-  const session = await requireSession();
-  await assertCanManage(session, guildId);
-  const result = await applyModerationConfig(guildId, input, session.user.id);
-  if (result.ok) revalidatePath(`/servers/${guildId}/moderation`);
-  return result;
+  return saveConfig(guildId, 'MODERATION', input, 'moderation');
+}
+
+export async function saveWelcomeConfig(
+  guildId: string,
+  input: WelcomeConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'WELCOME', input, 'welcome');
+}
+
+export async function saveAutoroleConfig(
+  guildId: string,
+  input: AutoroleConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'AUTOROLE', input, 'autoroles');
 }
 
 export async function saveGuildSettings(

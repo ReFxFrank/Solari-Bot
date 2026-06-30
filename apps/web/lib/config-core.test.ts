@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
 import { REDIS_CHANNELS } from '@helios/shared';
 import { prisma } from '@helios/database';
-import { applyModuleEnabled } from './config-core';
+import { applyModuleConfig, applyModuleEnabled } from './config-core';
 import { getRedis } from './redis';
 import { canManageGuild, type DiscordGuildSummary } from './discord';
 
@@ -55,6 +55,29 @@ suite('applyModuleEnabled (integration)', () => {
     // Redis invalidation (what the bot subscribes to → live in <1s)
     const message = JSON.parse(await received) as { guildId: string; module: string };
     expect(message).toEqual({ guildId: GUILD_ID, module: 'LEVELING' });
+  });
+
+  it('validates and persists a module config blob, rejecting invalid input', async () => {
+    const ok = await applyModuleConfig(
+      GUILD_ID,
+      'WELCOME',
+      { message: 'Hi {user}', channelId: '123' },
+      USER_ID,
+    );
+    expect(ok.ok).toBe(true);
+
+    const row = await prisma.guildModuleConfig.findUnique({
+      where: { guildId_module: { guildId: GUILD_ID, module: 'WELCOME' } },
+    });
+    expect((row?.config as { message?: string })?.message).toBe('Hi {user}');
+
+    // Invalid: message must be a string — zod rejects, nothing is written.
+    const bad = await applyModuleConfig(GUILD_ID, 'WELCOME', { message: 123 }, USER_ID);
+    expect(bad.ok).toBe(false);
+    const unchanged = await prisma.guildModuleConfig.findUnique({
+      where: { guildId_module: { guildId: GUILD_ID, module: 'WELCOME' } },
+    });
+    expect((unchanged?.config as { message?: string })?.message).toBe('Hi {user}');
   });
 });
 

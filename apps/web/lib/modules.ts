@@ -69,6 +69,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Greetings, goodbyes, and welcome cards.',
     icon: DoorOpen,
     category: 'core',
+    configSlug: 'welcome',
   },
   {
     module: 'AUTOROLE',
@@ -76,6 +77,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Roles on join, sticky & timed roles.',
     icon: UserPlus,
     category: 'core',
+    configSlug: 'autoroles',
   },
   {
     module: 'LEVELING',
