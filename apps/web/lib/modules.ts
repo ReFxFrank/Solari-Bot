@@ -94,6 +94,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Button & select-menu role panels.',
     icon: Tags,
     category: 'core',
+    configSlug: 'roles',
   },
   {
     module: 'CUSTOM_COMMANDS',

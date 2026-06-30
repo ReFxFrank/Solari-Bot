@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { logger } from '../logger';
 import type { Command } from './command';
 import type { BotEvent } from './event';
+import type { ComponentHandler, ComponentModule } from './component';
 
 const SOURCE_RE = /\.(ts|js|mjs)$/;
 const SKIP_RE = /\.(test|spec|d)\.(ts|js|mjs)$/;
@@ -55,4 +56,20 @@ export async function loadEvents(): Promise<BotEvent[]> {
     events.push(event);
   }
   return events;
+}
+
+/** File-based component-handler loader. Each file default-exports a ComponentModule. */
+export async function loadComponentHandlers(): Promise<Map<string, ComponentHandler>> {
+  const dir = fileURLToPath(new URL('../components', import.meta.url));
+  const handlers = new Map<string, ComponentHandler>();
+  for (const file of await walk(dir)) {
+    const mod: { default?: ComponentModule } = await import(pathToFileURL(file).href);
+    const component = mod.default;
+    if (!component?.module || typeof component.handle !== 'function') {
+      logger.warn({ file }, 'Skipping file without a valid component default export');
+      continue;
+    }
+    handlers.set(component.module, component.handle);
+  }
+  return handlers;
 }

@@ -74,6 +74,7 @@ model Guild {
   auditLogs     DashboardAuditLog[]
   cases         ModerationCase[]
   userLevels    UserLevel[]
+  rolePanels    ReactionRolePanel[]
 
   @@index([ownerId])
 }
@@ -122,6 +123,38 @@ enum CaseType {
   TEMPBAN
   UNBAN
   NOTE
+}
+
+enum RolePanelMode {
+  NORMAL // toggle each role on/off
+  UNIQUE // one role from the panel at a time
+  VERIFY // grant only; clicking never removes
+}
+
+enum RolePanelType {
+  BUTTON
+  SELECT
+}
+
+/// A self-assignable role panel (§8E). Options ([{roleId,label,emoji?}]) are
+/// stored as JSON; `messageId` is set once the panel is deployed to a channel.
+model ReactionRolePanel {
+  id          String        @id @default(cuid())
+  guildId     String
+  channelId   String?
+  messageId   String?
+  title       String
+  description String?
+  mode        RolePanelMode @default(NORMAL)
+  type        RolePanelType @default(BUTTON)
+  options     Json          @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([messageId])
 }
 
 /// Per-guild, per-user XP/level state (§8D). Level rewards are stored in the

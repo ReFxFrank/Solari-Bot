@@ -3,6 +3,8 @@ import { brandedEmbed, errorEmbed } from '../lib/embeds';
 import { commandCounter, commandLatency } from '../services/metrics';
 import type { BotContext } from './context';
 import type { Command } from './command';
+import type { ComponentHandler } from './component';
+import { parseCustomId } from './customId';
 
 async function respond(
   interaction: ChatInputCommandInteraction,
@@ -27,7 +29,20 @@ export async function dispatchInteraction(
   interaction: Interaction,
   ctx: BotContext,
   commands: Map<string, Command>,
+  componentHandlers: Map<string, ComponentHandler>,
 ): Promise<void> {
+  if (interaction.isMessageComponent()) {
+    const parsed = parseCustomId(interaction.customId);
+    const handler = componentHandlers.get(parsed.module);
+    if (!handler) return;
+    try {
+      await handler(interaction, parsed, ctx);
+    } catch (err) {
+      ctx.logger.error({ err, customId: interaction.customId }, 'Component handler failed');
+    }
+    return;
+  }
+
   if (interaction.isChatInputCommand()) {
     const command = commands.get(interaction.commandName);
     if (!command) return;

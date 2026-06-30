@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { REDIS_CHANNELS, type Module } from '@helios/shared';
+import { REDIS_CHANNELS, type LiveCommandType, type Module } from '@helios/shared';
 
 /** Lazy Redis singleton (created on first use, never at module import). */
 let client: Redis | null = null;
@@ -17,4 +17,13 @@ export function getRedis(): Redis {
  */
 export async function publishConfigUpdate(guildId: string, module: Module): Promise<void> {
   await getRedis().publish(REDIS_CHANNELS.configUpdate, JSON.stringify({ guildId, module }));
+}
+
+/** Publish a live "do it now" command to the bot (§4.3). */
+export async function publishLiveCommand(
+  guildId: string,
+  type: LiveCommandType,
+  payload?: unknown,
+): Promise<void> {
+  await getRedis().publish(REDIS_CHANNELS.command, JSON.stringify({ type, guildId, payload }));
 }

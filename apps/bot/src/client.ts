@@ -14,8 +14,9 @@ import { ConfigCache } from './services/configCache';
 import { JobService } from './services/jobs';
 import { closeRedis, redis } from './services/redis';
 import { guildGauge, startMetricsServer } from './services/metrics';
-import { loadCommands, loadEvents } from './framework/loaders';
+import { loadCommands, loadComponentHandlers, loadEvents } from './framework/loaders';
 import { dispatchInteraction } from './framework/dispatch';
+import { LiveCommandService } from './services/liveCommands';
 import type { BotContext } from './framework/context';
 
 /**
@@ -42,8 +43,17 @@ async function bootstrap(): Promise<void> {
   const jobs = new JobService(client, logger);
   const ctx: BotContext = { client, logger, prisma, config, jobs, redis };
 
-  const [commands, events] = await Promise.all([loadCommands(), loadEvents()]);
-  logger.info({ commands: commands.size, events: events.length }, 'Loaded commands and events');
+  const [commands, events, componentHandlers] = await Promise.all([
+    loadCommands(),
+    loadEvents(),
+    loadComponentHandlers(),
+  ]);
+  logger.info(
+    { commands: commands.size, events: events.length, components: componentHandlers.size },
+    'Loaded commands, events, and component handlers',
+  );
+
+  const liveCommands = new LiveCommandService(client, logger);
 
   for (const event of events) {
     const run = (...args: ClientEvents[typeof event.name]): void => {
@@ -56,12 +66,13 @@ async function bootstrap(): Promise<void> {
   }
 
   client.on(Events.InteractionCreate, (interaction) => {
-    void dispatchInteraction(interaction, ctx, commands).catch((err: unknown) =>
+    void dispatchInteraction(interaction, ctx, commands, componentHandlers).catch((err: unknown) =>
       logger.error({ err }, 'Interaction dispatch error'),
     );
   });
 
   await config.start();
+  await liveCommands.start();
 
   let stopMetrics: (() => Promise<void>) | null = null;
 

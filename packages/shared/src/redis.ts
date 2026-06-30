@@ -18,12 +18,27 @@ export interface ConfigUpdateMessage {
 }
 
 export type LiveCommandType =
-  'TEST_WELCOME' | 'DEPLOY_EMBED' | 'REFRESH_LEADERBOARD' | 'RESYNC_COMMANDS' | 'REFRESH_STATS';
+  | 'TEST_WELCOME'
+  | 'DEPLOY_EMBED'
+  | 'REFRESH_LEADERBOARD'
+  | 'RESYNC_COMMANDS'
+  | 'REFRESH_STATS'
+  | 'DEPLOY_PANEL'
+  | 'DELETE_PANEL';
 
 export interface LiveCommandMessage<TPayload = unknown> {
   type: LiveCommandType;
   guildId: string;
   payload?: TPayload;
+}
+
+export interface DeployPanelPayload {
+  panelId: string;
+}
+
+export interface DeletePanelPayload {
+  channelId: string;
+  messageId: string;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */
