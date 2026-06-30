@@ -1,42 +1,36 @@
 import './load-env';
+import { fileURLToPath } from 'node:url';
+import { ShardingManager } from 'discord.js';
 import { env } from './env';
 import { logger } from './logger';
 
 /**
- * Phase 0 bootstrap. This validates the environment, brings up structured
- * logging, and installs graceful-shutdown handlers — the spine that Phase 1
- * builds the sharded Discord client and BullMQ workers on top of.
+ * ShardingManager entry (§4.5). Spawns the per-shard client in `client.ts`.
  *
- * Discord gateway wiring intentionally does not run yet: Phase 0's acceptance
- * criteria are infra + typecheck/lint, not a live gateway connection.
+ * The shard children are forked with `--import tsx` so they can run the
+ * TypeScript entry directly (matching how the parent is launched), without a
+ * separate build step.
  */
 async function main(): Promise<void> {
-  logger.info(
-    {
-      nodeEnv: env.NODE_ENV,
-      owners: env.OWNER_IDS.length,
-      devGuild: env.DEV_GUILD_ID ?? null,
-    },
-    'Helios bot — Phase 0 scaffold booted. Discord gateway + commands arrive in Phase 1.',
-  );
+  const shardFile = fileURLToPath(new URL('./client.ts', import.meta.url));
 
-  // Phase 1 will spawn the ShardingManager here, e.g.:
-  //   const manager = new ShardingManager(new URL('./client.ts', import.meta.url).pathname, {
-  //     token: env.DISCORD_TOKEN,
-  //     totalShards: 'auto',
-  //   });
-  //   await manager.spawn();
+  const manager = new ShardingManager(shardFile, {
+    token: env.DISCORD_TOKEN,
+    totalShards: 'auto',
+    execArgv: ['--import', 'tsx'],
+    respawn: true,
+  });
 
-  const shutdown = (signal: NodeJS.Signals): void => {
-    logger.info({ signal }, 'Received shutdown signal, exiting.');
-    process.exit(0);
-  };
+  manager.on('shardCreate', (shard) => {
+    logger.info({ shard: shard.id }, 'Launching shard');
+    shard.on('death', () => logger.error({ shard: shard.id }, 'Shard process died'));
+  });
 
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  await manager.spawn();
+  logger.info({ shards: manager.totalShards }, 'All shards spawned');
 }
 
-main().catch((error: unknown) => {
-  logger.error({ err: error }, 'Fatal error during bot startup');
+main().catch((err: unknown) => {
+  logger.error({ err }, 'Fatal error in sharding manager');
   process.exit(1);
 });
