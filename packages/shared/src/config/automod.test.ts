@@ -3,7 +3,9 @@ import {
   automodConfigSchema,
   containsDisallowedLink,
   containsInvite,
+  evaluateJoinRate,
   exceedsCaps,
+  isAccountTooNew,
   matchBlockedWord,
 } from './automod';
 
@@ -15,6 +17,59 @@ describe('automodConfigSchema', () => {
     expect(config.mentions.maxMentions).toBe(5);
     expect(config.spam.maxMessages).toBe(5);
     expect(config.words.list).toEqual([]);
+  });
+
+  it('fills raid and verification defaults', () => {
+    const config = automodConfigSchema.parse({});
+    expect(config.raid.enabled).toBe(false);
+    expect(config.raid.minAccountAgeHours).toBe(0);
+    expect(config.raid.joinThreshold).toBe(10);
+    expect(config.raid.raidAction).toBe('kick');
+    expect(config.verification.enabled).toBe(false);
+    expect(config.verification.buttonLabel).toBe('Verify');
+    expect(config.verification.verifiedRoleId).toBe('');
+  });
+});
+
+describe('isAccountTooNew', () => {
+  const now = 1_000 * 3_600_000; // arbitrary "now" in ms
+
+  it('is disabled when the floor is 0', () => {
+    expect(isAccountTooNew(0, 0, now)).toBe(false);
+  });
+
+  it('flags accounts younger than the floor', () => {
+    const oneHourOld = now - 1 * 3_600_000;
+    expect(isAccountTooNew(oneHourOld, 24, now)).toBe(true);
+  });
+
+  it('allows accounts at or above the floor', () => {
+    const exactlyADayOld = now - 24 * 3_600_000;
+    expect(isAccountTooNew(exactlyADayOld, 24, now)).toBe(false);
+    const olderStill = now - 48 * 3_600_000;
+    expect(isAccountTooNew(olderStill, 24, now)).toBe(false);
+  });
+});
+
+describe('evaluateJoinRate', () => {
+  it('prunes timestamps outside the window', () => {
+    const now = 100_000;
+    const stamps = [now - 20_000, now - 5_000, now - 1_000, now];
+    const { recent } = evaluateJoinRate(stamps, 10, 50, now);
+    expect(recent).toEqual([now - 5_000, now - 1_000, now]); // 20s-old dropped
+  });
+
+  it('trips when the in-window count reaches the threshold', () => {
+    const now = 100_000;
+    const stamps = [now - 4_000, now - 3_000, now - 2_000, now - 1_000, now];
+    expect(evaluateJoinRate(stamps, 10, 5, now).raid).toBe(true);
+    expect(evaluateJoinRate(stamps, 10, 6, now).raid).toBe(false);
+  });
+
+  it('does not count expired joins toward the threshold', () => {
+    const now = 100_000;
+    const stamps = [now - 30_000, now - 25_000, now - 20_000, now]; // only 1 in a 10s window
+    expect(evaluateJoinRate(stamps, 10, 3, now).raid).toBe(false);
   });
 });
 

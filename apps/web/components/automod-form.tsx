@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useTransition, type ReactNode } from 'react';
-import { AUTOMOD_ACTIONS, type AutomodAction, type AutomodConfig } from '@helios/shared';
+import {
+  AUTOMOD_ACTIONS,
+  GATE_ACTIONS,
+  type AutomodAction,
+  type AutomodConfig,
+  type GateAction,
+} from '@helios/shared';
 import { saveAutomodConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 
@@ -36,6 +42,19 @@ export function AutomodForm({ guildId, initial }: { guildId: string; initial: Au
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], ...value } }));
     setStatus('idle');
   }
+
+  function patchRaid(value: Partial<AutomodConfig['raid']>): void {
+    setConfig((prev) => ({ ...prev, raid: { ...prev.raid, ...value } }));
+    setStatus('idle');
+  }
+
+  function patchVerification(value: Partial<AutomodConfig['verification']>): void {
+    setConfig((prev) => ({ ...prev, verification: { ...prev.verification, ...value } }));
+    setStatus('idle');
+  }
+
+  const raid = config.raid;
+  const verification = config.verification;
 
   function save(): void {
     startTransition(async () => {
@@ -221,6 +240,210 @@ export function AutomodForm({ guildId, initial }: { guildId: string; initial: Au
           />
         </Field>,
       )}
+
+      {/* Raid protection */}
+      <div className="rounded-lg border border-white/10 p-3">
+        <label className="flex items-center gap-2 text-sm font-medium text-white/85">
+          <input
+            type="checkbox"
+            checked={raid.enabled}
+            onChange={(e) => patchRaid({ enabled: e.target.checked })}
+          />
+          Raid protection
+        </label>
+        <p className="mt-1 text-xs text-white/40">
+          Gate the door on join — reject young accounts and auto-sanction join floods.
+        </p>
+        {raid.enabled && (
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Min account age (hours)" hint="0 disables the age gate.">
+                <input
+                  type="number"
+                  min={0}
+                  max={8760}
+                  className={inputClass}
+                  value={raid.minAccountAgeHours}
+                  onChange={(e) =>
+                    patchRaid({
+                      minAccountAgeHours: Math.min(8760, Math.max(0, Number(e.target.value) || 0)),
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Action for young accounts">
+                <select
+                  className={inputClass}
+                  value={raid.accountAgeAction}
+                  onChange={(e) => patchRaid({ accountAgeAction: e.target.value as GateAction })}
+                >
+                  {GATE_ACTIONS.map((action) => (
+                    <option key={action} value={action} className="bg-[#1a1b26]">
+                      {action}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Join threshold" hint="Joins that arm raid mode.">
+                <input
+                  type="number"
+                  min={2}
+                  max={100}
+                  className={inputClass}
+                  value={raid.joinThreshold}
+                  onChange={(e) =>
+                    patchRaid({
+                      joinThreshold: Math.min(100, Math.max(2, Number(e.target.value) || 10)),
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Within seconds">
+                <input
+                  type="number"
+                  min={1}
+                  max={300}
+                  className={inputClass}
+                  value={raid.joinWindowSeconds}
+                  onChange={(e) =>
+                    patchRaid({
+                      joinWindowSeconds: Math.min(300, Math.max(1, Number(e.target.value) || 10)),
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Raid action">
+                <select
+                  className={inputClass}
+                  value={raid.raidAction}
+                  onChange={(e) => patchRaid({ raidAction: e.target.value as GateAction })}
+                >
+                  {GATE_ACTIONS.map((action) => (
+                    <option key={action} value={action} className="bg-[#1a1b26]">
+                      {action}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Raid-mode duration (seconds)" hint="How long the gate stays armed.">
+                <input
+                  type="number"
+                  min={30}
+                  max={3600}
+                  className={inputClass}
+                  value={raid.raidModeDurationSeconds}
+                  onChange={(e) =>
+                    patchRaid({
+                      raidModeDurationSeconds: Math.min(
+                        3600,
+                        Math.max(30, Number(e.target.value) || 300),
+                      ),
+                    })
+                  }
+                />
+              </Field>
+              {(raid.accountAgeAction === 'timeout' || raid.raidAction === 'timeout') && (
+                <Field label="Timeout minutes">
+                  <input
+                    type="number"
+                    min={1}
+                    max={10080}
+                    className={inputClass}
+                    value={raid.timeoutMinutes}
+                    onChange={(e) =>
+                      patchRaid({ timeoutMinutes: Math.max(1, Number(e.target.value) || 60) })
+                    }
+                  />
+                </Field>
+              )}
+            </div>
+            <Field
+              label="Alert channel ID"
+              hint="Where the “raid engaged” notice posts. Blank = member log."
+            >
+              <input
+                className={monoInputClass}
+                value={raid.alertChannelId}
+                onChange={(e) => patchRaid({ alertChannelId: e.target.value.trim() })}
+              />
+            </Field>
+          </div>
+        )}
+      </div>
+
+      {/* Button verification gate */}
+      <div className="rounded-lg border border-white/10 p-3">
+        <label className="flex items-center gap-2 text-sm font-medium text-white/85">
+          <input
+            type="checkbox"
+            checked={verification.enabled}
+            onChange={(e) => patchVerification({ enabled: e.target.checked })}
+          />
+          Button verification
+        </label>
+        <p className="mt-1 text-xs text-white/40">
+          Post a panel with <code>/verification panel</code>; clicking the button grants the
+          verified role.
+        </p>
+        {verification.enabled && (
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Verified role ID" hint="Granted on a successful verify.">
+                <input
+                  className={monoInputClass}
+                  value={verification.verifiedRoleId}
+                  onChange={(e) => patchVerification({ verifiedRoleId: e.target.value.trim() })}
+                />
+              </Field>
+              <Field label="Unverified role ID" hint="Optional. Added on join, removed on verify.">
+                <input
+                  className={monoInputClass}
+                  value={verification.unverifiedRoleId}
+                  onChange={(e) => patchVerification({ unverifiedRoleId: e.target.value.trim() })}
+                />
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Button label">
+                <input
+                  className={inputClass}
+                  maxLength={80}
+                  value={verification.buttonLabel}
+                  onChange={(e) => patchVerification({ buttonLabel: e.target.value })}
+                />
+              </Field>
+              <Field label="Panel title">
+                <input
+                  className={inputClass}
+                  maxLength={256}
+                  value={verification.panelTitle}
+                  onChange={(e) => patchVerification({ panelTitle: e.target.value })}
+                />
+              </Field>
+            </div>
+            <Field label="Panel message">
+              <textarea
+                className={`${inputClass} min-h-16 resize-y`}
+                maxLength={2000}
+                value={verification.panelMessage}
+                onChange={(e) => patchVerification({ panelMessage: e.target.value })}
+              />
+            </Field>
+            <Field label="Success message" hint="Shown privately after verifying.">
+              <textarea
+                className={`${inputClass} min-h-16 resize-y`}
+                maxLength={2000}
+                value={verification.successMessage}
+                onChange={(e) => patchVerification({ successMessage: e.target.value })}
+              />
+            </Field>
+          </div>
+        )}
+      </div>
 
       <SaveBar pending={pending} status={status} onSave={save} />
     </div>
