@@ -1,10 +1,9 @@
-import { Queue, Worker } from 'bullmq';
+import { Queue, Worker, type Job } from 'bullmq';
 import { QUEUE_NAMES, QUEUE_PREFIX, type TempActionExpireJob } from '@helios/jobs';
 import type { Client } from 'discord.js';
 import { prisma, type PrismaClient } from '@helios/database';
 import type { Logger } from '../logger';
 import { bullConnection } from './redis';
-import { handleTempActionExpire } from '../jobs/handlers/tempActionExpire';
 
 /** Dependencies handed to job handlers. */
 export interface JobContext {
@@ -13,19 +12,34 @@ export interface JobContext {
   logger: Logger;
 }
 
+export type JobHandler<TData = unknown> = (data: TData, ctx: JobContext) => Promise<void>;
+
+export interface ScheduleOptions {
+  delayMs?: number;
+  /** Idempotency key — re-scheduling with the same id replaces the prior job. */
+  jobId?: string;
+  attempts?: number;
+}
+
 /**
- * Durable job service (§5.4). Owns the BullMQ Queues (for enqueuing) and
- * Workers (for processing) that run inside the bot process. Because jobs live
- * in Redis, every scheduled effect survives a restart — verify by restarting
- * mid-timer.
+ * Durable job service (§5.4). Owns BullMQ Queues (enqueue) and Workers
+ * (process) inside the bot process. Handlers are registered per queue and a
+ * Worker is spun up for each at startup. Because jobs live in Redis, every
+ * scheduled effect survives a restart.
  */
 export class JobService {
   private readonly queues = new Map<string, Queue>();
   private readonly workers: Worker[] = [];
+  private readonly handlers = new Map<string, JobHandler>();
   private readonly ctx: JobContext;
 
   constructor(client: Client, logger: Logger) {
     this.ctx = { client, prisma, logger };
+  }
+
+  /** Register the handler for a queue. Call before `startWorkers`. */
+  registerHandler<TData>(queueName: string, handler: JobHandler<TData>): void {
+    this.handlers.set(queueName, handler as JobHandler);
   }
 
   private queue(name: string): Queue {
@@ -38,48 +52,59 @@ export class JobService {
   }
 
   /**
-   * Schedule a temporary-action reversal after `delayMs`. `jobId` makes this
-   * idempotent — re-scheduling with the same id is a no-op while the job is
-   * pending.
+   * Schedule (or reschedule) a job. With a `jobId`, this is idempotent: any
+   * existing job for that id is removed first, so a new delay actually wins
+   * (BullMQ no-ops `add()` on a duplicate id) and a stale failed-job key can't
+   * block re-scheduling. Failures retry with backoff.
    */
-  async scheduleTempAction(
-    data: TempActionExpireJob,
-    delayMs: number,
-    jobId: string,
+  async schedule(
+    queueName: string,
+    jobName: string,
+    data: unknown,
+    options: ScheduleOptions = {},
   ): Promise<void> {
-    const queue = this.queue(QUEUE_NAMES.tempActionExpire);
-    // BullMQ treats add() with an already-existing jobId as a silent no-op, so a
-    // reschedule (new duration) or a leftover failed-job key would otherwise be
-    // ignored. Remove any prior job for this id first so the new schedule wins.
-    await queue.remove(jobId).catch(() => undefined);
-    await queue.add('tempActionExpire', data, {
-      delay: Math.max(0, delayMs),
-      jobId,
-      // Retry transient failures (e.g. a Discord 5xx/429 during the reversal)
-      // instead of dropping the action.
-      attempts: 5,
+    const queue = this.queue(queueName);
+    if (options.jobId) await queue.remove(options.jobId).catch(() => undefined);
+    await queue.add(jobName, data, {
+      delay: Math.max(0, options.delayMs ?? 0),
+      jobId: options.jobId,
+      attempts: options.attempts ?? 5,
       backoff: { type: 'exponential', delay: 10_000 },
       removeOnComplete: true,
       removeOnFail: 1000,
     });
   }
 
+  /** Cancel a scheduled job by id. */
+  async cancel(queueName: string, jobId: string): Promise<void> {
+    const job = await this.queue(queueName).getJob(jobId);
+    await job?.remove();
+  }
+
+  // ── Temp-action convenience (moderation) ──────────────────────────────────
+
+  async scheduleTempAction(
+    data: TempActionExpireJob,
+    delayMs: number,
+    jobId: string,
+  ): Promise<void> {
+    await this.schedule(QUEUE_NAMES.tempActionExpire, 'tempActionExpire', data, { delayMs, jobId });
+  }
+
+  async cancelTempAction(jobId: string): Promise<void> {
+    await this.cancel(QUEUE_NAMES.tempActionExpire, jobId);
+  }
+
   /**
-   * Re-arm scheduled temp-actions from the database (the source of truth) on
-   * startup, for guilds this shard owns. Self-heals after a restart or any
-   * enqueue lost to a crash / Redis blip — the DB row, not Redis, guarantees
-   * the reversal eventually happens.
+   * Re-arm scheduled temp-actions from the database (source of truth) on
+   * startup for guilds this shard owns — self-heals after a restart or a lost
+   * enqueue.
    */
   async reconcile(): Promise<void> {
     const guildIds = [...this.ctx.client.guilds.cache.keys()];
     if (guildIds.length === 0) return;
     const cases = await prisma.moderationCase.findMany({
-      where: {
-        type: 'TEMPBAN',
-        active: true,
-        expiresAt: { not: null },
-        guildId: { in: guildIds },
-      },
+      where: { type: 'TEMPBAN', active: true, expiresAt: { not: null }, guildId: { in: guildIds } },
       select: { id: true, guildId: true, targetId: true, expiresAt: true },
     });
     for (const moderationCase of cases) {
@@ -98,24 +123,19 @@ export class JobService {
     this.ctx.logger.info({ count: cases.length }, 'Reconciled scheduled temp-actions');
   }
 
-  /** Cancel a scheduled temp-action (e.g. a manual unban before expiry). */
-  async cancelTempAction(jobId: string): Promise<void> {
-    const job = await this.queue(QUEUE_NAMES.tempActionExpire).getJob(jobId);
-    await job?.remove();
-  }
-
-  /** Start the workers. Call after login — handlers use the authed REST client. */
+  /** Start a Worker for every registered handler. Call after login. */
   startWorkers(): void {
-    const tempActions = new Worker<TempActionExpireJob>(
-      QUEUE_NAMES.tempActionExpire,
-      (job) => handleTempActionExpire(job.data, this.ctx),
-      { connection: bullConnection, prefix: QUEUE_PREFIX },
-    );
-    tempActions.on('failed', (job, err) =>
-      this.ctx.logger.error({ err, jobId: job?.id }, 'tempActionExpire job failed'),
-    );
-    this.workers.push(tempActions);
-    this.ctx.logger.info('Job workers started');
+    for (const [name, handler] of this.handlers) {
+      const worker = new Worker(name, (job: Job) => handler(job.data, this.ctx), {
+        connection: bullConnection,
+        prefix: QUEUE_PREFIX,
+      });
+      worker.on('failed', (job, err) =>
+        this.ctx.logger.error({ err, jobId: job?.id, queue: name }, 'Job failed'),
+      );
+      this.workers.push(worker);
+    }
+    this.ctx.logger.info({ workers: this.workers.length }, 'Job workers started');
   }
 
   async close(): Promise<void> {
@@ -129,4 +149,9 @@ export class JobService {
 /** Stable job id for a guild member's temp-ban expiry (no `:` — BullMQ keys). */
 export function tempBanJobId(guildId: string, userId: string): string {
   return `tempban-${guildId}-${userId}`;
+}
+
+/** Stable job id for a giveaway's scheduled end. */
+export function giveawayJobId(giveawayId: string): string {
+  return `giveaway-${giveawayId}`;
 }

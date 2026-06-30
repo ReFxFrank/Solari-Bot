@@ -4,12 +4,14 @@ import {
   REDIS_CHANNELS,
   type DeletePanelPayload,
   type DeployPanelPayload,
+  type GiveawayActionPayload,
   type LiveCommandMessage,
   type RolePanelOption,
 } from '@helios/shared';
 import type { Logger } from '../logger';
 import { subscriber } from './redis';
 import { buildPanelMessage } from '../modules/roles';
+import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 
 /**
  * Subscribes to `helios:command` (§4.3). Uses broadcast-and-filter: every shard
@@ -42,6 +44,18 @@ export class LiveCommandService {
         return;
       case 'DELETE_PANEL':
         await this.deletePanel(message.guildId, message.payload as DeletePanelPayload);
+        return;
+      case 'END_GIVEAWAY':
+        await endGiveaway((message.payload as GiveawayActionPayload).giveawayId, {
+          client: this.client,
+          logger: this.logger,
+        });
+        return;
+      case 'REROLL_GIVEAWAY':
+        await rerollGiveaway((message.payload as GiveawayActionPayload).giveawayId, {
+          client: this.client,
+          logger: this.logger,
+        });
         return;
       default:
         return;

@@ -17,6 +17,9 @@ import { guildGauge, startMetricsServer } from './services/metrics';
 import { loadCommands, loadComponentHandlers, loadEvents } from './framework/loaders';
 import { dispatchInteraction } from './framework/dispatch';
 import { LiveCommandService } from './services/liveCommands';
+import { QUEUE_NAMES } from '@helios/jobs';
+import { handleTempActionExpire } from './jobs/handlers/tempActionExpire';
+import { handleGiveawayEnd } from './jobs/handlers/giveawayEnd';
 import type { BotContext } from './framework/context';
 
 /**
@@ -59,6 +62,9 @@ async function bootstrap(): Promise<void> {
     { commands: commands.size, events: events.length, components: componentHandlers.size },
     'Loaded commands, events, and component handlers',
   );
+
+  jobs.registerHandler(QUEUE_NAMES.tempActionExpire, handleTempActionExpire);
+  jobs.registerHandler(QUEUE_NAMES.giveawayEnd, handleGiveawayEnd);
 
   const liveCommands = new LiveCommandService(client, logger);
 

@@ -76,6 +76,7 @@ model Guild {
   userLevels    UserLevel[]
   rolePanels    ReactionRolePanel[]
   starboard     StarboardMessage[]
+  giveaways     Giveaway[]
 
   @@index([ownerId])
 }
@@ -156,6 +157,40 @@ model ReactionRolePanel {
 
   @@index([guildId])
   @@index([messageId])
+}
+
+/// A giveaway (§8G). `requirements` is a JSON blob ({ roleIds: [] }); winners
+/// are drawn from GiveawayEntry rows by the durable `giveawayEnd` job.
+model Giveaway {
+  id           String   @id @default(cuid())
+  guildId      String
+  channelId    String
+  messageId    String?
+  prize        String
+  winnerCount  Int      @default(1)
+  requirements Json     @default("{}")
+  endsAt       DateTime
+  ended        Boolean  @default(false)
+  createdBy    String
+  createdAt    DateTime @default(now())
+
+  guild   Guild           @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  entries GiveawayEntry[]
+
+  @@index([guildId])
+  @@index([ended, endsAt])
+}
+
+model GiveawayEntry {
+  id         String   @id @default(cuid())
+  giveawayId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  giveaway Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, userId])
+  @@index([giveawayId])
 }
 
 /// Maps a starred source message to its posted starboard message (§8G), so the

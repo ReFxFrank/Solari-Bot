@@ -117,6 +117,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Timed draws with requirements & reroll.',
     icon: Gift,
     category: 'core',
+    configSlug: 'giveaways',
   },
   {
     module: 'POLLS',

@@ -24,7 +24,9 @@ export type LiveCommandType =
   | 'RESYNC_COMMANDS'
   | 'REFRESH_STATS'
   | 'DEPLOY_PANEL'
-  | 'DELETE_PANEL';
+  | 'DELETE_PANEL'
+  | 'END_GIVEAWAY'
+  | 'REROLL_GIVEAWAY';
 
 export interface LiveCommandMessage<TPayload = unknown> {
   type: LiveCommandType;
@@ -39,6 +41,10 @@ export interface DeployPanelPayload {
 export interface DeletePanelPayload {
   channelId: string;
   messageId: string;
+}
+
+export interface GiveawayActionPayload {
+  giveawayId: string;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */
