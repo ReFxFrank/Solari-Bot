@@ -21,6 +21,14 @@ export const rolePanelInputSchema = z.object({
   channelId: z.string().nullable().default(null),
   mode: z.enum(rolePanelModes).default('NORMAL'),
   type: z.enum(rolePanelTypes).default('BUTTON'),
-  options: z.array(rolePanelOptionSchema).min(1).max(25),
+  // Duplicate roleIds produce duplicate component custom-ids/values, which
+  // Discord rejects at send time — reject them up front instead.
+  options: z
+    .array(rolePanelOptionSchema)
+    .min(1)
+    .max(25)
+    .refine((opts) => new Set(opts.map((o) => o.roleId)).size === opts.length, {
+      message: 'Each role can appear only once per panel.',
+    }),
 });
 export type RolePanelInput = z.infer<typeof rolePanelInputSchema>;
