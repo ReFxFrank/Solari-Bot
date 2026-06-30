@@ -77,6 +77,8 @@ model Guild {
   rolePanels    ReactionRolePanel[]
   starboard     StarboardMessage[]
   giveaways     Giveaway[]
+  reminders         Reminder[]
+  scheduledMessages ScheduledMessage[]
 
   @@index([ownerId])
 }
@@ -254,4 +256,56 @@ model ModerationCase {
   @@index([guildId])
   @@index([guildId, targetId])
   @@index([active, expiresAt])
+}
+
+/// How often a scheduled message repeats. Mirrors `ScheduleRepeat` in
+/// `@helios/shared` — keep the two in sync.
+enum ScheduleRepeat {
+  NONE
+  HOURLY
+  DAILY
+  WEEKLY
+}
+
+/// A personal/server reminder (§8 Reminders). Fired by the durable `reminder`
+/// job — never a timer — and removed once delivered. Scoped to the guild it was
+/// created in so the owning shard can re-arm it on startup.
+model Reminder {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  userId    String
+  content   String
+  remindAt  DateTime
+  createdAt DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([userId])
+  @@index([remindAt])
+}
+
+/// A scheduled / recurring announcement (§8 Scheduled messages). The durable
+/// `scheduledMessage` job posts `content` to `channelId` at `nextRunAt`; if
+/// `repeat` is not NONE it re-arms itself for the next interval, otherwise it
+/// flips `enabled` off after firing once.
+model ScheduledMessage {
+  id        String         @id @default(cuid())
+  guildId   String
+  channelId String
+  name      String?
+  content   String
+  repeat    ScheduleRepeat @default(NONE)
+  nextRunAt DateTime
+  lastRunAt DateTime?
+  enabled   Boolean        @default(true)
+  createdBy String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([enabled, nextRunAt])
 }

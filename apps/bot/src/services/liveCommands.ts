@@ -1,5 +1,6 @@
 import type { Client } from 'discord.js';
 import { prisma } from '@helios/database';
+import { QUEUE_NAMES } from '@helios/jobs';
 import {
   REDIS_CHANNELS,
   type DeletePanelPayload,
@@ -7,11 +8,14 @@ import {
   type GiveawayActionPayload,
   type LiveCommandMessage,
   type RolePanelOption,
+  type ScheduledMessagePayload,
 } from '@helios/shared';
 import type { Logger } from '../logger';
 import { subscriber } from './redis';
 import { buildPanelMessage } from '../modules/roles';
 import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
+import { armScheduledMessage } from '../modules/scheduledMessages';
+import { scheduledMessageJobId, type JobService } from './jobs';
 
 /**
  * Subscribes to `helios:command` (§4.3). Uses broadcast-and-filter: every shard
@@ -21,6 +25,7 @@ export class LiveCommandService {
   constructor(
     private readonly client: Client,
     private readonly logger: Logger,
+    private readonly jobs: JobService,
   ) {}
 
   async start(): Promise<void> {
@@ -56,6 +61,19 @@ export class LiveCommandService {
           client: this.client,
           logger: this.logger,
         });
+        return;
+      case 'SCHEDULE_MESSAGE':
+        await armScheduledMessage((message.payload as ScheduledMessagePayload).scheduledMessageId, {
+          client: this.client,
+          logger: this.logger,
+          jobs: this.jobs,
+        });
+        return;
+      case 'CANCEL_SCHEDULED_MESSAGE':
+        await this.jobs.cancel(
+          QUEUE_NAMES.scheduledMessage,
+          scheduledMessageJobId((message.payload as ScheduledMessagePayload).scheduledMessageId),
+        );
         return;
       default:
         return;

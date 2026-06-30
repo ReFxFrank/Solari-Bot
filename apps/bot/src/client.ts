@@ -20,6 +20,8 @@ import { LiveCommandService } from './services/liveCommands';
 import { QUEUE_NAMES } from '@helios/jobs';
 import { handleTempActionExpire } from './jobs/handlers/tempActionExpire';
 import { handleGiveawayEnd } from './jobs/handlers/giveawayEnd';
+import { handleReminder } from './jobs/handlers/reminder';
+import { handleScheduledMessage } from './jobs/handlers/scheduledMessage';
 import type { BotContext } from './framework/context';
 
 /**
@@ -65,8 +67,10 @@ async function bootstrap(): Promise<void> {
 
   jobs.registerHandler(QUEUE_NAMES.tempActionExpire, handleTempActionExpire);
   jobs.registerHandler(QUEUE_NAMES.giveawayEnd, handleGiveawayEnd);
+  jobs.registerHandler(QUEUE_NAMES.reminder, handleReminder);
+  jobs.registerHandler(QUEUE_NAMES.scheduledMessage, handleScheduledMessage);
 
-  const liveCommands = new LiveCommandService(client, logger);
+  const liveCommands = new LiveCommandService(client, logger, jobs);
 
   for (const event of events) {
     const run = (...args: ClientEvents[typeof event.name]): void => {
@@ -98,10 +102,18 @@ async function bootstrap(): Promise<void> {
     guildGauge.set(ready.guilds.cache.size);
     // Workers use the authed REST client, so start them once logged in.
     jobs.startWorkers();
-    // Re-arm any temp-action timers from the DB for guilds this shard owns.
-    void jobs
-      .reconcile()
-      .catch((err: unknown) => logger.error({ err }, 'Temp-action reconcile failed'));
+    // Re-arm any durable timers from the DB (source of truth) for guilds this
+    // shard owns — self-heals after a restart or a lost enqueue.
+    void Promise.allSettled([
+      jobs.reconcile(),
+      jobs.reconcileReminders(),
+      jobs.reconcileScheduledMessages(),
+    ]).then((results) => {
+      for (const result of results) {
+        if (result.status === 'rejected')
+          logger.error({ err: result.reason }, 'Durable-job reconcile failed');
+      }
+    });
     stopMetrics = startMetricsServer(ready.shard?.ids[0] ?? 0);
   });
 

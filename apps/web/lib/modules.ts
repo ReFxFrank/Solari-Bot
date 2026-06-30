@@ -146,6 +146,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Cron / recurring announcements.',
     icon: CalendarClock,
     category: 'core',
+    configSlug: 'scheduled',
   },
   {
     module: 'TICKETS',

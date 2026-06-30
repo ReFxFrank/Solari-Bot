@@ -10,6 +10,8 @@ export interface JobContext {
   client: Client;
   prisma: PrismaClient;
   logger: Logger;
+  /** The owning service, so a handler can re-arm a recurring job. */
+  jobs: JobService;
 }
 
 export type JobHandler<TData = unknown> = (data: TData, ctx: JobContext) => Promise<void>;
@@ -34,7 +36,7 @@ export class JobService {
   private readonly ctx: JobContext;
 
   constructor(client: Client, logger: Logger) {
-    this.ctx = { client, prisma, logger };
+    this.ctx = { client, prisma, logger, jobs: this };
   }
 
   /** Register the handler for a queue. Call before `startWorkers`. */
@@ -123,6 +125,47 @@ export class JobService {
     this.ctx.logger.info({ count: cases.length }, 'Reconciled scheduled temp-actions');
   }
 
+  /** Re-arm pending reminders for guilds this shard owns (self-heal on boot). */
+  async reconcileReminders(): Promise<void> {
+    const guildIds = [...this.ctx.client.guilds.cache.keys()];
+    if (guildIds.length === 0) return;
+    const reminders = await prisma.reminder.findMany({
+      where: { guildId: { in: guildIds } },
+      select: { id: true, remindAt: true },
+    });
+    for (const reminder of reminders) {
+      await this.schedule(
+        QUEUE_NAMES.reminder,
+        'reminder',
+        { reminderId: reminder.id },
+        { delayMs: reminder.remindAt.getTime() - Date.now(), jobId: reminderJobId(reminder.id) },
+      );
+    }
+    this.ctx.logger.info({ count: reminders.length }, 'Reconciled reminders');
+  }
+
+  /** Re-arm enabled scheduled messages for guilds this shard owns. */
+  async reconcileScheduledMessages(): Promise<void> {
+    const guildIds = [...this.ctx.client.guilds.cache.keys()];
+    if (guildIds.length === 0) return;
+    const messages = await prisma.scheduledMessage.findMany({
+      where: { enabled: true, guildId: { in: guildIds } },
+      select: { id: true, nextRunAt: true },
+    });
+    for (const message of messages) {
+      await this.schedule(
+        QUEUE_NAMES.scheduledMessage,
+        'scheduledMessage',
+        { scheduledMessageId: message.id },
+        {
+          delayMs: message.nextRunAt.getTime() - Date.now(),
+          jobId: scheduledMessageJobId(message.id),
+        },
+      );
+    }
+    this.ctx.logger.info({ count: messages.length }, 'Reconciled scheduled messages');
+  }
+
   /** Start a Worker for every registered handler. Call after login. */
   startWorkers(): void {
     for (const [name, handler] of this.handlers) {
@@ -154,4 +197,14 @@ export function tempBanJobId(guildId: string, userId: string): string {
 /** Stable job id for a giveaway's scheduled end. */
 export function giveawayJobId(giveawayId: string): string {
   return `giveaway-${giveawayId}`;
+}
+
+/** Stable job id for a reminder's delivery. */
+export function reminderJobId(reminderId: string): string {
+  return `reminder-${reminderId}`;
+}
+
+/** Stable job id for a scheduled message's next run. */
+export function scheduledMessageJobId(scheduledMessageId: string): string {
+  return `scheduledmsg-${scheduledMessageId}`;
 }

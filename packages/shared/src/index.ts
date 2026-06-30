@@ -4,5 +4,6 @@ export * from './env';
 export * from './redis';
 export * from './leveling';
 export * from './roles';
+export * from './schedule';
 export * from './refx';
 export * from './config';
