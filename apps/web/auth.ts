@@ -58,7 +58,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Discord({
       clientId: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      authorization: { params: { scope: DISCORD_SCOPES } },
+      // Must include the full `url`, not just `params`: Auth.js REPLACES the
+      // provider's default `authorization` when you pass an object, and Discord
+      // has no OIDC `issuer` for the discovery fallback — so omitting `url`
+      // makes signIn throw `TypeError: Invalid URL`.
+      authorization: {
+        url: 'https://discord.com/api/oauth2/authorize',
+        params: { scope: DISCORD_SCOPES },
+      },
     }),
   ],
   session: { strategy: 'jwt' },
