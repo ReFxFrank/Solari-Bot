@@ -1,0 +1,264 @@
+# Helios — Setup & Local Testing Guide
+
+This walks you from a fresh clone to a **running bot + dashboard you can test in
+your own Discord server**. Every command below is the real one from this repo.
+
+> **What's testable today:** all the core modules — moderation, automod,
+> raid/verification, logging, welcome/autoroles, leveling + voice XP + **rank
+> cards**, reaction roles, custom commands, starboard, giveaways, polls,
+> suggestions, reminders, scheduled messages, tickets, stats counters, invite
+> tracking, birthdays, AFK, and the ReFx status integration.
+> **Music (`/play`)** is being built right now (Phase 4) — you can start
+> Lavalink, but the music commands aren't live yet.
+
+---
+
+## 1. Prerequisites
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| **Node.js** | **20+** | Pinned to 20 via `.nvmrc`. Run `nvm use` if you use nvm. |
+| **pnpm** | **9+** (10.33.0 pinned) | Easiest: `corepack enable` — it auto-provisions the pinned version. |
+| **Docker** + **Docker Compose** | recent | Runs Postgres, Redis, and (optionally) Lavalink. |
+
+```bash
+corepack enable          # provisions the pinned pnpm
+node -v                  # should be 20.x
+```
+
+You also need a **Discord application** (next section).
+
+---
+
+## 2. Create your Discord application
+
+1. Go to <https://discord.com/developers/applications> → **New Application**.
+2. **Bot** tab:
+   - Click **Reset Token** → copy it → this is `DISCORD_TOKEN`.
+   - Scroll to **Privileged Gateway Intents** and enable **both**:
+     - ✅ **Server Members Intent**
+     - ✅ **Message Content Intent**
+     - (Leave *Presence Intent* **off** — the bot doesn't use it.)
+3. **OAuth2** tab:
+   - Copy **Client ID** → `DISCORD_CLIENT_ID`.
+   - Copy **Client Secret** (Reset if needed) → `DISCORD_CLIENT_SECRET`.
+   - Under **Redirects**, add **exactly**:
+     ```
+     http://localhost:3000/api/auth/callback/discord
+     ```
+     (This is the dashboard login callback. The path must match exactly — no
+     trailing slash.)
+4. **Invite the bot** to a test server. Use **OAuth2 → URL Generator**:
+   - Scopes: ✅ `bot` ✅ `applications.commands`
+   - Bot Permissions: for a test server, **Administrator** is simplest. (For a
+     real deployment, grant View Channels, Send Messages, Embed Links, Manage
+     Messages, Add/Manage Reactions, Kick/Ban/Timeout Members, Manage Roles,
+     Manage Server, Connect/Speak.)
+   - Open the generated URL and add the bot to **your** server (you must have
+     Manage Server there).
+
+   Quick invite URL (Administrator) — replace `YOUR_CLIENT_ID`:
+   ```
+   https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot+applications.commands
+   ```
+
+> 💡 Get your **server's ID** (right-click the server → Copy Server ID, with
+> Developer Mode on). Set it as `DEV_GUILD_ID` so slash commands appear
+> **instantly** instead of taking up to an hour to propagate globally.
+
+---
+
+## 3. Install & configure
+
+```bash
+pnpm install                 # also generates the Prisma client (postinstall)
+cp .env.example .env         # then edit .env (next step)
+```
+
+### Fill in `.env`
+
+The bot and dashboard validate their environment on startup (and fail fast with
+a readable error if something required is missing). Minimum to fill:
+
+```dotenv
+# ── Datastores (defaults match docker-compose; leave as-is for local) ──
+DATABASE_URL=postgresql://helios:helios@localhost:5432/helios?schema=public
+REDIS_URL=redis://localhost:6379
+
+# ── Discord (from section 2) ──
+DISCORD_TOKEN=your-bot-token
+DISCORD_CLIENT_ID=your-application-id
+DISCORD_CLIENT_SECRET=your-client-secret      # required by the dashboard
+OWNER_IDS=your-discord-user-id                # optional; comma-separated bot owners
+DEV_GUILD_ID=your-test-server-id              # optional but recommended (instant commands)
+
+# ── Dashboard auth ──
+AUTH_SECRET=                                   # generate: openssl rand -base64 32
+AUTH_URL=http://localhost:3000
+```
+
+Generate the auth secret:
+```bash
+openssl rand -base64 32      # paste into AUTH_SECRET
+```
+
+**Required vs optional (so you know what actually matters):**
+
+| Variable | Bot | Dashboard |
+|----------|-----|-----------|
+| `DATABASE_URL` | ✅ required | ✅ required |
+| `REDIS_URL` | ✅ required | ✅ required |
+| `DISCORD_TOKEN` | ✅ required | — |
+| `DISCORD_CLIENT_ID` | ✅ required | ✅ required |
+| `DISCORD_CLIENT_SECRET` | optional | ✅ required |
+| `AUTH_SECRET` | — | ✅ required |
+| `AUTH_URL` | — | recommended (`http://localhost:3000`) |
+| `DEV_GUILD_ID` | optional (instant commands) | — |
+| `OWNER_IDS`, `ENCRYPTION_KEY`, `METRICS_*`, `REFX_*` | optional | optional |
+
+> `DATABASE_URL` and `REDIS_URL` must be **full URLs** (validated as such) — a
+> bare `host:port` will be rejected.
+
+---
+
+## 4. Start infrastructure & database
+
+```bash
+docker compose up -d         # starts Postgres + Redis only (healthchecked)
+pnpm db:deploy               # applies all migrations to the database
+```
+
+`docker compose up` starts **only Postgres + Redis** — Lavalink and the app
+containers sit behind opt-in profiles, so they don't start here.
+
+---
+
+## 5. Register slash commands
+
+```bash
+pnpm deploy:commands
+```
+
+- With `DEV_GUILD_ID` set → commands register to that server **instantly**.
+- Without it → **global** registration, which can take **up to ~1 hour** to
+  appear.
+
+> This is a one-shot script — **re-run it whenever command definitions change.**
+> It reads (and validates) the full bot env, so `DATABASE_URL`/`REDIS_URL` must
+> be present even though it doesn't connect to them.
+
+---
+
+## 6. Run the bot + dashboard
+
+Run both together with hot reload:
+
+```bash
+pnpm dev
+```
+
+Or run them in separate terminals (clearer logs while testing):
+
+```bash
+pnpm --filter @helios/bot dev     # the bot
+pnpm --filter @helios/web dev     # the dashboard
+```
+
+- **Bot:** within a few seconds you should see a `Shard ready` log and the bot
+  goes online in your server.
+- **Dashboard:** open <http://localhost:3000>, click **Sign in with Discord**,
+  authorize, and you'll land on **/servers** — the list of servers where you
+  have **Manage Server** (or Administrator/ownership). Pick your test server to
+  open its config pages.
+
+---
+
+## 7. Try it out
+
+In your server:
+
+- `/help` — confirms the bot is alive and lists commands.
+- `/rank` — renders the Canvas rank card (chat for a bit first to earn XP).
+- `/ping`, `/userinfo`-style utilities, `/birthday`, `/remind`, `/tag`.
+- `/ticket panel`, `/poll`, `/suggest`, `/giveaway start`.
+- Moderation: `/ban`, `/purge`, etc. (needs the bot's role above the target).
+- Turn on a module in the **dashboard**, save, and watch the bot pick it up
+  within ~1 second (e.g. enable **Auto-moderation**, set a blocked word, and
+  post it).
+
+On the **dashboard** you can configure every module per-server: moderation,
+automod (incl. raid protection + verification), leveling, welcome, tickets,
+starboard, giveaways, and more.
+
+---
+
+## 8. (Optional) Music / Lavalink
+
+> Music commands (`/play`, queue, skip…) are **in active development** and not
+> wired up yet. You can start Lavalink now to have the backend ready.
+
+```bash
+docker compose --profile music up -d lavalink
+```
+
+The password chain is automatic: `.env` `LAVALINK_PASSWORD` → the Lavalink
+container → the bot. Defaults to `youshallnotpass` everywhere, so it "just
+works" locally.
+
+**Heads-up on YouTube:** Lavalink **v4 removed the built-in YouTube source**, so
+out of the box only SoundCloud, Bandcamp, Twitch, Vimeo, and direct HTTP URLs
+resolve. YouTube needs the `youtube-source` plugin — that config will land
+together with the music module.
+
+---
+
+## 9. Running everything in Docker (alternative)
+
+Instead of `pnpm dev` on your host, you can containerize the apps too:
+
+```bash
+docker compose --profile apps up --build           # bot + web (+ Postgres/Redis)
+docker compose --profile apps --profile music up --build   # ...plus Lavalink
+```
+
+The app containers read `.env` and automatically rewrite `DATABASE_URL`,
+`REDIS_URL`, and `LAVALINK_HOST` to the internal service names — so your
+`localhost` values in `.env` are only used when running on the host.
+
+> Compose does **not** run migrations. After the containers are up (or before),
+> apply them from the host with `pnpm db:deploy` (uses the `localhost`
+> `DATABASE_URL`). You still need to `pnpm deploy:commands` once.
+
+---
+
+## 10. Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| **Env validation error on startup** | A required var is missing/invalid. Check the table in §3. `DATABASE_URL`/`REDIS_URL` must be valid URLs. |
+| **`deploy:commands` errors about DATABASE_URL/REDIS_URL** | It validates the full bot env even though it doesn't connect — set those two vars. |
+| **Slash commands don't appear** | Set `DEV_GUILD_ID` and re-run `pnpm deploy:commands` (global registration is slow, ~1h). |
+| **Dashboard redirects you away from a server** | You need **Manage Server** (or Admin/ownership) on it. A newly-granted permission can take up to ~60s to refresh. |
+| **OAuth "redirect URI mismatch"** | The portal redirect must be exactly `http://localhost:3000/api/auth/callback/discord`. |
+| **Automod / member events don't fire** | Enable **Message Content** + **Server Members** intents in the Developer Portal (§2). |
+| **Postgres/Redis connection refused** | `docker compose up -d` and wait for healthy; confirm `DATABASE_URL`/`REDIS_URL` hosts/ports. |
+| **Prisma client / type errors** | `pnpm db:generate` (normally automatic via `pnpm install`). |
+| **Moderation action fails** | The bot's highest role must be **above** the target's, and it needs the relevant permission. |
+
+---
+
+## Command cheat-sheet
+
+```bash
+corepack enable                  # provision pnpm
+pnpm install                     # deps + prisma generate
+docker compose up -d             # Postgres + Redis
+pnpm db:deploy                   # apply migrations
+pnpm deploy:commands             # register slash commands
+pnpm dev                         # run bot + dashboard
+
+# handy extras
+pnpm db:studio                   # browse the database (Prisma Studio)
+pnpm typecheck && pnpm lint && pnpm test
+docker compose --profile music up -d lavalink   # Lavalink (music backend)
+```
