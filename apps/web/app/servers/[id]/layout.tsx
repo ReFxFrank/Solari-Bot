@@ -32,6 +32,7 @@ export default async function GuildLayout({
   }));
   const nav = [
     { href: `/servers/${id}`, label: 'Overview' },
+    { href: `/servers/${id}/premium`, label: 'Premium' },
     ...moduleNav,
     { href: `/servers/${id}/settings`, label: 'Settings' },
     { href: `/servers/${id}/audit`, label: 'Audit log' },
