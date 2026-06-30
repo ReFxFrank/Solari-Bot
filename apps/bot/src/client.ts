@@ -32,6 +32,7 @@ async function bootstrap(): Promise<void> {
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildModeration,
       GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.MessageContent,
     ],
     partials: [Partials.GuildMember, Partials.User],

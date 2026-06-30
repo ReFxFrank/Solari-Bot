@@ -62,6 +62,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Message, member, server & voice logs.',
     icon: ScrollText,
     category: 'core',
+    configSlug: 'logging',
   },
   {
     module: 'WELCOME',
