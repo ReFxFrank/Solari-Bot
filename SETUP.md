@@ -28,6 +28,27 @@ node -v                  # should be 20.x
 
 You also need a **Discord application** (next section).
 
+### Windows
+
+Helios runs on Windows — nothing in the stack needs native build tools (the one
+native module, `@napi-rs/canvas`, ships Windows prebuilds, and audio is handled
+by Lavalink inside Docker). Two ways to run it:
+
+- **WSL2 (recommended):** install [WSL2](https://learn.microsoft.com/windows/wsl/install)
+  + Docker Desktop (WSL2 backend). Everything is Linux-native and the commands
+  below work exactly as written.
+- **Native Windows (PowerShell + Docker Desktop):** also works, with two small
+  substitutions:
+  - `openssl` isn't built in — generate `AUTH_SECRET` with Node instead:
+    ```powershell
+    node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+    ```
+  - `cp .env.example .env` works in PowerShell (it's an alias) and Git Bash; in
+    `cmd` use `copy .env.example .env`.
+
+Docker Desktop must be installed and **running** before the `docker compose`
+steps.
+
 ---
 
 ## 2. Create your Discord application
@@ -100,6 +121,8 @@ AUTH_URL=http://localhost:3000
 Generate the auth secret:
 ```bash
 openssl rand -base64 32      # paste into AUTH_SECRET
+# Windows / no openssl — works anywhere Node is installed:
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 **Required vs optional (so you know what actually matters):**
