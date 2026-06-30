@@ -1,7 +1,8 @@
-import { MessageFlags, SlashCommandBuilder } from 'discord.js';
+import { AttachmentBuilder, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { prisma } from '@helios/database';
 import { xpProgress } from '@helios/shared';
 import { brandedEmbed } from '../../lib/embeds';
+import { renderRankCard } from '../../lib/rankCard';
 import { RequireGuild } from '../../lib/permissions';
 import type { Command } from '../../framework/command';
 
@@ -12,7 +13,7 @@ const command: Command = {
     .addUserOption((o) => o.setName('user').setDescription('Whose rank to show')),
   module: 'LEVELING',
   preconditions: [RequireGuild],
-  async execute(interaction) {
+  async execute(interaction, ctx) {
     if (!interaction.inCachedGuild()) return;
     const target = interaction.options.getUser('user') ?? interaction.user;
 
@@ -38,20 +39,42 @@ const command: Command = {
       })) + 1;
     const { level, current, needed } = xpProgress(userLevel.xp);
 
-    await interaction.reply({
-      embeds: [
-        brandedEmbed({
-          kind: 'info',
-          title: `${target.username} — Level ${level}`,
-          description: [
-            `**Rank:** #${rank}`,
-            `**Progress:** ${current} / ${needed} XP`,
-            `**Total XP:** ${userLevel.xp}`,
-            `**Messages:** ${userLevel.messages}`,
-          ].join('\n'),
-        }),
-      ],
+    const fallbackEmbed = brandedEmbed({
+      kind: 'info',
+      title: `${target.username} — Level ${level}`,
+      description: [
+        `**Rank:** #${rank}`,
+        `**Progress:** ${current} / ${needed} XP`,
+        `**Total XP:** ${userLevel.xp}`,
+        `**Messages:** ${userLevel.messages}`,
+      ].join('\n'),
     });
+
+    const config = await ctx.config.getConfig(interaction.guildId, 'LEVELING');
+    if (!config.cardEnabled) {
+      await interaction.reply({ embeds: [fallbackEmbed] });
+      return;
+    }
+
+    await interaction.deferReply();
+    try {
+      const member = await interaction.guild.members.fetch(target.id).catch(() => null);
+      const png = await renderRankCard({
+        displayName: member?.displayName ?? target.displayName ?? target.username,
+        username: target.username,
+        avatarUrl: (member ?? target).displayAvatarURL({ extension: 'png', size: 256 }),
+        level,
+        rank,
+        currentXp: current,
+        neededXp: needed,
+        totalXp: userLevel.xp,
+      });
+      await interaction.editReply({ files: [new AttachmentBuilder(png, { name: 'rank.png' })] });
+    } catch (err) {
+      // A canvas/render/network failure must never swallow the command.
+      ctx.logger.warn({ err, guildId: interaction.guildId }, 'Rank card render failed');
+      await interaction.editReply({ embeds: [fallbackEmbed] });
+    }
   },
 };
 
