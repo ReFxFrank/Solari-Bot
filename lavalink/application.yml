@@ -9,7 +9,11 @@ lavalink:
   server:
     password: '${LAVALINK_SERVER_PASSWORD:youshallnotpass}'
     sources:
-      youtube: true
+      # Lavalink v4 REMOVED the built-in YouTube source — this flag is inert.
+      # YouTube playback requires the standalone youtube-source plugin, which
+      # lands with the music module (Phase 4). Until then these sources work:
+      # soundcloud, bandcamp, twitch, vimeo, and direct http URLs.
+      youtube: false
       bandcamp: true
       soundcloud: true
       twitch: true

@@ -114,7 +114,12 @@ openssl rand -base64 32      # paste into AUTH_SECRET
 | `AUTH_SECRET` | — | ✅ required |
 | `AUTH_URL` | — | recommended (`http://localhost:3000`) |
 | `DEV_GUILD_ID` | optional (instant commands) | — |
-| `OWNER_IDS`, `ENCRYPTION_KEY`, `METRICS_*`, `REFX_*` | optional | optional |
+| `OWNER_IDS` | optional (bot-owner commands) | optional |
+| `ENCRYPTION_KEY`, `METRICS_*`, `REFX_STATUS_*`, `REFX_NODES_URL` | optional (bot only) | — |
+| `REFX_WEBHOOK_SECRET` | — | optional (web only) |
+
+> If you set `ENCRYPTION_KEY`, it must be **at least 32 characters**
+> (`openssl rand -hex 32`) or startup fails; leaving it unset is fine.
 
 > `DATABASE_URL` and `REDIS_URL` must be **full URLs** (validated as such) — a
 > bare `host:port` will be rejected.
