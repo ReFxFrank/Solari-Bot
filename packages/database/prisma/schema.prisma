@@ -73,6 +73,7 @@ model Guild {
   moduleConfigs GuildModuleConfig[]
   auditLogs     DashboardAuditLog[]
   cases         ModerationCase[]
+  userLevels    UserLevel[]
 
   @@index([ownerId])
 }
@@ -121,6 +122,26 @@ enum CaseType {
   TEMPBAN
   UNBAN
   NOTE
+}
+
+/// Per-guild, per-user XP/level state (§8D). Level rewards are stored in the
+/// leveling module config, not here.
+model UserLevel {
+  id           String    @id @default(cuid())
+  guildId      String
+  userId       String
+  xp           Int       @default(0)
+  level        Int       @default(0)
+  messages     Int       @default(0)
+  voiceMinutes Int       @default(0)
+  lastXpAt     DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId])
+  @@index([guildId, xp])
 }
 
 /// A numbered moderation action (§6). `caseNumber` is per-guild (see

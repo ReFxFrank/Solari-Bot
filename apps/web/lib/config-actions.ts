@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import type {
   AutoroleConfig,
+  LevelingConfig,
   Module,
   ModerationConfig,
   ModuleWithSchema,
@@ -67,6 +68,13 @@ export async function saveAutoroleConfig(
   input: AutoroleConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'AUTOROLE', input, 'autoroles');
+}
+
+export async function saveLevelingConfig(
+  guildId: string,
+  input: LevelingConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'LEVELING', input, 'leveling');
 }
 
 export async function saveGuildSettings(

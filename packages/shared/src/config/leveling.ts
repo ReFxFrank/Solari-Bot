@@ -13,6 +13,10 @@ export const levelingConfigSchema = z.object({
   cardEnabled: z.boolean().default(true),
   noXpRoleIds: z.array(z.string()).default([]),
   noXpChannelIds: z.array(z.string()).default([]),
+  /** Role rewards granted at a level. */
+  rewards: z.array(z.object({ level: z.number().int().min(1), roleId: z.string() })).default([]),
+  /** Keep lower reward roles (true) or replace with the highest earned (false). */
+  roleRewardStack: z.boolean().default(true),
 });
 
 export type LevelingConfig = z.infer<typeof levelingConfigSchema>;

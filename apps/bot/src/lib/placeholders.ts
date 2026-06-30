@@ -8,7 +8,11 @@ export interface PlaceholderMember {
   guild: { name: string; memberCount: number };
 }
 
-export function applyPlaceholders(template: string, member: PlaceholderMember): string {
+export function applyPlaceholders(
+  template: string,
+  member: PlaceholderMember,
+  extra: Record<string, string> = {},
+): string {
   const { user, guild } = member;
   const accountAgeDays = Math.max(0, Math.floor((Date.now() - user.createdTimestamp) / 86_400_000));
 
@@ -22,6 +26,7 @@ export function applyPlaceholders(template: string, member: PlaceholderMember): 
     '{server.name}': guild.name,
     '{memberCount}': String(guild.memberCount),
     '{accountAge}': `${accountAgeDays} day${accountAgeDays === 1 ? '' : 's'}`,
+    ...extra,
   };
 
   return template.replace(/\{[a-zA-Z.]+\}/g, (token) => replacements[token] ?? token);

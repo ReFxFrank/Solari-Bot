@@ -85,6 +85,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Text & voice XP, rank cards, rewards.',
     icon: TrendingUp,
     category: 'core',
+    configSlug: 'leveling',
   },
   {
     module: 'ROLES',
