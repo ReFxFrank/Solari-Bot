@@ -167,8 +167,14 @@ export function nodeMetricsLine(node: RefxNodeMetrics): string {
       ? (node.diskUsedGb / node.diskTotalGb) * 100
       : undefined);
   if (diskPercent !== undefined) parts.push(`Disk ${Math.round(diskPercent)}%`);
-  if (node.serversOnline !== undefined && node.serversMax !== undefined) {
-    parts.push(`${node.serversOnline}/${node.serversMax}`);
+  if (node.serversOnline !== undefined) {
+    // `serversMax` is optional in the feed — show the running count alone when
+    // there's no capacity to compare against.
+    parts.push(
+      node.serversMax !== undefined
+        ? `${node.serversOnline}/${node.serversMax} servers`
+        : `${node.serversOnline} servers`,
+    );
   }
   if (node.uptimeSeconds !== undefined) parts.push(`up ${formatUptime(node.uptimeSeconds)}`);
   return parts.join(' · ');

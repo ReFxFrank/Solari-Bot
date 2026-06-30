@@ -4,6 +4,7 @@ import {
   fetchRefxNodes,
   formatUptime,
   nodeMetricsLine,
+  refxNodeMetricsSchema,
   refxNodesSchema,
   refxStatusEmoji,
   refxStatusSchema,
@@ -59,6 +60,13 @@ describe('refxStatusEmoji', () => {
     expect(refxStatusEmoji('maintenance')).toBe('🔵');
     expect(refxStatusEmoji('degraded_performance')).toBe('🟡');
     expect(refxStatusEmoji('major_outage')).toBe('🔴');
+  });
+
+  it('covers the ReFx status vocabulary (operational|degraded|maintenance|outage)', () => {
+    expect(refxStatusEmoji('operational')).toBe('🟢');
+    expect(refxStatusEmoji('degraded')).toBe('🟡');
+    expect(refxStatusEmoji('maintenance')).toBe('🔵');
+    expect(refxStatusEmoji('outage')).toBe('🔴');
   });
 });
 
@@ -174,7 +182,89 @@ describe('refx metric formatting', () => {
     });
     expect(line).toContain('CPU 30%');
     expect(line).toContain('RAM 50%');
-    expect(line).toContain('3/10');
+    expect(line).toContain('3/10 servers');
+  });
+
+  it('shows the running server count even without serversMax', () => {
+    const line = nodeMetricsLine({ name: 'n', status: 'up', cpuPercent: 9.8, serversOnline: 4 });
+    expect(line).toContain('CPU 10%');
+    expect(line).toContain('4 servers');
+    expect(line).not.toContain('/');
+  });
+
+  it('degrades gracefully for a heartbeat-less node (only name/status/serversOnline)', () => {
+    // A node that hasn't reported metrics still parses and renders.
+    const node = refxNodeMetricsSchema.parse({
+      name: 'n',
+      status: 'operational',
+      serversOnline: 0,
+    });
+    expect(node.cpuPercent).toBeUndefined();
+    expect(nodeMetricsLine(node)).toBe('0 servers');
+    // A bare node with no metrics at all renders an empty suffix.
+    expect(nodeMetricsLine(refxNodeMetricsSchema.parse({ name: 'n', status: 'operational' }))).toBe(
+      '',
+    );
+  });
+
+  it('keeps zero-valued metrics (0% is not "missing")', () => {
+    const line = nodeMetricsLine({
+      name: 'n',
+      status: 'operational',
+      cpuPercent: 0,
+      diskPercent: 0,
+      serversOnline: 1,
+    });
+    expect(line).toBe('CPU 0% · Disk 0% · 1 servers');
+  });
+
+  it('parses a real GET /api/v1/status/nodes sample and renders every node', () => {
+    const sample = {
+      success: true,
+      data: {
+        updatedAt: '2026-06-30T18:42:10.512Z',
+        regions: [
+          {
+            code: 'ca-east',
+            name: 'CA east',
+            status: 'operational',
+            nodesUp: 2,
+            nodesTotal: 2,
+            nodes: [
+              {
+                name: 'refx-ca-east-bhs',
+                status: 'operational',
+                cpuPercent: 31.4,
+                memoryUsedMb: 18342,
+                memoryTotalMb: 65536,
+                memoryPercent: 28,
+                diskUsedGb: 220,
+                diskTotalGb: 960,
+                diskPercent: 23,
+                serversOnline: 12,
+              },
+              {
+                name: 'refx-ca-east-bhs1',
+                status: 'operational',
+                cpuPercent: 9.8,
+                memoryUsedMb: 7110,
+                memoryTotalMb: 65536,
+                memoryPercent: 11,
+                diskUsedGb: 96,
+                diskTotalGb: 960,
+                diskPercent: 10,
+                serversOnline: 4,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const parsed = refxNodesSchema.parse(sample);
+    const nodes = parsed.data.regions[0]?.nodes ?? [];
+    expect(nodes).toHaveLength(2);
+    expect(nodeMetricsLine(nodes[0]!)).toBe('CPU 31% · RAM 28% · Disk 23% · 12 servers');
+    expect(nodeMetricsLine(nodes[1]!)).toBe('CPU 10% · RAM 11% · Disk 10% · 4 servers');
   });
 });
 
