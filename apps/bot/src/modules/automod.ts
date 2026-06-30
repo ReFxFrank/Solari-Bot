@@ -20,7 +20,16 @@ interface Trigger {
 }
 
 function isExempt(message: Message<true>, config: AutomodConfig): boolean {
-  if (config.exemptChannelIds.includes(message.channelId)) return true;
+  // A thread message's channelId is the thread's own id, so also honor the
+  // parent channel's exemption.
+  const channel = message.channel;
+  const parentId = channel.isThread() ? channel.parentId : null;
+  if (
+    config.exemptChannelIds.includes(message.channelId) ||
+    (parentId && config.exemptChannelIds.includes(parentId))
+  ) {
+    return true;
+  }
   const member = message.member;
   if (!member) return false;
   // Moderators (Manage Messages) are never auto-moderated.
@@ -28,14 +37,30 @@ function isExempt(message: Message<true>, config: AutomodConfig): boolean {
   return config.exemptRoleIds.some((roleId) => member.roles.cache.has(roleId));
 }
 
-function checkSpam(message: Message<true>, maxMessages: number, windowSeconds: number): boolean {
+const MAX_SPAM_WINDOW_MS = 60_000;
+let sweepCounter = 0;
+
+/** Periodically evict stale spam-window keys so the Map stays bounded. */
+function maybeSweep(): void {
+  if (++sweepCounter % 1000 !== 0) return;
+  const cutoff = Date.now() - MAX_SPAM_WINDOW_MS;
+  for (const [key, stamps] of spamWindows) {
+    if ((stamps[stamps.length - 1] ?? 0) <= cutoff) spamWindows.delete(key);
+  }
+}
+
+/** Record a message in the per-user window (every non-exempt message). */
+function recordMessage(message: Message<true>, windowSeconds: number): void {
   const key = `${message.guildId}:${message.author.id}`;
-  const now = Date.now();
-  const cutoff = now - windowSeconds * 1000;
+  const cutoff = Date.now() - windowSeconds * 1000;
   const recent = (spamWindows.get(key) ?? []).filter((ts) => ts > cutoff);
-  recent.push(now);
+  recent.push(Date.now());
   spamWindows.set(key, recent);
-  return recent.length > maxMessages;
+  maybeSweep();
+}
+
+function isFlooding(message: Message<true>, maxMessages: number): boolean {
+  return (spamWindows.get(`${message.guildId}:${message.author.id}`)?.length ?? 0) > maxMessages;
 }
 
 /** Find the first enabled filter this message trips. Order: cheap → expensive. */
@@ -49,8 +74,9 @@ function evaluate(message: Message<true>, config: AutomodConfig): Trigger | null
   }
   if (config.mentions.enabled) {
     const count = message.mentions.users.size + message.mentions.roles.size;
-    if (count > config.mentions.maxMentions)
+    if (message.mentions.everyone || count > config.mentions.maxMentions) {
       return { rule: config.mentions, reason: 'Mass mentions' };
+    }
   }
   if (config.caps.enabled && exceedsCaps(content, config.caps.percent, config.caps.minLength)) {
     return { rule: config.caps, reason: 'Excessive caps' };
@@ -58,10 +84,9 @@ function evaluate(message: Message<true>, config: AutomodConfig): Trigger | null
   if (config.words.enabled && matchBlockedWord(content, config.words.list)) {
     return { rule: config.words, reason: 'Blocked word' };
   }
-  if (
-    config.spam.enabled &&
-    checkSpam(message, config.spam.maxMessages, config.spam.windowSeconds)
-  ) {
+  // Spam recording is decoupled from the trip check (done in handleAutomodMessage)
+  // so a flood that also trips a cheaper filter still feeds the window.
+  if (config.spam.enabled && isFlooding(message, config.spam.maxMessages)) {
     return { rule: config.spam, reason: 'Spam (message flood)' };
   }
   return null;
@@ -128,6 +153,13 @@ async function applyAction(
         moderatorId: botId,
         reason,
       });
+    } else if (rule.action !== 'delete') {
+      // The intended punishment couldn't be applied — the member is uncached or
+      // outranks the bot. Surface it instead of failing silently.
+      ctx.logger.warn(
+        { guildId: message.guildId, action: rule.action, targetId: message.author.id },
+        'Automod action skipped: member uncached or outranks the bot',
+      );
     }
   } catch (err) {
     ctx.logger.warn(
@@ -145,9 +177,13 @@ async function applyAction(
 export async function handleAutomodMessage(
   message: Message<true>,
   ctx: BotContext,
+  isEdit = false,
 ): Promise<boolean> {
   const config = await ctx.config.getConfig(message.guildId, 'AUTOMOD');
   if (isExempt(message, config)) return false;
+  // Record every non-exempt message so spam detection counts floods even when
+  // a cheaper filter trips on some of them. Edits don't count as new messages.
+  if (!isEdit && config.spam.enabled) recordMessage(message, config.spam.windowSeconds);
   const trigger = evaluate(message, config);
   if (!trigger) return false;
   await applyAction(message, trigger, ctx);

@@ -51,17 +51,30 @@ export type AutomodConfig = z.infer<typeof automodConfigSchema>;
 
 // ── Pure content checks ──────────────────────────────────────────────────────
 
-const INVITE_RE = /(?:discord(?:app)?\.com\/invite|discord\.(?:gg|io|me|li)|\.gg)\/[\w-]+/i;
+// Anchored to Discord invite hosts only — a bare ".gg" branch would flag every
+// op.gg / start.gg / tenor.gg link.
+const INVITE_RE = /(?:discord(?:app)?\.com\/invite|discord\.(?:gg|io|me|li))\/[\w-]+/i;
 export function containsInvite(content: string): boolean {
   return INVITE_RE.test(content);
 }
 
-const URL_RE = /https?:\/\/([^\s/?#]+)/gi;
-/** True if the content has any URL whose host isn't covered by the allowlist. */
+// Matches scheme / www. / path-bearing links (the forms Discord auto-linkifies)
+// so a scheme-less `www.evil.com` or `evil.com/x` can't bypass the allowlist,
+// while bare dotted prose ("node.js") with no scheme/www/path is left alone.
+// Userinfo and :port are captured separately so the host compares cleanly.
+//                  1:scheme/www         userinfo          2:host                  3:port    4:path
+const LINK_RE =
+  /(https?:\/\/|www\.)?(?:[^\s/@]+@)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)(:\d+)?(\/[^\s]*)?/gi;
+
+/** True if the content has any link whose host isn't covered by the allowlist. */
 export function containsDisallowedLink(content: string, allowlist: string[]): boolean {
   const allow = allowlist.map((entry) => entry.trim().toLowerCase()).filter(Boolean);
-  for (const match of content.matchAll(URL_RE)) {
-    const host = (match[1] ?? '').toLowerCase();
+  for (const match of content.matchAll(LINK_RE)) {
+    // Only treat it as a link if it carries a scheme/www prefix or a path —
+    // otherwise it's likely ordinary prose with a dot.
+    if (!match[1] && !match[4]) continue;
+    const host = (match[2] ?? '').toLowerCase();
+    if (!host) continue;
     const ok = allow.some((domain) => host === domain || host.endsWith(`.${domain}`));
     if (!ok) return true;
   }

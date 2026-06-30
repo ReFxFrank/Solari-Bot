@@ -22,8 +22,14 @@ describe('containsInvite', () => {
   it('detects discord invite forms', () => {
     expect(containsInvite('join discord.gg/abc123')).toBe(true);
     expect(containsInvite('https://discord.com/invite/xYz')).toBe(true);
-    expect(containsInvite('cool .gg/server link')).toBe(true);
+    expect(containsInvite('https://discordapp.com/invite/xYz')).toBe(true);
     expect(containsInvite('just a normal message')).toBe(false);
+  });
+
+  it('does not flag non-discord .gg domains', () => {
+    expect(containsInvite('https://op.gg/summoner/foo')).toBe(false);
+    expect(containsInvite('check start.gg/tournament/x')).toBe(false);
+    expect(containsInvite('a tenor.gg/view/x gif')).toBe(false);
   });
 });
 
@@ -33,6 +39,20 @@ describe('containsDisallowedLink', () => {
     expect(containsDisallowedLink('see https://github.com/a', ['github.com'])).toBe(false);
     expect(containsDisallowedLink('see https://gist.github.com/a', ['github.com'])).toBe(false);
     expect(containsDisallowedLink('no links here', ['github.com'])).toBe(false);
+  });
+
+  it('catches scheme-less links that Discord auto-linkifies', () => {
+    expect(containsDisallowedLink('visit www.evil.com now', ['mysite.com'])).toBe(true);
+    expect(containsDisallowedLink('go to evil.com/promo', ['mysite.com'])).toBe(true);
+    // bare dotted prose with no scheme/www/path is left alone
+    expect(containsDisallowedLink('I use node.js daily', ['mysite.com'])).toBe(false);
+  });
+
+  it('normalizes port and userinfo before the allowlist check', () => {
+    expect(containsDisallowedLink('https://good.com:8080/x', ['good.com'])).toBe(false);
+    expect(containsDisallowedLink('https://good.com:443/x', ['good.com'])).toBe(false);
+    expect(containsDisallowedLink('https://user@good.com/x', ['good.com'])).toBe(false);
+    expect(containsDisallowedLink('https://www.good.com/x', ['good.com'])).toBe(false);
   });
 });
 
