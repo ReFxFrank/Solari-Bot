@@ -31,6 +31,8 @@ const command: Command = {
       return;
     }
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const amount = interaction.options.getInteger('amount', true);
     const user = interaction.options.getUser('user');
 
@@ -45,7 +47,7 @@ const command: Command = {
       deletedCount = deleted.size;
     }
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [
         brandedEmbed({
           kind: 'success',
@@ -55,7 +57,6 @@ const command: Command = {
               : `Deleted **${deletedCount}** message${deletedCount === 1 ? '' : 's'}${user ? ` from ${user.tag}` : ''}.`,
         }),
       ],
-      flags: MessageFlags.Ephemeral,
     });
   },
 };

@@ -32,12 +32,13 @@ const command: Command = {
       return;
     }
 
+    await interaction.deferReply();
+
     try {
       await interaction.guild.bans.remove(userId, `${reason} — by ${interaction.user.tag}`);
     } catch {
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [errorEmbed('That user isn’t banned, or the ID is wrong.')],
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -54,7 +55,7 @@ const command: Command = {
       reason,
     });
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [
         brandedEmbed({
           kind: 'success',

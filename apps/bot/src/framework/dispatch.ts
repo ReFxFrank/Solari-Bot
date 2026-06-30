@@ -8,12 +8,14 @@ async function respond(
   interaction: ChatInputCommandInteraction,
   embed: ReturnType<typeof errorEmbed>,
 ): Promise<void> {
-  const payload = { embeds: [embed], flags: MessageFlags.Ephemeral } as const;
   try {
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(payload);
+    if (interaction.deferred && !interaction.replied) {
+      // Fill the deferred placeholder (ephemerality was fixed at defer time).
+      await interaction.editReply({ embeds: [embed] });
+    } else if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
     } else {
-      await interaction.reply(payload);
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
   } catch {
     // Interaction expired or already acknowledged elsewhere — nothing to do.

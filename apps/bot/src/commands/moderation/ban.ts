@@ -79,13 +79,9 @@ const command: Command = {
     const isTemp = durationSeconds !== null;
     const expiresAt = isTemp ? new Date(Date.now() + durationSeconds! * 1000) : null;
 
-    // Best-effort DM before the ban, if enabled.
-    const modConfig = await ctx.config.getConfig(interaction.guildId, 'MODERATION');
-    if (modConfig.dmOnAction) {
-      await target
-        .send(`You have been banned from **${interaction.guild.name}**.\nReason: ${reason}`)
-        .catch(() => undefined);
-    }
+    // Defer before any slow work (DM/ban/DB/queue) so we never miss Discord's
+    // 3-second ack window; the result is delivered via editReply.
+    await interaction.deferReply();
 
     try {
       await interaction.guild.members.ban(target.id, {
@@ -94,11 +90,19 @@ const command: Command = {
       });
     } catch (err) {
       ctx.logger.error({ err, target: target.id }, 'Ban API call failed');
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [errorEmbed('I couldn’t ban that user — they may have a higher role than me.')],
-        flags: MessageFlags.Ephemeral,
       });
       return;
+    }
+
+    // Best-effort DM AFTER a confirmed ban, so a failed ban never sends a false
+    // "you were banned" notice.
+    const modConfig = await ctx.config.getConfig(interaction.guildId, 'MODERATION');
+    if (modConfig.dmOnAction) {
+      await target
+        .send(`You have been banned from **${interaction.guild.name}**.\nReason: ${reason}`)
+        .catch(() => undefined);
     }
 
     const moderationCase = await createModerationCase({
@@ -112,19 +116,28 @@ const command: Command = {
     });
 
     if (isTemp && expiresAt) {
-      await ctx.jobs.scheduleTempAction(
-        {
-          type: 'UNBAN',
-          guildId: interaction.guildId,
-          userId: target.id,
-          caseId: moderationCase.id,
-        },
-        expiresAt.getTime() - Date.now(),
-        tempBanJobId(interaction.guildId, target.id),
-      );
+      try {
+        await ctx.jobs.scheduleTempAction(
+          {
+            type: 'UNBAN',
+            guildId: interaction.guildId,
+            userId: target.id,
+            caseId: moderationCase.id,
+          },
+          expiresAt.getTime() - Date.now(),
+          tempBanJobId(interaction.guildId, target.id),
+        );
+      } catch (err) {
+        // The TEMPBAN case is persisted; reconcile() re-arms the timer on the
+        // next startup, so the auto-unban is not lost.
+        ctx.logger.warn(
+          { err, target: target.id },
+          'Failed to enqueue auto-unban; it will be re-armed on restart',
+        );
+      }
     }
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [
         brandedEmbed({
           kind: 'success',

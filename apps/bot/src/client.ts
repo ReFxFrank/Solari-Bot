@@ -73,6 +73,10 @@ async function bootstrap(): Promise<void> {
     guildGauge.set(ready.guilds.cache.size);
     // Workers use the authed REST client, so start them once logged in.
     jobs.startWorkers();
+    // Re-arm any temp-action timers from the DB for guilds this shard owns.
+    void jobs
+      .reconcile()
+      .catch((err: unknown) => logger.error({ err }, 'Temp-action reconcile failed'));
     stopMetrics = startMetricsServer(ready.shard?.ids[0] ?? 0);
   });
 

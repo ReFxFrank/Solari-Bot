@@ -1,13 +1,33 @@
-import { Routes } from 'discord.js';
+import { DiscordAPIError, Routes } from 'discord.js';
 import type { TempActionExpireJob } from '@helios/jobs';
 import { createModerationCase, deactivateTempBans } from '../../lib/cases';
 import type { JobContext } from '../../services/jobs';
 
 /**
+ * Discord error codes meaning "the target is already gone" — safe to treat as a
+ * successful reversal rather than retrying forever.
+ */
+const ALREADY_GONE = new Set([
+  10026, // Unknown Ban
+  10007, // Unknown Member
+  10011, // Unknown Role
+]);
+
+/**
+ * Re-throw transient/unknown REST errors so BullMQ retries the job; swallow only
+ * the "already gone" cases. This prevents a transient 429/5xx from being treated
+ * as success (which would leave a user banned forever while the DB records an
+ * unban).
+ */
+function ignoreIfAlreadyGone(err: unknown): void {
+  if (err instanceof DiscordAPIError && ALREADY_GONE.has(Number(err.code))) return;
+  throw err;
+}
+
+/**
  * Reverse an expired temporary action. Uses REST (`client.rest`) rather than
  * cache, so any shard's worker can execute it regardless of which shard owns
- * the guild. Failures (e.g. the user was already manually unbanned) are logged,
- * not thrown, so bookkeeping still completes.
+ * the guild.
  */
 export async function handleTempActionExpire(
   data: TempActionExpireJob,
@@ -22,8 +42,10 @@ export async function handleTempActionExpire(
           reason: 'Temporary ban expired',
         });
       } catch (err) {
-        logger.warn({ err, ...data }, 'tempActionExpire: unban failed (may already be unbanned)');
+        ignoreIfAlreadyGone(err); // transient errors re-throw here -> job retries
+        logger.info({ ...data }, 'tempActionExpire: user was already unbanned');
       }
+      // Only runs once the unban is confirmed (or confirmed already-gone).
       await deactivateTempBans(data.guildId, data.userId);
       await createModerationCase({
         guildId: data.guildId,
@@ -43,7 +65,8 @@ export async function handleTempActionExpire(
           reason: 'Mute expired',
         });
       } catch (err) {
-        logger.warn({ err, ...data }, 'tempActionExpire: unmute failed');
+        ignoreIfAlreadyGone(err);
+        logger.info({ ...data }, 'tempActionExpire: member gone, nothing to unmute');
       }
       return;
     }
@@ -55,7 +78,8 @@ export async function handleTempActionExpire(
           reason: 'Temporary role expired',
         });
       } catch (err) {
-        logger.warn({ err, ...data }, 'tempActionExpire: temp-role removal failed');
+        ignoreIfAlreadyGone(err);
+        logger.info({ ...data }, 'tempActionExpire: member/role gone, nothing to remove');
       }
       return;
     }

@@ -47,12 +47,55 @@ export class JobService {
     delayMs: number,
     jobId: string,
   ): Promise<void> {
-    await this.queue(QUEUE_NAMES.tempActionExpire).add('tempActionExpire', data, {
+    const queue = this.queue(QUEUE_NAMES.tempActionExpire);
+    // BullMQ treats add() with an already-existing jobId as a silent no-op, so a
+    // reschedule (new duration) or a leftover failed-job key would otherwise be
+    // ignored. Remove any prior job for this id first so the new schedule wins.
+    await queue.remove(jobId).catch(() => undefined);
+    await queue.add('tempActionExpire', data, {
       delay: Math.max(0, delayMs),
       jobId,
+      // Retry transient failures (e.g. a Discord 5xx/429 during the reversal)
+      // instead of dropping the action.
+      attempts: 5,
+      backoff: { type: 'exponential', delay: 10_000 },
       removeOnComplete: true,
-      removeOnFail: 100,
+      removeOnFail: 1000,
     });
+  }
+
+  /**
+   * Re-arm scheduled temp-actions from the database (the source of truth) on
+   * startup, for guilds this shard owns. Self-heals after a restart or any
+   * enqueue lost to a crash / Redis blip — the DB row, not Redis, guarantees
+   * the reversal eventually happens.
+   */
+  async reconcile(): Promise<void> {
+    const guildIds = [...this.ctx.client.guilds.cache.keys()];
+    if (guildIds.length === 0) return;
+    const cases = await prisma.moderationCase.findMany({
+      where: {
+        type: 'TEMPBAN',
+        active: true,
+        expiresAt: { not: null },
+        guildId: { in: guildIds },
+      },
+      select: { id: true, guildId: true, targetId: true, expiresAt: true },
+    });
+    for (const moderationCase of cases) {
+      if (!moderationCase.expiresAt) continue;
+      await this.scheduleTempAction(
+        {
+          type: 'UNBAN',
+          guildId: moderationCase.guildId,
+          userId: moderationCase.targetId,
+          caseId: moderationCase.id,
+        },
+        moderationCase.expiresAt.getTime() - Date.now(),
+        tempBanJobId(moderationCase.guildId, moderationCase.targetId),
+      );
+    }
+    this.ctx.logger.info({ count: cases.length }, 'Reconciled scheduled temp-actions');
   }
 
   /** Cancel a scheduled temp-action (e.g. a manual unban before expiry). */

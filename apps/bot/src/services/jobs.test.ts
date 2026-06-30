@@ -55,6 +55,27 @@ suite('JobService durable scheduling (integration)', () => {
     await jobs.close();
   });
 
+  it('reschedules an existing job so a new duration replaces the old one', async () => {
+    const guildId = `test-guild-jobs-resched-${Date.now()}`;
+    const jobId = tempBanJobId(guildId, 'u');
+    const jobs = new JobService({} as unknown as Client, logger);
+    const queue = new Queue(QUEUE_NAMES.tempActionExpire, {
+      connection: bullConnection,
+      prefix: QUEUE_PREFIX,
+    });
+
+    await jobs.scheduleTempAction({ type: 'UNBAN', guildId, userId: 'u' }, 60_000, jobId);
+    expect((await queue.getJob(jobId))?.opts.delay).toBe(60_000);
+
+    // Re-schedule with a different delay — must replace, not silently no-op.
+    await jobs.scheduleTempAction({ type: 'UNBAN', guildId, userId: 'u' }, 1234, jobId);
+    expect((await queue.getJob(jobId))?.opts.delay).toBe(1234);
+
+    await queue.remove(jobId).catch(() => undefined);
+    await queue.close();
+    await jobs.close();
+  });
+
   it('cancelTempAction removes a scheduled job', async () => {
     const guildId = `test-guild-jobs-cancel-${Date.now()}`;
     const jobId = tempBanJobId(guildId, 'u');
