@@ -1,4 +1,4 @@
-import { PrismaClient } from './generated/client';
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Singleton PrismaClient. In development we stash it on `globalThis` so hot
@@ -16,4 +16,4 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-export * from './generated/client';
+export * from '@prisma/client';
