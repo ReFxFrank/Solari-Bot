@@ -7,6 +7,7 @@ import { autoroleConfigSchema } from './autorole';
 import { loggingConfigSchema } from './logging';
 import { starboardConfigSchema } from './starboard';
 import { ticketsConfigSchema } from './tickets';
+import { refxAlertsConfigSchema } from './refxAlerts';
 
 export * from './moderation';
 export * from './leveling';
@@ -15,6 +16,7 @@ export * from './autorole';
 export * from './logging';
 export * from './starboard';
 export * from './tickets';
+export * from './refxAlerts';
 
 /**
  * Registry mapping a module to the zod schema that validates its `config` JSON
@@ -31,6 +33,7 @@ export const MODULE_CONFIG_SCHEMAS = {
   LOGGING: loggingConfigSchema,
   STARBOARD: starboardConfigSchema,
   TICKETS: ticketsConfigSchema,
+  REFX_ALERTS: refxAlertsConfigSchema,
 } satisfies Partial<Record<Module, z.ZodTypeAny>>;
 
 export type ModuleWithSchema = keyof typeof MODULE_CONFIG_SCHEMAS;

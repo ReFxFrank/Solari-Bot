@@ -73,7 +73,7 @@ async function bootstrap(): Promise<void> {
   jobs.registerHandler(QUEUE_NAMES.scheduledMessage, handleScheduledMessage);
   jobs.registerHandler(QUEUE_NAMES.ticketAutoClose, handleTicketAutoClose);
 
-  const liveCommands = new LiveCommandService(client, logger, jobs);
+  const liveCommands = new LiveCommandService(client, logger, jobs, config);
 
   for (const event of events) {
     const run = (...args: ClientEvents[typeof event.name]): void => {

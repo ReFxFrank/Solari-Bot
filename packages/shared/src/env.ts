@@ -39,6 +39,12 @@ export const botEnvSchema = baseEnvSchema.extend({
     .transform((value) => value === 'true' || value === '1'),
   /** Base metrics port; each shard binds METRICS_PORT + shardId. */
   METRICS_PORT: z.coerce.number().int().positive().default(9090),
+  /** Public ReFx status feed override (optional; defaults to api.refx.gg). */
+  REFX_STATUS_URL: z.string().url().optional(),
+  /** status:read bearer token for the authenticated node-metrics feed. */
+  REFX_STATUS_TOKEN: z.string().optional(),
+  /** Authenticated node-metrics endpoint override (optional). */
+  REFX_NODES_URL: z.string().url().optional(),
 });
 
 export const webEnvSchema = baseEnvSchema.extend({
@@ -47,6 +53,9 @@ export const webEnvSchema = baseEnvSchema.extend({
   DISCORD_CLIENT_ID: z.string().min(1),
   DISCORD_CLIENT_SECRET: z.string().min(1),
   OWNER_IDS: z.string().default('').transform(csvToArray),
+  /** Shared HMAC secret for the inbound ReFx webhook. Unset => receiver
+   *  returns 503 (fails closed). Must match the ReFx backend's value. */
+  REFX_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;

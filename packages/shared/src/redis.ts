@@ -29,7 +29,8 @@ export type LiveCommandType =
   | 'REROLL_GIVEAWAY'
   | 'SCHEDULE_MESSAGE'
   | 'CANCEL_SCHEDULED_MESSAGE'
-  | 'DEPLOY_TICKET_PANEL';
+  | 'DEPLOY_TICKET_PANEL'
+  | 'REFX_ALERT';
 
 export interface LiveCommandMessage<TPayload = unknown> {
   type: LiveCommandType;
@@ -56,6 +57,19 @@ export interface ScheduledMessagePayload {
 
 export interface DeployTicketPanelPayload {
   channelId: string;
+}
+
+/**
+ * A ReFx status/incident alert to post. The web webhook receiver has already
+ * matched the event to this guild's subscription and resolved the target
+ * channel; the bot re-checks live config and posts. `data` is the validated
+ * webhook event data (kept loose so it can carry passthrough fields).
+ */
+export interface RefxAlertPayload {
+  event: 'incident.created' | 'incident.updated' | 'incident.resolved' | 'component.status_changed';
+  timestamp: string;
+  channelId: string;
+  data: unknown;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */

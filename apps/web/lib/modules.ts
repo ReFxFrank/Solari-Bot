@@ -23,6 +23,7 @@ import {
   Music,
   Bell,
   Mic,
+  ServerCog,
   Wrench,
   Sparkles,
   type LucideIcon,
@@ -211,6 +212,14 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Join-to-create voice channels.',
     icon: Mic,
     category: 'premium',
+  },
+  {
+    module: 'REFX_ALERTS',
+    name: 'ReFx Alerts',
+    description: 'Live ReFx Hosting incident & node alerts.',
+    icon: ServerCog,
+    category: 'premium',
+    configSlug: 'refx-alerts',
   },
   {
     module: 'UTILITY',

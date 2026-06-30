@@ -8,6 +8,7 @@ import type {
   Module,
   ModerationConfig,
   ModuleWithSchema,
+  RefxAlertsConfig,
   StarboardConfig,
   TicketsConfig,
   WelcomeConfig,
@@ -99,6 +100,13 @@ export async function saveTicketsConfig(
   input: TicketsConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'TICKETS', input, 'tickets');
+}
+
+export async function saveRefxAlertsConfig(
+  guildId: string,
+  input: RefxAlertsConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'REFX_ALERTS', input, 'refx-alerts');
 }
 
 export async function saveGuildSettings(

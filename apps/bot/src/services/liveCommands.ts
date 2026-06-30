@@ -8,6 +8,7 @@ import {
   type GiveawayActionPayload,
   type DeployTicketPanelPayload,
   type LiveCommandMessage,
+  type RefxAlertPayload,
   type RolePanelOption,
   type ScheduledMessagePayload,
 } from '@helios/shared';
@@ -17,7 +18,9 @@ import { buildPanelMessage } from '../modules/roles';
 import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 import { armScheduledMessage } from '../modules/scheduledMessages';
 import { buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
+import { postRefxAlert } from '../modules/refxAlerts';
 import { scheduledMessageJobId, type JobService } from './jobs';
+import type { ConfigCache } from './configCache';
 
 /**
  * Subscribes to `helios:command` (§4.3). Uses broadcast-and-filter: every shard
@@ -28,6 +31,7 @@ export class LiveCommandService {
     private readonly client: Client,
     private readonly logger: Logger,
     private readonly jobs: JobService,
+    private readonly config: ConfigCache,
   ) {}
 
   async start(): Promise<void> {
@@ -81,6 +85,15 @@ export class LiveCommandService {
         await this.deployTicketPanel(
           message.guildId,
           (message.payload as DeployTicketPanelPayload).channelId,
+        );
+        return;
+      case 'REFX_ALERT':
+        await postRefxAlert(
+          this.client,
+          this.config,
+          this.logger,
+          message.guildId,
+          message.payload as RefxAlertPayload,
         );
         return;
       default:
