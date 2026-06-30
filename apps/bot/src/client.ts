@@ -33,10 +33,17 @@ async function bootstrap(): Promise<void> {
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildModeration,
       GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMessageReactions,
       GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.MessageContent,
     ],
-    partials: [Partials.GuildMember, Partials.User],
+    partials: [
+      Partials.GuildMember,
+      Partials.User,
+      Partials.Message,
+      Partials.Reaction,
+      Partials.Channel,
+    ],
   });
 
   const config = new ConfigCache();

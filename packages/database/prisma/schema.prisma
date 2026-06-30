@@ -75,6 +75,7 @@ model Guild {
   cases         ModerationCase[]
   userLevels    UserLevel[]
   rolePanels    ReactionRolePanel[]
+  starboard     StarboardMessage[]
 
   @@index([ownerId])
 }
@@ -155,6 +156,24 @@ model ReactionRolePanel {
 
   @@index([guildId])
   @@index([messageId])
+}
+
+/// Maps a starred source message to its posted starboard message (§8G), so the
+/// board entry can be updated/removed as the star count changes.
+model StarboardMessage {
+  id                String   @id @default(cuid())
+  guildId           String
+  sourceChannelId   String
+  sourceMessageId   String
+  starboardMessageId String?
+  count             Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, sourceMessageId])
+  @@index([guildId])
 }
 
 /// Per-guild, per-user XP/level state (§8D). Level rewards are stored in the

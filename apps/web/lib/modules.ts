@@ -109,6 +109,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Highlight the best messages.',
     icon: Star,
     category: 'core',
+    configSlug: 'starboard',
   },
   {
     module: 'GIVEAWAYS',
