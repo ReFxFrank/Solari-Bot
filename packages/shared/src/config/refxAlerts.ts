@@ -15,7 +15,11 @@ const SEVERITY_RANK: Record<RefxSeverity, number> = {
 
 function severityRank(value: string): number {
   const key = value.toLowerCase();
-  return key in SEVERITY_RANK ? SEVERITY_RANK[key as RefxSeverity] : 1;
+  // An unknown/renamed label ranks at the TOP so a present-but-unrecognized
+  // severity passes any floor and triggers mentions — fail open, matching the
+  // documented contract. Coercing it to 'minor' would silently drop a real
+  // high-severity incident the moment the backend introduces a new label.
+  return key in SEVERITY_RANK ? SEVERITY_RANK[key as RefxSeverity] : SEVERITY_RANK.critical;
 }
 
 export const refxAlertsConfigSchema = z.object({
@@ -48,7 +52,9 @@ export function refxAlertMatches(
   if (!config.events.includes(event)) return false;
 
   if (config.regionFilter.length > 0 && data.regionCode) {
-    if (!config.regionFilter.includes(data.regionCode)) return false;
+    // Case-insensitive: dashboard input is free text, backend codes are fixed.
+    const region = data.regionCode.toLowerCase();
+    if (!config.regionFilter.some((entry) => entry.toLowerCase() === region)) return false;
   }
 
   if (config.minSeverity && data.severity) {

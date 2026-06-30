@@ -68,35 +68,53 @@ const command: Command = {
     }
 
     const data = status.data;
+    const description = `${refxStatusEmoji(data.status)} Overall: **${data.status}**`;
     const embed = brandedEmbed({
       kind: data.status.toLowerCase().includes('operational') ? 'success' : 'warning',
       title: 'ReFx Hosting Status',
-      description: `${refxStatusEmoji(data.status)} Overall: **${data.status}**`,
+      description,
     });
 
+    // Discord caps an embed at 6000 chars across title + description + every
+    // field name/value + footer. Track a running budget and stop adding fields
+    // before we'd overflow, so a large multi-region outage degrades gracefully
+    // instead of failing the whole command with a 400.
+    const EMBED_BUDGET = 5800;
+    let used = 'ReFx Hosting Status'.length + description.length + 32; // + footer margin
+    const addField = (name: string, value: string): boolean => {
+      if (used + name.length + value.length > EMBED_BUDGET) return false;
+      embed.addFields({ name, value });
+      used += name.length + value.length;
+      return true;
+    };
+
     if (data.components.length) {
-      embed.addFields({
-        name: 'Services',
-        value: data.components
+      addField(
+        'Services',
+        data.components
           .map((component) => `${refxStatusEmoji(component.status)} ${component.name}`)
           .join('\n')
           .slice(0, 1024),
-      });
+      );
     }
 
+    let truncated = false;
     for (const region of data.regions.slice(0, 10)) {
-      embed.addFields({ name: '​', value: regionLine(region, metricsByRegion?.get(region.code)) });
+      if (!addField('​', regionLine(region, metricsByRegion?.get(region.code)))) {
+        truncated = true;
+        break;
+      }
     }
 
     if (data.incidents.active.length) {
-      embed.addFields({
-        name: '⚠️ Active incidents',
-        value: data.incidents.active
-          .map((incident) => `• ${incident.title ?? incident.status ?? 'Incident'}`)
-          .join('\n')
-          .slice(0, 1024),
-      });
+      const incidentsValue = data.incidents.active
+        .map((incident) => `• ${incident.title ?? incident.status ?? 'Incident'}`)
+        .join('\n')
+        .slice(0, 1024);
+      if (!addField('⚠️ Active incidents', incidentsValue)) truncated = true;
     }
+
+    if (truncated) addField('​', '…more status at the dashboard /status page.');
 
     if (data.updatedAt) embed.setFooter({ text: `Updated` }).setTimestamp(new Date(data.updatedAt));
 

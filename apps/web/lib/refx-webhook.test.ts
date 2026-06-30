@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { verifyRefxSignature } from './refx-webhook';
+import { readRawBodyCapped, verifyRefxSignature } from './refx-webhook';
 
 const SECRET = 'a-test-secret-at-least-16-chars';
 const BODY = JSON.stringify({ event: 'incident.created', timestamp: 't', data: { id: 'i' } });
@@ -25,5 +25,17 @@ describe('verifyRefxSignature', () => {
     expect(verifyRefxSignature(SECRET, BODY, 'sha256=nothex!!')).toBe(false);
     expect(verifyRefxSignature(SECRET, BODY, 'sha256=abc')).toBe(false); // odd length
     expect(verifyRefxSignature(SECRET, BODY, 'sha256=dead')).toBe(false); // valid hex, wrong length
+  });
+});
+
+describe('readRawBodyCapped', () => {
+  it('returns the body when under the cap', async () => {
+    const request = new Request('http://x', { method: 'POST', body: 'hello world' });
+    expect(await readRawBodyCapped(request, 1000)).toBe('hello world');
+  });
+
+  it('returns null once the streamed total exceeds the cap', async () => {
+    const request = new Request('http://x', { method: 'POST', body: 'x'.repeat(5000) });
+    expect(await readRawBodyCapped(request, 128)).toBeNull();
   });
 });

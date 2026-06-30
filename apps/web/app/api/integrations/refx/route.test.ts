@@ -87,35 +87,49 @@ suite('POST /api/integrations/refx (integration)', () => {
 
   it('accepts a signed delivery, fans out, and dedups the retry', async () => {
     process.env.REFX_WEBHOOK_SECRET = SECRET;
-    const delivery = `d-${Date.now()}-dedupe`;
+    // Unique body per run so the signature-keyed dedupe doesn't collide with a
+    // prior run's still-live Redis key.
+    const body = JSON.stringify({
+      event: 'incident.created',
+      timestamp: '2026-06-30T00:00:00Z',
+      data: { id: `i-${Date.now()}`, title: 'Outage', regionCode: 'ca-east' },
+    });
     const headers = {
-      'x-refx-signature': sign(validBody),
+      'x-refx-signature': sign(body),
       'x-refx-event': 'incident.created',
-      'x-refx-delivery': delivery,
+      'x-refx-delivery': `d-${Date.now()}-dedupe`,
     };
-    const first = await POST(req(validBody, headers));
+    const first = await POST(req(body, headers));
     expect(first.status).toBe(200);
     const firstJson = (await first.json()) as { fannedOut: number };
     expect(firstJson.fannedOut).toBeGreaterThanOrEqual(1);
 
-    const retry = await POST(req(validBody, headers));
+    const retry = await POST(req(body, headers));
     expect(retry.status).toBe(200);
     const retryJson = (await retry.json()) as { deduped?: boolean };
     expect(retryJson.deduped).toBe(true);
   });
 
-  it('returns 422 on a valid signature but invalid body and releases the delivery key', async () => {
+  it('returns 422 on a valid signature but non-object data and releases the dedupe key', async () => {
     process.env.REFX_WEBHOOK_SECRET = SECRET;
-    const badBody = JSON.stringify({ event: 'incident.created', timestamp: 't', data: {} }); // missing id
-    const delivery = `d-${Date.now()}-bad`;
+    // data must be an object; a non-object fails schema even though all inner
+    // fields are now optional (fail-open parsing).
+    const badBody = JSON.stringify({
+      event: 'incident.created',
+      timestamp: 't',
+      data: `not-an-object-${Date.now()}`,
+    });
+    const sig = sign(badBody);
     const res = await POST(
       req(badBody, {
-        'x-refx-signature': sign(badBody),
+        'x-refx-signature': sig,
         'x-refx-event': 'incident.created',
-        'x-refx-delivery': delivery,
+        'x-refx-delivery': `d-${Date.now()}-bad`,
       }),
     );
     expect(res.status).toBe(422);
-    expect(await getRedis().get(`refx:webhook:${delivery}`)).toBeNull();
+    // The dedupe key is the signature hex; it must be released so a corrected
+    // retry of the same delivery isn't swallowed.
+    expect(await getRedis().get(`refx:webhook:${sig.slice('sha256='.length)}`)).toBeNull();
   });
 });

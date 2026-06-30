@@ -5,6 +5,42 @@ const HEX_RE = /^[0-9a-f]+$/i;
 const deliveryKey = (id: string): string => `refx:webhook:${id}`;
 
 /**
+ * Read the request body, hard-capping memory at `maxBytes`. Streams the body
+ * and aborts the moment the running total exceeds the cap, so a hostile client
+ * can never make us buffer an unbounded payload (Content-Length is untrusted
+ * and App Router applies no default body limit). Returns null when too large.
+ */
+export async function readRawBodyCapped(
+  request: Request,
+  maxBytes: number,
+): Promise<string | null> {
+  const stream = request.body;
+  if (!stream) {
+    const text = await request.text();
+    return Buffer.byteLength(text, 'utf8') > maxBytes ? null : text;
+  }
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+/**
  * Verify an `X-ReFx-Signature: sha256=<hex>` header against the raw request
  * body using a constant-time comparison. Returns false (never throws) for a
  * missing/malformed/wrong-length signature, so it can't be used as an oracle.

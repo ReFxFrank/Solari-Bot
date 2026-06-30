@@ -186,15 +186,24 @@ export const REFX_WEBHOOK_EVENTS = [
 ] as const;
 export type RefxWebhookEvent = (typeof REFX_WEBHOOK_EVENTS)[number];
 
-/** Incident payload. `.passthrough()` tolerates new backend fields. */
+/**
+ * Incident payload. All fields are optional and `.passthrough()` keeps unknown
+ * ones: because only the authenticated ReFx backend can produce a valid
+ * signature, we parse trusted webhook data FAIL-OPEN — a real, signed incident
+ * must never be dropped (422) just because a field was renamed or omitted. The
+ * envelope (`event` + `timestamp`) stays strict; rendering tolerates missing
+ * fields (see `buildRefxAlert`).
+ */
 export const refxIncidentEventDataSchema = z
   .object({
-    id: z.string(),
+    id: z.string().optional(),
     title: z.string().optional(),
     status: z.string().optional(),
     severity: z.string().optional(),
     regionCode: z.string().optional(),
-    url: z.string().url().optional(),
+    // A malformed url is dropped (→ undefined), not fatal, so it can't 422 a
+    // real incident; keeping `.url()` also keeps `embed.setURL` safe downstream.
+    url: z.string().url().optional().catch(undefined),
     body: z.string().optional(),
     updatedAt: z.string().optional(),
   })
@@ -202,9 +211,9 @@ export const refxIncidentEventDataSchema = z
 
 export const refxComponentEventDataSchema = z
   .object({
-    key: z.string(),
-    name: z.string(),
-    status: z.string(),
+    key: z.string().optional(),
+    name: z.string().optional(),
+    status: z.string().optional(),
     previousStatus: z.string().optional(),
     regionCode: z.string().optional(),
   })

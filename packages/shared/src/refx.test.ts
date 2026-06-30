@@ -196,7 +196,7 @@ describe('refxWebhookSchema', () => {
     expect(component.event).toBe('component.status_changed');
   });
 
-  it('rejects unknown events and missing timestamp', () => {
+  it('rejects unknown events, missing timestamp, and non-object data', () => {
     expect(
       refxWebhookSchema.safeParse({ event: 'nope', timestamp: 'x', data: { id: 'i' } }).success,
     ).toBe(false);
@@ -204,12 +204,26 @@ describe('refxWebhookSchema', () => {
       refxWebhookSchema.safeParse({ event: 'incident.created', data: { id: 'i' } }).success,
     ).toBe(false);
     expect(
-      refxWebhookSchema.safeParse({
-        event: 'component.status_changed',
-        timestamp: 'x',
-        data: { key: 'k' },
-      }).success,
+      refxWebhookSchema.safeParse({ event: 'incident.created', timestamp: 'x', data: 'nope' })
+        .success,
     ).toBe(false);
+  });
+
+  it('parses fail-open data so a signed event is never dropped on a renamed/omitted field', () => {
+    expect(
+      refxWebhookSchema.parse({ event: 'incident.created', timestamp: 't', data: {} }).event,
+    ).toBe('incident.created');
+    expect(
+      refxWebhookSchema.parse({ event: 'component.status_changed', timestamp: 't', data: {} })
+        .event,
+    ).toBe('component.status_changed');
+    // a malformed url is dropped, not fatal
+    const parsed = refxWebhookSchema.parse({
+      event: 'incident.created',
+      timestamp: 't',
+      data: { id: 'i', url: 'not a url' },
+    });
+    expect((parsed.data as Record<string, unknown>).url).toBeUndefined();
   });
 });
 

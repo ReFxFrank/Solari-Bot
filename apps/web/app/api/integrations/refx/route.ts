@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { REFX_WEBHOOK_EVENTS, refxWebhookSchema, type RefxAlertData } from '@helios/shared';
-import { claimDelivery, releaseDelivery, verifyRefxSignature } from '../../../../lib/refx-webhook';
+import {
+  claimDelivery,
+  readRawBodyCapped,
+  releaseDelivery,
+  verifyRefxSignature,
+} from '../../../../lib/refx-webhook';
 import { fanOutRefxEvent } from '../../../../lib/refx-fanout';
 
 // node:crypto + exact raw bytes require the Node runtime, not Edge.
@@ -22,13 +27,11 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'webhook not configured' }, { status: 503 });
   }
 
-  const declaredLength = Number(request.headers.get('content-length') ?? '0');
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: 'payload too large' }, { status: 413 });
-  }
-
-  const rawBody = await request.text();
-  if (Buffer.byteLength(rawBody, 'utf8') > MAX_BODY_BYTES) {
+  // Stream the body with a hard memory cap; Content-Length is untrusted and
+  // App Router applies no default limit (a chunked/oversized body would
+  // otherwise OOM the process before we ever check the signature).
+  const rawBody = await readRawBodyCapped(request, MAX_BODY_BYTES);
+  if (rawBody === null) {
     return NextResponse.json({ error: 'payload too large' }, { status: 413 });
   }
 
@@ -45,10 +48,17 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'invalid signature' }, { status: 401 });
   }
 
-  // Claim AFTER verifying so a forged delivery id can't poison the dedupe set.
+  // Idempotency keyed on the SIGNED material (the verified signature hex), not
+  // the unsigned X-ReFx-Delivery header. The header can be detached from its
+  // body, so keying dedupe on it enables replay amplification (same body, many
+  // ids) and targeted suppression (pre-claiming a future id). Keying on the
+  // signature means a replay reuses the same key (deduped) and an attacker
+  // can't pre-claim a key for a body they don't have. The delivery header is
+  // still required for protocol/observability.
+  const dedupeKey = signature.slice('sha256='.length);
   let claimed: boolean;
   try {
-    claimed = await claimDelivery(delivery);
+    claimed = await claimDelivery(dedupeKey);
   } catch {
     return NextResponse.json({ error: 'temporarily unavailable' }, { status: 503 });
   }
@@ -60,11 +70,11 @@ export async function POST(request: Request): Promise<Response> {
   try {
     parsed = refxWebhookSchema.parse(JSON.parse(rawBody));
   } catch {
-    await releaseDelivery(delivery).catch(() => undefined);
+    await releaseDelivery(dedupeKey).catch(() => undefined);
     return NextResponse.json({ error: 'invalid body' }, { status: 422 });
   }
   if (parsed.event !== eventHeader) {
-    await releaseDelivery(delivery).catch(() => undefined);
+    await releaseDelivery(dedupeKey).catch(() => undefined);
     return NextResponse.json({ error: 'event mismatch' }, { status: 422 });
   }
 

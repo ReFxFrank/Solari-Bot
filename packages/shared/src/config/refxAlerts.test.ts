@@ -31,6 +31,13 @@ describe('refxAlertMatches', () => {
     expect(refxAlertMatches(config, 'incident.created', { id: 'i' })).toBe(true);
   });
 
+  it('matches region filters case-insensitively', () => {
+    const config = refxAlertsConfigSchema.parse({ regionFilter: ['CA-East'] });
+    expect(refxAlertMatches(config, 'incident.created', { id: 'i', regionCode: 'ca-east' })).toBe(
+      true,
+    );
+  });
+
   it('respects a minimum severity floor and fails open when severity is absent', () => {
     const config = refxAlertsConfigSchema.parse({ minSeverity: 'major' });
     expect(refxAlertMatches(config, 'incident.created', { id: 'i', severity: 'critical' })).toBe(
@@ -43,7 +50,12 @@ describe('refxAlertMatches', () => {
     expect(refxAlertMatches(config, 'incident.created', { id: 'i', severity: 'maintenance' })).toBe(
       false,
     );
+    // missing severity => fail open
     expect(refxAlertMatches(config, 'incident.created', { id: 'i' })).toBe(true);
+    // unknown/renamed severity => fail open (ranks at top), never dropped
+    expect(refxAlertMatches(config, 'incident.created', { id: 'i', severity: 'emergency' })).toBe(
+      true,
+    );
   });
 });
 
