@@ -1,0 +1,109 @@
+// Helios — Prisma schema (single source of truth for the data model).
+//
+// Phase 0 ships the foundational models needed for the config-sync spine:
+// Guild metadata, per-(guild, module) configuration, and the dashboard audit
+// log. Feature tables (ModerationCase, UserLevel, Giveaway, ...) are added in
+// their respective phases per the build brief §6.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Every configurable feature area. Mirrors the `Module` union in
+/// `@helios/shared` — keep the two in sync.
+enum Module {
+  MODERATION
+  AUTOMOD
+  LOGGING
+  WELCOME
+  AUTOROLE
+  LEVELING
+  ROLES
+  CUSTOM_COMMANDS
+  STARBOARD
+  GIVEAWAYS
+  POLLS
+  SUGGESTIONS
+  REMINDERS
+  SCHEDULED_MESSAGES
+  TICKETS
+  STATS_COUNTERS
+  INVITE_TRACKING
+  BIRTHDAYS
+  AFK
+  ECONOMY
+  MUSIC
+  SOCIAL
+  TEMP_VOICE
+  UTILITY
+  FUN
+}
+
+enum PremiumTier {
+  FREE
+  PREMIUM
+}
+
+/// Guild metadata mirror (§4.4). The bot upserts these rows from gateway
+/// events so the dashboard never needs to hit the Discord API for basics.
+model Guild {
+  id           String      @id // Discord snowflake
+  name         String?
+  icon         String? // icon hash
+  ownerId      String?
+  memberCount  Int         @default(0)
+  joinedAt     DateTime    @default(now())
+  premiumTier  PremiumTier @default(FREE)
+  featureFlags Json        @default("{}")
+  locale       String      @default("en-US")
+  timezone     String      @default("UTC")
+  prefix       String      @default("!")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  moduleConfigs GuildModuleConfig[]
+  auditLogs     DashboardAuditLog[]
+
+  @@index([ownerId])
+}
+
+/// One row per (guild, module). `config` is a JSON blob validated by the
+/// matching zod schema in `@helios/shared` on every read and write (§4.1).
+model GuildModuleConfig {
+  id        String   @id @default(cuid())
+  guildId   String
+  module    Module
+  enabled   Boolean  @default(false)
+  config    Json     @default("{}")
+  updatedBy String? // Discord user id of the last editor
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, module])
+  @@index([guildId])
+}
+
+/// Records every dashboard configuration change (actor, module, before/after).
+model DashboardAuditLog {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  action    String
+  module    Module?
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([guildId, createdAt])
+}
