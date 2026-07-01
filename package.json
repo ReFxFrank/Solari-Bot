@@ -23,7 +23,8 @@
     "db:migrate": "pnpm --filter @solari/database migrate:dev",
     "db:deploy": "pnpm --filter @solari/database migrate:deploy",
     "db:studio": "pnpm --filter @solari/database studio",
-    "deploy:commands": "pnpm --filter @solari/bot deploy:commands"
+    "deploy:commands": "pnpm --filter @solari/bot deploy:commands",
+    "redeploy": "bash scripts/redeploy.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
