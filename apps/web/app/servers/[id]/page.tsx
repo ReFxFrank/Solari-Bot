@@ -1,11 +1,19 @@
+import Link from 'next/link';
+import { ArrowRight, Crown } from 'lucide-react';
 import { prisma } from '@helios/database';
 import type { Module } from '@helios/shared';
 import { guardGuildAccess } from '../../../lib/auth-guards';
-import { MODULE_META } from '../../../lib/modules';
+import { MODULE_META, type ModuleCategory } from '../../../lib/modules';
 import { ModuleCard } from '../../../components/module-card';
 import { GlassCard } from '../../../components/ui/glass-card';
 
 export const dynamic = 'force-dynamic';
+
+const GROUPS: { category: ModuleCategory; label: string }[] = [
+  { category: 'core', label: 'Core' },
+  { category: 'premium', label: 'Premium' },
+  { category: 'utility', label: 'Utility' },
+];
 
 export default async function OverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,6 +34,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
     }),
   ]);
 
+  const isPremium = guild?.premiumTier === 'PREMIUM';
   const enabledByModule = new Map<Module, boolean>(configs.map((c) => [c.module, c.enabled]));
   const enabledCount = configs.filter((c) => c.enabled).length;
 
@@ -37,19 +46,54 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
         <Stat label="Modules on" value={`${enabledCount} / ${MODULE_META.length}`} />
       </section>
 
-      <section>
-        <h2 className="mb-3 text-sm font-semibold text-white/80">Modules</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULE_META.map((meta) => (
-            <ModuleCard
-              key={meta.module}
-              guildId={id}
-              meta={meta}
-              enabled={enabledByModule.get(meta.module) ?? false}
-            />
-          ))}
-        </div>
-      </section>
+      {!isPremium && (
+        <Link
+          href={`/servers/${id}/premium`}
+          className="premium-glow group flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[var(--color-premium)]/[0.08] to-transparent p-5 transition-colors hover:from-[var(--color-premium)]/[0.12]"
+        >
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--color-premium)]/15 text-[var(--color-premium)]">
+              <Crown className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold text-white/90">Unlock {'✨'} Premium</p>
+              <p className="text-sm text-white/55">
+                Music, Economy, Social Alerts, Temp Voice + higher limits.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-premium)] px-4 py-2 text-sm font-semibold text-black transition-transform group-hover:translate-x-0.5">
+            Upgrade <ArrowRight className="h-4 w-4" />
+          </span>
+        </Link>
+      )}
+
+      {GROUPS.map(({ category, label }) => {
+        const modules = MODULE_META.filter((m) => m.category === category);
+        if (modules.length === 0) return null;
+        return (
+          <section key={category}>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/80">
+              {label}
+              {category === 'premium' && (
+                <Crown className="h-3.5 w-3.5 text-[var(--color-premium)]" />
+              )}
+              <span className="text-xs font-normal text-white/30">({modules.length})</span>
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {modules.map((meta) => (
+                <ModuleCard
+                  key={meta.module}
+                  guildId={id}
+                  meta={meta}
+                  enabled={enabledByModule.get(meta.module) ?? false}
+                  locked={category === 'premium' && !isPremium}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
       <section>
         <h2 className="mb-3 text-sm font-semibold text-white/80">Recent moderation</h2>
@@ -58,10 +102,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
             <p className="p-4 text-sm text-white/40">No moderation cases yet.</p>
           ) : (
             recentCases.map((c) => (
-              <div
-                key={c.caseNumber}
-                className="flex items-center justify-between px-4 py-3 text-sm"
-              >
+              <div key={c.caseNumber} className="flex items-center justify-between px-4 py-3 text-sm">
                 <span className="font-mono text-white/40">#{c.caseNumber}</span>
                 <span className="font-medium text-white/80">{c.type}</span>
                 <span className="font-mono text-white/50">{c.targetId}</span>

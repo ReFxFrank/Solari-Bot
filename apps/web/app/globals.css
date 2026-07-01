@@ -8,12 +8,15 @@
  */
 @theme {
   --color-base: #0a0a0f;
-  --color-base-elevated: #0d0d16;
+  --color-base-elevated: #14141f;
   --color-blurple: #5865f2;
+  --color-blurple-bright: #7c86ff;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #f43f5e;
   --color-info: #38bdf8;
+  /* Premium accent — reserved exclusively for the paid tier (crown, badges). */
+  --color-premium: #f5c451;
 
   --font-sans: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
@@ -30,7 +33,9 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 800px at 50% -10%, #0d0d16 0%, #0a0a0f 60%) fixed,
+    radial-gradient(900px 600px at 12% -8%, rgba(88, 101, 242, 0.14), transparent 60%) fixed,
+    radial-gradient(1000px 700px at 92% 4%, rgba(124, 134, 255, 0.08), transparent 55%) fixed,
+    radial-gradient(1200px 900px at 50% -10%, #101019 0%, #0a0a0f 60%) fixed,
     #0a0a0f;
   color: #e7e7ee;
   font-family: var(--font-sans);
@@ -39,12 +44,19 @@ body {
 
 /* Glass panel primitive used across module cards and stat surfaces. */
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   box-shadow:
-    0 10px 30px -10px rgba(0, 0, 0, 0.6),
+    0 12px 32px -14px rgba(0, 0, 0, 0.65),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Subtle gold aura for premium surfaces (upgrade cards, premium chips). */
+.premium-glow {
+  box-shadow:
+    0 0 0 1px rgba(245, 196, 81, 0.25),
+    0 18px 48px -22px rgba(245, 196, 81, 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {
