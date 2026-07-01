@@ -133,11 +133,20 @@ const command: Command = {
       embeds: [
         brandedEmbed({
           kind: won ? 'success' : 'danger',
-          title: `${rouletteEmoji(pocket)} It landed on ${pocket} (${rouletteColor(pocket)})`,
+          title: '🎡 Roulette',
           description: won
-            ? `Your **${ROULETTE_BET_LABEL[choice]}** bet hit — you won ${formatMoney(net, config)}! 🎉`
-            : `Your **${ROULETTE_BET_LABEL[choice]}** bet missed — you lost ${formatMoney(amount, config)}.`,
-        }),
+            ? `**You won ${formatMoney(net, config)}!** 🎉`
+            : `**You lost ${formatMoney(amount, config)}.**`,
+        })
+          .addFields(
+            { name: 'Your Bet', value: ROULETTE_BET_LABEL[choice], inline: true },
+            {
+              name: 'Landed On',
+              value: `${rouletteEmoji(pocket)} **${pocket}** (${rouletteColor(pocket)})`,
+              inline: true,
+            },
+          )
+          .setFooter({ text: `Bet ${amount.toLocaleString('en-US')}` }),
       ],
       components: [],
     });

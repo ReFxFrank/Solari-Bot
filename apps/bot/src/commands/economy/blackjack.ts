@@ -13,6 +13,7 @@ import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
 import { addWallet, formatMoney, getEconomyUser, resolveBet, trySpendWallet } from '../../lib/economy';
 import {
+  CARD_BACK,
   createDeck,
   handValue,
   isBlackjack,
@@ -33,28 +34,41 @@ function controls(canDouble: boolean): ActionRowBuilder<ButtonBuilder> {
   );
   if (canDouble) {
     row.addComponents(
-      new ButtonBuilder().setCustomId('double').setLabel('Double').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('double').setLabel('Double Down').setStyle(ButtonStyle.Success),
     );
   }
   return row;
 }
 
-function activeEmbed(player: Card[], dealer: Card[], config: EconomyConfig, stake: number) {
-  return brandedEmbed({
-    kind: 'default',
-    title: '🃏 Blackjack',
-    description:
-      `**Your hand** (${handValue(player)})\n${renderHand(player)}\n\n` +
-      `**Dealer shows**\n${renderHand([dealer[0] as Card])}  🂠\n\n` +
-      `Bet: ${formatMoney(stake, config)} · Make your move.`,
-  });
+function handField(name: string, cards: Card[], value: number | string) {
+  return { name, value: `${renderHand(cards)}\n**Value:** ${value}`, inline: true };
+}
+
+function activeEmbed(
+  player: Card[],
+  dealer: Card[],
+  config: EconomyConfig,
+  stake: number,
+  remaining: number,
+) {
+  return brandedEmbed({ kind: 'default', title: '🃏 Blackjack' })
+    .setDescription(`Bet: ${formatMoney(stake, config)} · your move.`)
+    .addFields(
+      handField('Your Hand', player, handValue(player)),
+      {
+        name: 'Dealer Hand',
+        value: `${renderHand([dealer[0] as Card])} ${CARD_BACK}\n**Value:** ?`,
+        inline: true,
+      },
+    )
+    .setFooter({ text: `Cards remaining: ${remaining}` });
 }
 
 const OUTCOME_TEXT = {
   player_blackjack: { kind: 'success' as const, title: '🃏 Blackjack! 🎉' },
   player_win: { kind: 'success' as const, title: '🃏 You win! 🎉' },
-  push: { kind: 'info' as const, title: '🃏 Push — bet returned.' },
-  dealer_win: { kind: 'danger' as const, title: '🃏 Dealer wins.' },
+  push: { kind: 'info' as const, title: '🃏 Push' },
+  dealer_win: { kind: 'danger' as const, title: '🃏 Dealer wins' },
 };
 
 function finalEmbed(
@@ -64,22 +78,23 @@ function finalEmbed(
   stake: number,
   payout: number,
   config: EconomyConfig,
+  remaining: number,
 ) {
   const net = payout - stake;
   const meta = OUTCOME_TEXT[outcome];
   const line =
     net > 0
-      ? `You won ${formatMoney(net, config)}!`
+      ? `**You won ${formatMoney(net, config)}!**`
       : net === 0
         ? 'Your bet was returned.'
-        : `You lost ${formatMoney(stake, config)}.`;
-  return brandedEmbed({
-    kind: meta.kind,
-    title: meta.title,
-    description:
-      `**Your hand** (${handValue(player)})\n${renderHand(player)}\n\n` +
-      `**Dealer** (${handValue(dealer)})\n${renderHand(dealer)}\n\n${line}`,
-  });
+        : `**You lost ${formatMoney(stake, config)}.**`;
+  return brandedEmbed({ kind: meta.kind, title: meta.title })
+    .setDescription(line)
+    .addFields(
+      handField('Your Hand', player, handValue(player)),
+      handField('Dealer Hand', dealer, handValue(dealer)),
+    )
+    .setFooter({ text: `Cards remaining: ${remaining}` });
 }
 
 const command: Command = {
@@ -132,7 +147,15 @@ const command: Command = {
       await addWallet(guildId, userId, payout);
       await interaction.reply({
         embeds: [
-          finalEmbed(player, dealer, dealerNatural ? 'push' : 'player_blackjack', amount, payout, config),
+          finalEmbed(
+            player,
+            dealer,
+            dealerNatural ? 'push' : 'player_blackjack',
+            amount,
+            payout,
+            config,
+            deck.length,
+          ),
         ],
       });
       return;
@@ -144,14 +167,14 @@ const command: Command = {
       const outcome = settleBlackjack(player, dealer);
       const payout = outcome === 'player_win' ? stake * 2 : outcome === 'push' ? stake : 0;
       await addWallet(guildId, userId, payout);
-      const embed = finalEmbed(player, dealer, outcome, stake, payout, config);
+      const embed = finalEmbed(player, dealer, outcome, stake, payout, config, deck.length);
       if (btn) await btn.update({ embeds: [embed], components: [] });
       else await interaction.editReply({ embeds: [embed], components: [] });
     };
 
     const canAffordDouble = eco.wallet >= amount * 2;
     await interaction.reply({
-      embeds: [activeEmbed(player, dealer, config, stake)],
+      embeds: [activeEmbed(player, dealer, config, stake, deck.length)],
       components: [controls(canAffordDouble)],
     });
     const message = await interaction.fetchReply();
@@ -176,7 +199,7 @@ const command: Command = {
           finished = true;
         } else {
           await btn.update({
-            embeds: [activeEmbed(player, dealer, config, stake)],
+            embeds: [activeEmbed(player, dealer, config, stake, deck.length)],
             components: [controls(false)],
           });
         }

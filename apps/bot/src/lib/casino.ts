@@ -62,12 +62,17 @@ export function isBlackjack(cards: Card[]): boolean {
   return cards.length === 2 && handValue(cards) === 21;
 }
 
+/** Colored suit glyphs so cards read like little cards in an embed. */
+const SUIT_EMOJI: Record<Suit, string> = { '♠': '♠️', '♥': '♥️', '♦': '♦️', '♣': '♣️' };
+/** A face-down card. */
+export const CARD_BACK = '🂠';
+
 export function renderCard(card: Card): string {
-  return `${card.rank}${card.suit}`;
+  return `\`${card.rank}\`${SUIT_EMOJI[card.suit]}`;
 }
 
 export function renderHand(cards: Card[]): string {
-  return cards.map(renderCard).join('  ');
+  return cards.length ? cards.map(renderCard).join(' ') : '—';
 }
 
 /**

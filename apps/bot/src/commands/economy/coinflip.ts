@@ -55,11 +55,14 @@ const command: Command = {
       embeds: [
         brandedEmbed({
           kind: won ? 'success' : 'danger',
-          title: `🪙 The coin landed on ${result === 'heads' ? 'Heads' : 'Tails'}`,
+          title: '🪙 Coinflip',
           description: won
-            ? `You won ${formatMoney(amount, config)}! 🎉`
-            : `You lost ${formatMoney(amount, config)}.`,
-        }),
+            ? `**You won ${formatMoney(amount, config)}!** 🎉`
+            : `**You lost ${formatMoney(amount, config)}.**`,
+        }).addFields(
+          { name: 'Your Call', value: side === 'heads' ? 'Heads' : 'Tails', inline: true },
+          { name: 'Landed On', value: result === 'heads' ? '🪙 Heads' : '🪙 Tails', inline: true },
+        ),
       ],
     });
   },

@@ -59,14 +59,19 @@ const command: Command = {
       embeds: [
         brandedEmbed({
           kind: net > 0 ? 'success' : net === 0 ? 'info' : 'danger',
-          title: `🎰  ${reels.join('  ')}`,
-          description:
-            net > 0
-              ? `You won ${formatMoney(net, config)}!`
-              : net === 0
-                ? 'You broke even — bet returned.'
-                : `You lost ${formatMoney(amount, config)}.`,
-        }),
+          title: '🎰 Slots',
+          description: `［ ${reels.join(' │ ')} ］`,
+        })
+          .addFields({
+            name: 'Result',
+            value:
+              net > 0
+                ? `**You won ${formatMoney(net, config)}!**`
+                : net === 0
+                  ? 'Broke even — bet returned.'
+                  : `**You lost ${formatMoney(amount, config)}.**`,
+          })
+          .setFooter({ text: `Bet ${amount.toLocaleString('en-US')}` }),
       ],
     });
   },
