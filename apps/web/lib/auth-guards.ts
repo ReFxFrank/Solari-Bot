@@ -20,6 +20,42 @@ export async function requireSession(): Promise<Session & { user: { id: string }
   return session as Session & { user: { id: string } };
 }
 
+/** The set of bot-owner Discord user ids, parsed from OWNER_IDS (§ admin). */
+function ownerIds(): Set<string> {
+  return new Set(
+    (process.env.OWNER_IDS ?? '')
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean),
+  );
+}
+
+/** True when the signed-in user is a bot owner. Never a client-supplied claim. */
+export function isOwner(session: Session): boolean {
+  const id = session.user?.id;
+  return Boolean(id) && ownerIds().has(id as string);
+}
+
+/**
+ * Require an authenticated bot owner (for owner-only server actions). Throws
+ * `Forbidden` for a signed-in non-owner, `Unauthorized` for no session.
+ */
+export async function requireOwner(): Promise<Session & { user: { id: string } }> {
+  const session = await requireSession();
+  if (!isOwner(session)) throw new Error('Forbidden: owner only.');
+  return session;
+}
+
+/**
+ * Page-level owner guard: redirects to home for anyone who is not signed in or
+ * is not a bot owner (so the admin surface is invisible to non-owners).
+ */
+export async function guardOwnerPage(): Promise<Session> {
+  const session = await auth();
+  if (!session?.user?.id || !isOwner(session)) redirect('/');
+  return session;
+}
+
 /** Assert the session can manage the guild. Re-checked on every mutation. */
 export async function assertCanManage(session: Session, guildId: string): Promise<void> {
   if (!getManageableGuilds(session).some((guild) => guild.id === guildId)) {

@@ -55,6 +55,10 @@ export function atLeast(level: MemberLevel, required: MemberLevel): boolean {
 export const RequireGuild: Precondition = (interaction) =>
   interaction.inGuild() ? OK : deny('This command can only be used in a server.');
 
+/** Gate a command to the bot owner(s) (OWNER_IDS). Used by the /admin surface. */
+export const RequireBotOwner: Precondition = (interaction) =>
+  isBotOwner(interaction.user.id) ? OK : deny('This command is restricted to the bot owner.');
+
 export function RequireUserPermissions(perms: PermissionResolvable): Precondition {
   return (interaction) => {
     if (!interaction.inGuild()) return deny('This command can only be used in a server.');

@@ -50,6 +50,25 @@ enum PremiumTier {
   PREMIUM
 }
 
+enum BlacklistType {
+  GUILD
+  USER
+}
+
+/// Bot-owner blacklist (§ admin): a guild or user barred from using the bot.
+/// The bot loads these into memory and refuses commands from a match.
+model Blacklist {
+  id        String        @id @default(cuid())
+  type      BlacklistType
+  /// Guild or user snowflake, depending on `type`.
+  targetId  String
+  reason    String?
+  createdAt DateTime      @default(now())
+
+  @@unique([type, targetId])
+  @@index([type])
+}
+
 /// Guild metadata mirror (§4.4). The bot upserts these rows from gateway
 /// events so the dashboard never needs to hit the Discord API for basics.
 model Guild {

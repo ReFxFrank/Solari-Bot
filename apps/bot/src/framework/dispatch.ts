@@ -1,6 +1,8 @@
 import { MessageFlags, type ChatInputCommandInteraction, type Interaction } from 'discord.js';
 import { brandedEmbed, errorEmbed } from '../lib/embeds';
+import { isBotOwner } from '../lib/permissions';
 import { commandCounter, commandLatency } from '../services/metrics';
+import { isBlacklisted } from '../services/blacklist';
 import type { BotContext } from './context';
 import type { Command } from './command';
 import type { ComponentHandler } from './component';
@@ -46,6 +48,21 @@ export async function dispatchInteraction(
   if (interaction.isChatInputCommand()) {
     const command = commands.get(interaction.commandName);
     if (!command) return;
+
+    // Blacklist gate: a barred guild or user can't run anything (owners exempt).
+    if (!isBotOwner(interaction.user.id)) {
+      const guildId = interaction.inGuild() ? interaction.guildId : null;
+      if (await isBlacklisted(guildId, interaction.user.id)) {
+        await respond(
+          interaction,
+          brandedEmbed({
+            kind: 'danger',
+            description: 'You or this server are blocked from using this bot.',
+          }),
+        );
+        return;
+      }
+    }
 
     // Module gate (commands may require a module to be enabled).
     if (command.module && interaction.inGuild()) {
