@@ -30,6 +30,7 @@ export type LiveCommandType =
   | 'SCHEDULE_MESSAGE'
   | 'CANCEL_SCHEDULED_MESSAGE'
   | 'DEPLOY_TICKET_PANEL'
+  | 'DEPLOY_VERIFY_PANEL'
   | 'REFX_ALERT'
   | 'RESTART_CUSTOM_BOT';
 
@@ -57,6 +58,10 @@ export interface ScheduledMessagePayload {
 }
 
 export interface DeployTicketPanelPayload {
+  channelId: string;
+}
+
+export interface DeployVerifyPanelPayload {
   channelId: string;
 }
 

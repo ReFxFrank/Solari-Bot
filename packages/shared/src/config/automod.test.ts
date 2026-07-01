@@ -19,15 +19,14 @@ describe('automodConfigSchema', () => {
     expect(config.words.list).toEqual([]);
   });
 
-  it('fills raid and verification defaults', () => {
-    const config = automodConfigSchema.parse({});
+  it('fills raid defaults and strips the legacy verification key', () => {
+    const config = automodConfigSchema.parse({ verification: { enabled: true } });
     expect(config.raid.enabled).toBe(false);
     expect(config.raid.minAccountAgeHours).toBe(0);
     expect(config.raid.joinThreshold).toBe(10);
     expect(config.raid.raidAction).toBe('kick');
-    expect(config.verification.enabled).toBe(false);
-    expect(config.verification.buttonLabel).toBe('Verify');
-    expect(config.verification.verifiedRoleId).toBe('');
+    // Verification moved to its own module; stored legacy JSON must not throw.
+    expect('verification' in config).toBe(false);
   });
 });
 

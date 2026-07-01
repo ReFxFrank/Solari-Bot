@@ -33,7 +33,9 @@ export async function dispatchInteraction(
   commands: Map<string, Command>,
   componentHandlers: Map<string, ComponentHandler>,
 ): Promise<void> {
-  if (interaction.isMessageComponent()) {
+  // Buttons/selects AND modal submits route through the same custom-id scheme
+  // (`module:action:arg...`) so a module's modal lands in its component handler.
+  if (interaction.isMessageComponent() || interaction.isModalSubmit()) {
     const parsed = parseCustomId(interaction.customId);
     const handler = componentHandlers.get(parsed.module);
     if (!handler) return;

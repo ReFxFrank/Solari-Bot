@@ -24,6 +24,7 @@ import {
   Bell,
   Mic,
   ServerCog,
+  ShieldCheck,
   Wrench,
   Sparkles,
   Trophy,
@@ -88,6 +89,15 @@ export const MODULE_META: ModuleMeta[] = [
     category: 'core',
     accent: 'rose',
     configSlug: 'automod',
+  },
+  {
+    module: 'VERIFICATION',
+    name: 'Verification',
+    description: 'Button & captcha gate for new members.',
+    icon: ShieldCheck,
+    category: 'core',
+    accent: 'cyan',
+    configSlug: 'verification',
   },
   {
     module: 'LOGGING',
@@ -334,6 +344,7 @@ export type ModuleGroup = (typeof MODULE_GROUPS)[number];
 const GROUP_BY_MODULE: Partial<Record<Module, ModuleGroup>> = {
   MODERATION: 'Essentials',
   AUTOMOD: 'Essentials',
+  VERIFICATION: 'Essentials',
   LOGGING: 'Essentials',
   WELCOME: 'Essentials',
   AUTOROLE: 'Essentials',

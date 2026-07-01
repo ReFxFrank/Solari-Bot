@@ -7,6 +7,7 @@ import {
   type DeployPanelPayload,
   type GiveawayActionPayload,
   type DeployTicketPanelPayload,
+  type DeployVerifyPanelPayload,
   type LiveCommandMessage,
   type RefxAlertPayload,
   type RolePanelOption,
@@ -18,6 +19,7 @@ import { buildPanelMessage } from '../modules/roles';
 import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 import { armScheduledMessage } from '../modules/scheduledMessages';
 import { buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
+import { buildVerificationPanel } from '../modules/verification';
 import { postRefxAlert } from '../modules/refxAlerts';
 import { refreshStatsCounters } from '../modules/statsCounters';
 import { scheduledMessageJobId, type JobService } from './jobs';
@@ -94,6 +96,12 @@ export class LiveCommandService {
           (message.payload as DeployTicketPanelPayload).channelId,
         );
         return;
+      case 'DEPLOY_VERIFY_PANEL':
+        await this.deployVerifyPanel(
+          message.guildId,
+          (message.payload as DeployVerifyPanelPayload).channelId,
+        );
+        return;
       case 'REFX_ALERT':
         await postRefxAlert(
           this.client,
@@ -163,6 +171,20 @@ export class LiveCommandService {
       .send(buildTicketPanelMessage(config))
       .catch((err: unknown) =>
         this.logger.warn({ err, guildId, channelId }, 'Deploy ticket panel failed'),
+      );
+  }
+
+  private async deployVerifyPanel(guildId: string, channelId: string): Promise<void> {
+    const guild = this.client.guilds.cache.get(guildId);
+    const channel =
+      guild?.channels.cache.get(channelId) ??
+      (await guild?.channels.fetch(channelId).catch(() => null));
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
+    const config = await this.config.getConfig(guildId, 'VERIFICATION');
+    await channel
+      .send(buildVerificationPanel(config))
+      .catch((err: unknown) =>
+        this.logger.warn({ err, guildId, channelId }, 'Deploy verification panel failed'),
       );
   }
 

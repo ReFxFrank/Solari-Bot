@@ -19,6 +19,7 @@ import { tempVoiceConfigSchema } from './tempVoice';
 import { economyConfigSchema } from './economy';
 import { achievementsConfigSchema } from './achievements';
 import { pollsConfigSchema } from './polls';
+import { verificationConfigSchema } from './verification';
 
 export * from './moderation';
 export * from './automod';
@@ -39,6 +40,7 @@ export * from './statsCounters';
 export * from './inviteTracking';
 export * from './achievements';
 export * from './polls';
+export * from './verification';
 
 /**
  * Registry mapping a module to the zod schema that validates its `config` JSON
@@ -67,6 +69,7 @@ export const MODULE_CONFIG_SCHEMAS = {
   ECONOMY: economyConfigSchema,
   ACHIEVEMENTS: achievementsConfigSchema,
   POLLS: pollsConfigSchema,
+  VERIFICATION: verificationConfigSchema,
 } satisfies Partial<Record<Module, z.ZodTypeAny>>;
 
 export type ModuleWithSchema = keyof typeof MODULE_CONFIG_SCHEMAS;

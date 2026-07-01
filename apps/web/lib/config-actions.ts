@@ -22,6 +22,7 @@ import type {
   SuggestionsConfig,
   TempVoiceConfig,
   TicketsConfig,
+  VerificationConfig,
   WelcomeConfig,
 } from '@solari/shared';
 import { assertCanManage, requireSession } from './auth-guards';
@@ -196,6 +197,13 @@ export async function saveAchievementsConfig(
 
 export async function savePollsConfig(guildId: string, input: PollsConfig): Promise<ActionResult> {
   return saveConfig(guildId, 'POLLS', input, 'polls');
+}
+
+export async function saveVerificationConfig(
+  guildId: string,
+  input: VerificationConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'VERIFICATION', input, 'verification');
 }
 
 export async function saveGuildSettings(

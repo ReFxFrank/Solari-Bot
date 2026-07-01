@@ -50,26 +50,6 @@ export const raidConfigSchema = z.object({
 });
 export type RaidConfig = z.infer<typeof raidConfigSchema>;
 
-/**
- * Button verification gate (§8). A panel posts a button; clicking it grants the
- * verified role (and clears the optional unverified role auto-applied on join).
- */
-export const verificationConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  verifiedRoleId: z.string().default(''),
-  /** Optional role added on join and removed on verify (the "gate"). */
-  unverifiedRoleId: z.string().default(''),
-  buttonLabel: z.string().min(1).max(80).default('Verify'),
-  panelTitle: z.string().min(1).max(256).default('Verification'),
-  panelMessage: z
-    .string()
-    .min(1)
-    .max(2000)
-    .default('Click the button below to verify and unlock the rest of the server.'),
-  successMessage: z.string().min(1).max(2000).default('You are now verified. Welcome aboard!'),
-});
-export type VerificationConfig = z.infer<typeof verificationConfigSchema>;
-
 export const automodConfigSchema = z.object({
   exemptRoleIds: z.array(z.string()).default([]),
   exemptChannelIds: z.array(z.string()).default([]),
@@ -94,7 +74,8 @@ export const automodConfigSchema = z.object({
     .default({}),
   words: z.object({ ...ruleFields, list: z.array(z.string()).max(500).default([]) }).default({}),
   raid: raidConfigSchema.default({}),
-  verification: verificationConfigSchema.default({}),
+  // NOTE: `verification` moved to its own module (config/verification.ts). Any
+  // legacy key left in stored automod JSON is stripped harmlessly on parse.
 });
 
 export type AutomodConfig = z.infer<typeof automodConfigSchema>;

@@ -6,6 +6,8 @@ import { voteSuggestion } from '../modules/suggestions';
 export default defineComponent({
   module: 'suggestion',
   async handle(interaction, parsed, ctx) {
+    // Modals route through this registry too; this module only owns components.
+    if (interaction.isModalSubmit()) return;
     if (!interaction.inCachedGuild()) return;
     const id = parsed.args[0];
     const value = parsed.action === 'up' ? 1 : parsed.action === 'down' ? -1 : 0;

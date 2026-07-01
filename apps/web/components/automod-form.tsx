@@ -60,13 +60,7 @@ export function AutomodForm({
     setStatus('idle');
   }
 
-  function patchVerification(value: Partial<AutomodConfig['verification']>): void {
-    setConfig((prev) => ({ ...prev, verification: { ...prev.verification, ...value } }));
-    setStatus('idle');
-  }
-
   const raid = config.raid;
-  const verification = config.verification;
 
   function save(): void {
     startTransition(async () => {
@@ -392,77 +386,10 @@ export function AutomodForm({
         )}
       </div>
 
-      {/* Button verification gate */}
-      <div className="rounded-lg border border-white/10 p-3">
-        <label className="flex items-center gap-2 text-sm font-medium text-white/85">
-          <input
-            type="checkbox"
-            checked={verification.enabled}
-            onChange={(e) => patchVerification({ enabled: e.target.checked })}
-          />
-          Button verification
-        </label>
-        <p className="mt-1 text-xs text-white/40">
-          Post a panel with <code>/verification panel</code>; clicking the button grants the
-          verified role.
-        </p>
-        {verification.enabled && (
-          <div className="mt-3 flex flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Verified role" hint="Granted on a successful verify.">
-                <RoleSelect
-                  roles={roles}
-                  placeholder="None"
-                  selected={verification.verifiedRoleId ? [verification.verifiedRoleId] : []}
-                  onChange={(ids) => patchVerification({ verifiedRoleId: ids[0] ?? '' })}
-                />
-              </Field>
-              <Field label="Unverified role" hint="Optional. Added on join, removed on verify.">
-                <RoleSelect
-                  roles={roles}
-                  placeholder="None"
-                  selected={verification.unverifiedRoleId ? [verification.unverifiedRoleId] : []}
-                  onChange={(ids) => patchVerification({ unverifiedRoleId: ids[0] ?? '' })}
-                />
-              </Field>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Button label">
-                <input
-                  className={inputClass}
-                  maxLength={80}
-                  value={verification.buttonLabel}
-                  onChange={(e) => patchVerification({ buttonLabel: e.target.value })}
-                />
-              </Field>
-              <Field label="Panel title">
-                <input
-                  className={inputClass}
-                  maxLength={256}
-                  value={verification.panelTitle}
-                  onChange={(e) => patchVerification({ panelTitle: e.target.value })}
-                />
-              </Field>
-            </div>
-            <Field label="Panel message">
-              <textarea
-                className={`${inputClass} min-h-16 resize-y`}
-                maxLength={2000}
-                value={verification.panelMessage}
-                onChange={(e) => patchVerification({ panelMessage: e.target.value })}
-              />
-            </Field>
-            <Field label="Success message" hint="Shown privately after verifying.">
-              <textarea
-                className={`${inputClass} min-h-16 resize-y`}
-                maxLength={2000}
-                value={verification.successMessage}
-                onChange={(e) => patchVerification({ successMessage: e.target.value })}
-              />
-            </Field>
-          </div>
-        )}
-      </div>
+      <p className="text-xs text-white/40">
+        Looking for member verification? It has its own page now — see{' '}
+        <span className="font-medium text-white/60">Verification</span> in the sidebar.
+      </p>
 
       <SaveBar pending={pending} status={status} onSave={save} />
     </div>

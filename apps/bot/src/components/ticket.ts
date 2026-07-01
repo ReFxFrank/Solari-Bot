@@ -6,6 +6,8 @@ import { closeTicket, openTicket } from '../modules/tickets';
 export default defineComponent({
   module: 'ticket',
   async handle(interaction, parsed, ctx) {
+    // Modals route through this registry too; this module only owns components.
+    if (interaction.isModalSubmit()) return;
     if (!interaction.inCachedGuild()) return;
     const deps = { client: ctx.client, jobs: ctx.jobs, logger: ctx.logger };
 

@@ -6,6 +6,8 @@ import { POLL_LETTERS, buildPollMessage } from '../modules/polls';
 export default defineComponent({
   module: 'poll',
   async handle(interaction, parsed, _ctx) {
+    // Modals route through this registry too; this module only owns components.
+    if (interaction.isModalSubmit()) return;
     if (parsed.action !== 'vote' || !interaction.inCachedGuild()) return;
     const pollId = parsed.args[0];
     const optionIndex = Number(parsed.args[1]);

@@ -7,6 +7,8 @@ import { evaluateAchievements } from '../modules/achievements';
 export default defineComponent({
   module: 'giveaway',
   async handle(interaction, parsed, ctx) {
+    // Modals route through this registry too; this module only owns components.
+    if (interaction.isModalSubmit()) return;
     if (parsed.action !== 'enter' || !interaction.inCachedGuild()) return;
     const giveawayId = parsed.args[0];
     if (!giveawayId) return;

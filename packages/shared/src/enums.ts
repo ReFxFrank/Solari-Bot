@@ -6,6 +6,7 @@
 export const MODULES = [
   'MODERATION',
   'AUTOMOD',
+  'VERIFICATION',
   'LOGGING',
   'WELCOME',
   'AUTOROLE',

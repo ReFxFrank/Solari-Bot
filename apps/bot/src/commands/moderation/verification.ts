@@ -19,17 +19,15 @@ const command: Command = {
             .addChannelTypes(ChannelType.GuildText),
         ),
     ),
-  module: 'AUTOMOD',
+  module: 'VERIFICATION',
   preconditions: [RequireGuild, RequireUserPermissions(PermissionFlagsBits.ManageGuild)],
   async execute(interaction, ctx) {
     if (!interaction.inCachedGuild()) return;
 
-    const { verification } = await ctx.config.getConfig(interaction.guildId, 'AUTOMOD');
-    if (!verification.enabled || !verification.verifiedRoleId) {
+    const verification = await ctx.config.getConfig(interaction.guildId, 'VERIFICATION');
+    if (!verification.verifiedRoleId) {
       await interaction.reply({
-        embeds: [
-          errorEmbed('Enable verification and pick a verified role on the dashboard first.'),
-        ],
+        embeds: [errorEmbed('Pick a verified role on the dashboard first.')],
         flags: MessageFlags.Ephemeral,
       });
       return;

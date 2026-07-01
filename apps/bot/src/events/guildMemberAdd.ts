@@ -22,10 +22,12 @@ export default defineEvent({
         return false;
       });
       if (sanctioned) return;
-      await handleVerificationJoin(member, ctx).catch((err: unknown) =>
-        ctx.logger.error({ err, guildId: member.guild.id }, 'Verification-join handling failed'),
-      );
     }
+
+    // Verification gate role (self-gates on the VERIFICATION module).
+    await handleVerificationJoin(member, ctx).catch((err: unknown) =>
+      ctx.logger.error({ err, guildId: member.guild.id }, 'Verification-join handling failed'),
+    );
 
     // Resolve the inviter first (diff invites promptly to minimize races), but
     // isolate its failures — a transient DB error here must never suppress the

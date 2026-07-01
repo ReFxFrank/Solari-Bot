@@ -7,6 +7,8 @@ import { buttonRoleChange, selectRoleChange, type RoleChange } from '../modules/
 export default defineComponent({
   module: 'roles',
   async handle(interaction, parsed, ctx) {
+    // Modals route through this registry too; this module only owns components.
+    if (interaction.isModalSubmit()) return;
     if (!interaction.inCachedGuild()) return;
     const panelId = parsed.args[0];
     if (!panelId) return;
