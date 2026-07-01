@@ -1,5 +1,6 @@
 import { prisma } from '@solari/database';
 import { guardOwnerPage } from '../../lib/auth-guards';
+import { MODULE_META } from '../../lib/modules';
 import {
   AdminPanel,
   StatCard,
@@ -13,7 +14,7 @@ export default async function AdminPage() {
   // Redirects non-owners (and signed-out users) to home before any query runs.
   await guardOwnerPage();
 
-  const [totalServers, premiumServers, blacklistedCount, premiumGuilds, blacklistRows] =
+  const [totalServers, premiumServers, blacklistedCount, premiumGuilds, blacklistRows, flagRows] =
     await Promise.all([
       prisma.guild.count(),
       prisma.guild.count({ where: { premiumTier: 'PREMIUM' } }),
@@ -23,7 +24,13 @@ export default async function AdminPage() {
         select: { id: true, name: true },
       }),
       prisma.blacklist.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
+      prisma.globalModuleFlag.findMany({ select: { module: true, enabled: true } }),
     ]);
+
+  const features = MODULE_META.map((meta) => ({ module: meta.module, name: meta.name }));
+  const disabledModules = (flagRows as { module: string; enabled: boolean }[])
+    .filter((flag) => !flag.enabled)
+    .map((flag) => flag.module);
 
   const premium: PremiumGuild[] = (premiumGuilds as { id: string; name: string | null }[]).map(
     (guild) => ({ id: guild.id, name: guild.name }),
@@ -57,7 +64,12 @@ export default async function AdminPage() {
         <StatCard label="Blacklisted" value={blacklistedCount} />
       </div>
 
-      <AdminPanel premiumGuilds={premium} blacklist={blacklist} />
+      <AdminPanel
+        premiumGuilds={premium}
+        blacklist={blacklist}
+        features={features}
+        disabledModules={disabledModules}
+      />
     </main>
   );
 }

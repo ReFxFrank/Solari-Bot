@@ -21,9 +21,13 @@ export default async function GuildLayout({
   const { id } = await params;
   await guardGuildAccess(id);
 
-  const guild = await prisma.guild.findUnique({ where: { id } });
+  const [guild, flagRows] = await Promise.all([
+    prisma.guild.findUnique({ where: { id } }),
+    prisma.globalModuleFlag.findMany({ where: { enabled: false }, select: { module: true } }),
+  ]);
   if (!guild) notFound();
 
+  const globallyOff = new Set((flagRows as { module: string }[]).map((f) => f.module));
   const isPremium = guild.premiumTier === 'PREMIUM';
   const icon = guildIconUrl(id, guild.icon, 48);
 
@@ -43,6 +47,7 @@ export default async function GuildLayout({
       label: m.name,
       icon: <Icon className="h-4 w-4 shrink-0" />,
       locked: m.category === 'premium' && !isPremium,
+      disabledGlobally: globallyOff.has(m.module),
     };
   });
 
@@ -110,6 +115,7 @@ export default async function GuildLayout({
                   label={item.label}
                   icon={item.icon}
                   locked={item.locked}
+                  disabledGlobally={item.disabledGlobally}
                 />
               ))}
             </div>

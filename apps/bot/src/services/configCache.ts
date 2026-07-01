@@ -35,11 +35,16 @@ interface CacheEntry {
  */
 export class ConfigCache {
   private readonly store = new Map<string, CacheEntry>();
+  /** Modules the bot owner has globally disabled (across every guild). */
+  private globalDisabled = new Set<Module>();
+  private globalLoadedAt = 0;
+  private readonly globalTtlMs = 30_000;
 
   constructor(private readonly ttlMs = 5 * 60 * 1000) {}
 
   /** Begin listening for invalidation messages. Call once at startup. */
   async start(): Promise<void> {
+    await this.refreshGlobalFlags();
     await subscriber.subscribe(REDIS_CHANNELS.configUpdate);
     subscriber.on('message', (channel, raw) => {
       if (channel !== REDIS_CHANNELS.configUpdate) return;
@@ -89,8 +94,32 @@ export class ConfigCache {
     return entry.value as ModuleConfig<M>;
   }
 
-  /** Whether a module is enabled for a guild. */
+  /**
+   * Refresh the owner's global feature flags on a short TTL. Fails OPEN: a DB
+   * error keeps the last-known set rather than disabling (or enabling) the world.
+   */
+  private async refreshGlobalFlags(): Promise<void> {
+    if (Date.now() - this.globalLoadedAt < this.globalTtlMs) return;
+    try {
+      const rows = await prisma.globalModuleFlag.findMany({
+        where: { enabled: false },
+        select: { module: true },
+      });
+      this.globalDisabled = new Set(rows.map((r: { module: string }) => r.module as Module));
+    } catch {
+      // keep the previous set; just back off so we retry after the TTL
+    }
+    this.globalLoadedAt = Date.now();
+  }
+
+  /**
+   * Whether a module is enabled for a guild. A module the owner has globally
+   * disabled is off everywhere, regardless of the per-guild setting — this is
+   * the single gate both command dispatch and event handlers consult.
+   */
   async isEnabled(guildId: string, module: Module): Promise<boolean> {
+    await this.refreshGlobalFlags();
+    if (this.globalDisabled.has(module)) return false;
     const entry = await this.resolve(guildId, module);
     return entry.enabled;
   }

@@ -2,13 +2,19 @@
 
 import { useState, useTransition } from 'react';
 import { Crown, Trash2 } from 'lucide-react';
-import { addBlacklist, grantPremium, removeBlacklist } from '../lib/admin-actions';
+import { addBlacklist, grantPremium, removeBlacklist, setGlobalModule } from '../lib/admin-actions';
 import { GlassCard } from './ui/glass-card';
+import { Switch } from './ui/switch';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 
 export interface PremiumGuild {
   id: string;
   name: string | null;
+}
+
+export interface FeatureItem {
+  module: string;
+  name: string;
 }
 
 export interface BlacklistEntry {
@@ -22,11 +28,39 @@ export interface BlacklistEntry {
 export function AdminPanel({
   premiumGuilds,
   blacklist,
+  features,
+  disabledModules,
 }: {
   premiumGuilds: PremiumGuild[];
   blacklist: BlacklistEntry[];
+  features: FeatureItem[];
+  disabledModules: string[];
 }) {
   const [pending, startTransition] = useTransition();
+
+  // --- Global feature flags ---
+  const [disabled, setDisabled] = useState<Set<string>>(() => new Set(disabledModules));
+
+  function toggleModule(module: string, enable: boolean): void {
+    setDisabled((prev) => {
+      const next = new Set(prev);
+      if (enable) next.delete(module);
+      else next.add(module);
+      return next;
+    });
+    startTransition(async () => {
+      const result = await setGlobalModule(module, enable);
+      if (!result.ok) {
+        // Revert the optimistic toggle on failure.
+        setDisabled((prev) => {
+          const next = new Set(prev);
+          if (enable) next.add(module);
+          else next.delete(module);
+          return next;
+        });
+      }
+    });
+  }
 
   // --- Grant premium ---
   const [grantGuildId, setGrantGuildId] = useState('');
@@ -82,6 +116,36 @@ export function AdminPanel({
 
   return (
     <div className="flex flex-col gap-6">
+      <GlassCard className="flex flex-col gap-4 p-5">
+        <div>
+          <h3 className="text-sm font-semibold text-white/80">Global features</h3>
+          <p className="text-xs text-white/40">
+            Turn a module off to disable it for <strong>every</strong> server at once — commands and
+            background behaviour both stop. Takes effect within ~30s.
+          </p>
+        </div>
+        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+          {features.map((feature) => {
+            const on = !disabled.has(feature.module);
+            return (
+              <div
+                key={feature.module}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2"
+              >
+                <span className={`text-sm ${on ? 'text-white/85' : 'text-white/40'}`}>
+                  {feature.name}
+                </span>
+                <Switch
+                  checked={on}
+                  onChange={(next) => toggleModule(feature.module, next)}
+                  label={`Toggle ${feature.name}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </GlassCard>
+
       <GlassCard className="flex flex-col gap-4 p-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80">
           <Crown className="h-4 w-4 text-amber-300" /> Grant premium

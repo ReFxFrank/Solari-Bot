@@ -69,6 +69,15 @@ model Blacklist {
   @@index([type])
 }
 
+/// Owner-level global feature flags (§ admin). A row with enabled=false disables
+/// that module across EVERY guild — both commands and events — gated once in
+/// ConfigCache.isEnabled. No row means the module is globally on (the default).
+model GlobalModuleFlag {
+  module    String   @id
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt @default(now())
+}
+
 /// Guild metadata mirror (§4.4). The bot upserts these rows from gateway
 /// events so the dashboard never needs to hit the Discord API for basics.
 model Guild {

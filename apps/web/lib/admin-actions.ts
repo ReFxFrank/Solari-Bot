@@ -48,6 +48,25 @@ export async function addBlacklist(
   }
 }
 
+/** Globally enable/disable a module across every guild + dashboard. Owner-only. */
+export async function setGlobalModule(
+  module: string,
+  enabled: boolean,
+): Promise<AdminActionResult> {
+  await requireOwner();
+  try {
+    await prisma.globalModuleFlag.upsert({
+      where: { module },
+      update: { enabled },
+      create: { module, enabled },
+    });
+    revalidatePath('/admin');
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Could not update feature flag.' };
+  }
+}
+
 /** Remove a blacklist entry for a guild or user. Owner-only. */
 export async function removeBlacklist(
   type: 'GUILD' | 'USER',

@@ -12,6 +12,7 @@ export function NavLink({
   icon,
   premium,
   locked,
+  disabledGlobally,
 }: {
   href: string;
   label: string;
@@ -26,6 +27,8 @@ export function NavLink({
   premium?: boolean;
   /** Show a lock (premium module, guild not on Premium). */
   locked?: boolean;
+  /** Module the bot owner has globally disabled (dimmed + tooltip). */
+  disabledGlobally?: boolean;
 }) {
   const pathname = usePathname();
   const active = pathname === href;
@@ -33,6 +36,7 @@ export function NavLink({
   return (
     <Link
       href={href}
+      title={disabledGlobally ? 'Temporarily disabled by the bot operator' : undefined}
       className={cn(
         'group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
         premium
@@ -40,6 +44,7 @@ export function NavLink({
           : active
             ? 'bg-white/[0.07] font-medium text-white'
             : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+        disabledGlobally && 'opacity-40',
       )}
     >
       {active && !premium && (
