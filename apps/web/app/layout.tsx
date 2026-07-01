@@ -1,10 +1,40 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Solari — Discord Control Panel',
+  metadataBase: new URL('https://solari.gg'),
+  title: {
+    default: 'Solari — Discord Control Panel',
+    template: '%s · Solari',
+  },
   description: 'Self-hosted, premium-grade Discord bot dashboard.',
+  applicationName: 'Solari',
+  // Single source of truth for the favicon: drop the galaxy logo at
+  // apps/web/public/solari-logo.png and it serves every icon slot below.
+  icons: {
+    icon: '/solari-logo.png',
+    shortcut: '/solari-logo.png',
+    apple: '/solari-logo.png',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Solari',
+    title: 'Solari — Discord Control Panel',
+    description: 'Self-hosted, premium-grade Discord bot dashboard.',
+    url: 'https://solari.gg',
+    images: [{ url: '/solari-logo.png', width: 512, height: 512, alt: 'Solari' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Solari — Discord Control Panel',
+    description: 'Self-hosted, premium-grade Discord bot dashboard.',
+    images: ['/solari-logo.png'],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#8b5cf6',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

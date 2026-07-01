@@ -4,6 +4,7 @@ import { BRAND } from '@solari/shared';
 import { auth } from '../../auth';
 import { botInviteUrl } from '../../lib/invite';
 import { LoginButton } from '../auth-buttons';
+import { BrandMark } from './brand-mark';
 
 /** Public marketing top nav — logo, links, the always-visible gold Premium CTA. */
 export async function SiteNav() {
@@ -14,9 +15,7 @@ export async function SiteNav() {
     <header className="sticky top-0 z-30 border-b border-white/5 bg-[var(--color-base)]/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-white">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--color-brand-strong)] text-sm">
-            {BRAND.name.slice(0, 1)}
-          </span>
+          <BrandMark size={28} />
           {BRAND.name}
         </Link>
 
