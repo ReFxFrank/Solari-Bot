@@ -1,4 +1,4 @@
-import type { ReminderJob } from '@helios/jobs';
+import type { ReminderJob } from '@solari/jobs';
 import { fireReminder } from '../../modules/reminders';
 import type { JobContext } from '../../services/jobs';
 

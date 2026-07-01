@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { assertCanManage, requireSession } from './auth-guards';
 import { publishLiveCommand } from './redis';
 

@@ -7,7 +7,7 @@ import {
   Partials,
   type ClientEvents,
 } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { env } from './env';
 import { logger } from './logger';
 import { ConfigCache } from './services/configCache';
@@ -17,7 +17,7 @@ import { guildGauge, startMetricsServer } from './services/metrics';
 import { loadCommands, loadComponentHandlers, loadEvents } from './framework/loaders';
 import { dispatchInteraction } from './framework/dispatch';
 import { LiveCommandService } from './services/liveCommands';
-import { QUEUE_NAMES } from '@helios/jobs';
+import { QUEUE_NAMES } from '@solari/jobs';
 import { handleTempActionExpire } from './jobs/handlers/tempActionExpire';
 import { handleGiveawayEnd } from './jobs/handlers/giveawayEnd';
 import { handleReminder } from './jobs/handlers/reminder';

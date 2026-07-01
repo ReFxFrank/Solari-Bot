@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loggingConfigSchema } from '@helios/shared';
+import { loggingConfigSchema } from '@solari/shared';
 import { isIgnored } from './logging';
 
 const config = loggingConfigSchema.parse({

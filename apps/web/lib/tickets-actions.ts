@@ -1,7 +1,7 @@
 'use server';
 
-import { prisma } from '@helios/database';
-import { ticketsConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { ticketsConfigSchema } from '@solari/shared';
 import { assertCanManage, requireSession } from './auth-guards';
 import { publishLiveCommand } from './redis';
 

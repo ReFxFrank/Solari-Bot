@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { Module } from '@helios/shared';
+import type { Module } from '@solari/shared';
 import { setModuleEnabled } from '../lib/config-actions';
 import { Switch } from './ui/switch';
 

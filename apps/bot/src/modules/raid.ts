@@ -4,7 +4,7 @@ import {
   isAccountTooNew,
   type AutomodConfig,
   type GateAction,
-} from '@helios/shared';
+} from '@solari/shared';
 import { createModerationCase } from '../lib/cases';
 import { brandedEmbed } from '../lib/embeds';
 import { sendLog } from '../lib/logging';

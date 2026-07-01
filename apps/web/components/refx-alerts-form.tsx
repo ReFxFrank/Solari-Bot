@@ -7,7 +7,7 @@ import {
   type RefxAlertsConfig,
   type RefxSeverity,
   type RefxWebhookEvent,
-} from '@helios/shared';
+} from '@solari/shared';
 import { saveRefxAlertsConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 

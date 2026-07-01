@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { statsCountersConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { statsCountersConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { StatsCountersForm } from '../../../../components/stats-counters-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

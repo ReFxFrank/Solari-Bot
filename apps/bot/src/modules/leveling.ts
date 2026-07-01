@@ -1,13 +1,13 @@
 import { ChannelType, type Client, type Guild, type GuildMember, type Message } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import {
   eligibleVoiceMembers,
   levelFromXp,
   parseModuleConfig,
   type LevelingConfig,
   type VoiceChannelView,
-} from '@helios/shared';
-import { QUEUE_NAMES } from '@helios/jobs';
+} from '@solari/shared';
+import { QUEUE_NAMES } from '@solari/jobs';
 import { applyPlaceholders, type PlaceholderMember } from '../lib/placeholders';
 import { voiceXpJobId, type JobService } from '../services/jobs';
 import type { Logger } from '../logger';

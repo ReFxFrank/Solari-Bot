@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { inviteTrackingConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { inviteTrackingConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { InviteTrackingForm } from '../../../../components/invite-tracking-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

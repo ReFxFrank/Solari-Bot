@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Check, Crown, ShieldCheck } from 'lucide-react';
-import { BRAND } from '@helios/shared';
+import { BRAND } from '@solari/shared';
 import { PREMIUM_FEATURES, PRICING_TIERS, tierEnabled } from '../../lib/pricing';
 import { UrgencyBanner } from '../../components/marketing/urgency-banner';
 import { SiteNav } from '../../components/marketing/site-nav';

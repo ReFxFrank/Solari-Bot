@@ -1,4 +1,4 @@
-import type { PollEndJob } from '@helios/jobs';
+import type { PollEndJob } from '@solari/jobs';
 import { endPoll } from '../../modules/polls';
 import type { JobContext } from '../../services/jobs';
 

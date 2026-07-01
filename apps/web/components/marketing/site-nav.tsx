@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Crown } from 'lucide-react';
-import { BRAND } from '@helios/shared';
+import { BRAND } from '@solari/shared';
 import { auth } from '../../auth';
 import { botInviteUrl } from '../../lib/invite';
 import { LoginButton } from '../auth-buttons';

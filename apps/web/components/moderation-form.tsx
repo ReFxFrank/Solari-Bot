@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { ModerationConfig } from '@helios/shared';
+import type { ModerationConfig } from '@solari/shared';
 import type { ChannelOption, RoleOption } from '../lib/discord-guild';
 import { saveModerationConfig } from '../lib/config-actions';
 import { Switch } from './ui/switch';

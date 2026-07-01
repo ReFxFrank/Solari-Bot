@@ -15,7 +15,7 @@ datasource db {
 }
 
 /// Every configurable feature area. Mirrors the `Module` union in
-/// `@helios/shared` — keep the two in sync.
+/// `@solari/shared` — keep the two in sync.
 enum Module {
   MODERATION
   AUTOMOD
@@ -117,7 +117,7 @@ model GuildSubscription {
 }
 
 /// One row per (guild, module). `config` is a JSON blob validated by the
-/// matching zod schema in `@helios/shared` on every read and write (§4.1).
+/// matching zod schema in `@solari/shared` on every read and write (§4.1).
 model GuildModuleConfig {
   id        String   @id @default(cuid())
   guildId   String
@@ -292,7 +292,7 @@ model ModerationCase {
 }
 
 /// How often a scheduled message repeats. Mirrors `ScheduleRepeat` in
-/// `@helios/shared` — keep the two in sync.
+/// `@solari/shared` — keep the two in sync.
 enum ScheduleRepeat {
   NONE
   HOURLY

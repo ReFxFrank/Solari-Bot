@@ -1,5 +1,5 @@
 import { DiscordAPIError, Routes } from 'discord.js';
-import type { TempActionExpireJob } from '@helios/jobs';
+import type { TempActionExpireJob } from '@solari/jobs';
 import { createModerationCase, deactivateTempBans } from '../../lib/cases';
 import type { JobContext } from '../../services/jobs';
 

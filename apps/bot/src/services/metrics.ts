@@ -8,20 +8,20 @@ export const registry = new Registry();
 collectDefaultMetrics({ register: registry });
 
 export const guildGauge = new Gauge({
-  name: 'helios_shard_guilds',
+  name: 'solari_shard_guilds',
   help: 'Number of guilds on this shard',
   registers: [registry],
 });
 
 export const commandCounter = new Counter({
-  name: 'helios_commands_total',
+  name: 'solari_commands_total',
   help: 'Slash commands processed',
   labelNames: ['command', 'status'] as const,
   registers: [registry],
 });
 
 export const commandLatency = new Histogram({
-  name: 'helios_command_latency_seconds',
+  name: 'solari_command_latency_seconds',
   help: 'Slash command execution latency',
   labelNames: ['command'] as const,
   registers: [registry],

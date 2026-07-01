@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { customCommandInputSchema, type CustomCommandInput, type EmbedSpec } from '@helios/shared';
+import { customCommandInputSchema, type CustomCommandInput, type EmbedSpec } from '@solari/shared';
 import { deleteCustomCommand, upsertCustomCommand } from '../lib/customcommands-actions';
 import { GlassCard } from './ui/glass-card';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';

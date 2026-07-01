@@ -1,5 +1,5 @@
 import type { Client } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { brandedEmbed } from '../lib/embeds';
 import type { Logger } from '../logger';
 

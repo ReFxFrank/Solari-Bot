@@ -1,6 +1,6 @@
-import type { TicketAutoCloseJob } from '@helios/jobs';
-import { QUEUE_NAMES } from '@helios/jobs';
-import { prisma } from '@helios/database';
+import type { TicketAutoCloseJob } from '@solari/jobs';
+import { QUEUE_NAMES } from '@solari/jobs';
+import { prisma } from '@solari/database';
 import { closeTicket, getTicketsConfig } from '../../modules/tickets';
 import { ticketJobId, type JobContext } from '../../services/jobs';
 

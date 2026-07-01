@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import type { RolePanelOption } from '@helios/shared';
+import { prisma } from '@solari/database';
+import type { RolePanelOption } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { RolePanels, type PanelSummary } from '../../../../components/role-panels';
 

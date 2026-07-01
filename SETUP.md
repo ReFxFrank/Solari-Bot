@@ -218,8 +218,8 @@ pnpm dev
 Or run them in separate terminals (clearer logs while testing):
 
 ```bash
-pnpm --filter @helios/bot dev     # the bot
-pnpm --filter @helios/web dev     # the dashboard
+pnpm --filter @solari/bot dev     # the bot
+pnpm --filter @solari/web dev     # the dashboard
 ```
 
 - **Bot:** within a few seconds you should see a `Shard ready` log and the bot

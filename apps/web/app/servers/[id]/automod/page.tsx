@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { automodConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { automodConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { AutomodForm } from '../../../../components/automod-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

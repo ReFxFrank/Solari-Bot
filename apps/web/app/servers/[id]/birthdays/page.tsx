@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { birthdaysConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { birthdaysConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { BirthdaysForm } from '../../../../components/birthdays-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

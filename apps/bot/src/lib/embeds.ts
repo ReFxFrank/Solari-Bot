@@ -1,4 +1,4 @@
-import { BRAND, COLORS } from '@helios/shared';
+import { BRAND, COLORS } from '@solari/shared';
 import { EmbedBuilder, type ColorResolvable } from 'discord.js';
 
 type EmbedKind = 'default' | 'success' | 'warning' | 'danger' | 'info';

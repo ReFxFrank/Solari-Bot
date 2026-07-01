@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { WelcomeConfig } from '@helios/shared';
+import type { WelcomeConfig } from '@solari/shared';
 import { saveWelcomeConfig } from '../lib/config-actions';
 import { Switch } from './ui/switch';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';

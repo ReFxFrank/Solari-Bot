@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { getRedis } from '../../../../lib/redis';
 import { POST } from './route';
 

@@ -8,7 +8,7 @@ import {
   refxStatusEmoji,
   type RefxNodeMetrics,
   type RefxRegion,
-} from '@helios/shared';
+} from '@solari/shared';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
 import { Cooldown } from '../../lib/permissions';
 import { env } from '../../env';

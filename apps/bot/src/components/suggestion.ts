@@ -1,5 +1,5 @@
 import { MessageFlags } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { defineComponent } from '../framework/component';
 import { voteSuggestion } from '../modules/suggestions';
 

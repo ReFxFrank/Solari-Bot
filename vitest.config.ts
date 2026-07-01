@@ -6,9 +6,9 @@ const alias = (rel: string): string => fileURLToPath(new URL(rel, import.meta.ur
 export default defineConfig({
   resolve: {
     alias: {
-      '@helios/shared': alias('./packages/shared/src/index.ts'),
-      '@helios/database': alias('./packages/database/src/index.ts'),
-      '@helios/jobs': alias('./packages/jobs/src/index.ts'),
+      '@solari/shared': alias('./packages/shared/src/index.ts'),
+      '@solari/database': alias('./packages/database/src/index.ts'),
+      '@solari/jobs': alias('./packages/jobs/src/index.ts'),
     },
   },
   test: {

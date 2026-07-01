@@ -41,18 +41,18 @@ importers:
 
   apps/bot:
     dependencies:
-      '@helios/database':
-        specifier: workspace:*
-        version: link:../../packages/database
-      '@helios/jobs':
-        specifier: workspace:*
-        version: link:../../packages/jobs
-      '@helios/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@napi-rs/canvas':
         specifier: ^1.0.2
         version: 1.0.2
+      '@solari/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@solari/jobs':
+        specifier: workspace:*
+        version: link:../../packages/jobs
+      '@solari/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       bullmq:
         specifier: ^5.34.6
         version: 5.79.2
@@ -90,10 +90,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@helios/database':
+      '@solari/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@helios/shared':
+      '@solari/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       clsx:
@@ -173,7 +173,7 @@ importers:
 
   packages/jobs:
     dependencies:
-      '@helios/shared':
+      '@solari/shared':
         specifier: workspace:*
         version: link:../shared
       bullmq:

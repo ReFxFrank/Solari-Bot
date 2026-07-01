@@ -1,4 +1,4 @@
-import { DISCORD_LIMITS } from '@helios/shared';
+import { DISCORD_LIMITS } from '@solari/shared';
 
 const SEPARATOR = ':';
 

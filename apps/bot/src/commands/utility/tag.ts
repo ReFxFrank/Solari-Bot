@@ -1,6 +1,6 @@
 import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import { prisma } from '@helios/database';
-import { customCommandInputSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { customCommandInputSchema } from '@solari/shared';
 import { brandedEmbed, errorEmbed, successEmbed } from '../../lib/embeds';
 import { RequireGuild } from '../../lib/permissions';
 import { applyPlaceholders, type PlaceholderMember } from '../../lib/placeholders';

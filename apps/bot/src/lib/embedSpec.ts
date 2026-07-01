@@ -1,5 +1,5 @@
 import { EmbedBuilder, type ColorResolvable } from 'discord.js';
-import { embedSpecHasContent, type EmbedSpec } from '@helios/shared';
+import { embedSpecHasContent, type EmbedSpec } from '@solari/shared';
 
 /**
  * Render an EmbedSpec into a discord.js EmbedBuilder, optionally running each

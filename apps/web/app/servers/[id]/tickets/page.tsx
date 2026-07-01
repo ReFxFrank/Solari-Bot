@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { ticketsConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { ticketsConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { TicketsForm } from '../../../../components/tickets-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

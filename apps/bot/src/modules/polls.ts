@@ -6,8 +6,8 @@ import {
   type Client,
   type GuildTextBasedChannel,
 } from 'discord.js';
-import { prisma } from '@helios/database';
-import { pollBar, tallyPoll } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { pollBar, tallyPoll } from '@solari/shared';
 import { brandedEmbed } from '../lib/embeds';
 import { buildCustomId } from '../framework/customId';
 import type { Logger } from '../logger';

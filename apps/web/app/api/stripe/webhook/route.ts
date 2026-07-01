@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
-import { prisma } from '@helios/database';
-import { tierFromSubscription } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { tierFromSubscription } from '@solari/shared';
 import { getStripe } from '../../../../lib/stripe';
 
 export const dynamic = 'force-dynamic';

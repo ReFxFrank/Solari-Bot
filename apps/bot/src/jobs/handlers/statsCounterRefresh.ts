@@ -1,4 +1,4 @@
-import type { StatsCounterRefreshJob } from '@helios/jobs';
+import type { StatsCounterRefreshJob } from '@solari/jobs';
 import { refreshStatsCounters } from '../../modules/statsCounters';
 import type { JobContext } from '../../services/jobs';
 

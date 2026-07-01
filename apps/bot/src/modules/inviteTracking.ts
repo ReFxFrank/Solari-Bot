@@ -1,11 +1,11 @@
 import type { Collection, Guild, GuildMember, Invite } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import {
   diffInviteUse,
   parseModuleConfig,
   type InviteSnapshot,
   type InviteTrackingConfig,
-} from '@helios/shared';
+} from '@solari/shared';
 import { brandedEmbed } from '../lib/embeds';
 import type { Logger } from '../logger';
 

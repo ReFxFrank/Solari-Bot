@@ -1,5 +1,5 @@
-import { type Prisma, prisma } from '@helios/database';
-import { parseModuleConfig, type Module, type ModuleWithSchema } from '@helios/shared';
+import { type Prisma, prisma } from '@solari/database';
+import { parseModuleConfig, type Module, type ModuleWithSchema } from '@solari/shared';
 import { writeAuditLog } from './audit';
 import { publishConfigUpdate } from './redis';
 

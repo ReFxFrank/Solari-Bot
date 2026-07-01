@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { loggingConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { loggingConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { LoggingForm } from '../../../../components/logging-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

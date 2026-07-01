@@ -7,7 +7,7 @@ import {
   SCHEDULE_REPEATS,
   scheduledMessageInputSchema,
   type ScheduleRepeat,
-} from '@helios/shared';
+} from '@solari/shared';
 import {
   createScheduledMessage,
   deleteScheduledMessage,

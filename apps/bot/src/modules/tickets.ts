@@ -11,9 +11,9 @@ import {
   type GuildTextBasedChannel,
   type OverwriteResolvable,
 } from 'discord.js';
-import { prisma } from '@helios/database';
-import { QUEUE_NAMES } from '@helios/jobs';
-import { parseModuleConfig, type TicketsConfig } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { QUEUE_NAMES } from '@solari/jobs';
+import { parseModuleConfig, type TicketsConfig } from '@solari/shared';
 import { brandedEmbed } from '../lib/embeds';
 import { buildCustomId } from '../framework/customId';
 import { ticketJobId, type JobService } from '../services/jobs';

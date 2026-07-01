@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import type { ScheduleRepeat } from '@helios/shared';
+import { prisma } from '@solari/database';
+import type { ScheduleRepeat } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import {
   ScheduledMessages,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { BirthdaysConfig } from '@helios/shared';
+import type { BirthdaysConfig } from '@solari/shared';
 import { saveBirthdaysConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 

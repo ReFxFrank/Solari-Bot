@@ -1,7 +1,7 @@
 import { Queue, Worker, type Job } from 'bullmq';
-import { QUEUE_NAMES, QUEUE_PREFIX, type TempActionExpireJob } from '@helios/jobs';
+import { QUEUE_NAMES, QUEUE_PREFIX, type TempActionExpireJob } from '@solari/jobs';
 import type { Client } from 'discord.js';
-import { prisma, type PrismaClient } from '@helios/database';
+import { prisma, type PrismaClient } from '@solari/database';
 import type { Logger } from '../logger';
 import { bullConnection } from './redis';
 

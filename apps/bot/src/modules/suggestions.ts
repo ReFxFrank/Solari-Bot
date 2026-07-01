@@ -6,8 +6,8 @@ import {
   type Client,
   type GuildTextBasedChannel,
 } from 'discord.js';
-import { prisma, type SuggestionStatus } from '@helios/database';
-import { parseModuleConfig, type SuggestionsConfig } from '@helios/shared';
+import { prisma, type SuggestionStatus } from '@solari/database';
+import { parseModuleConfig, type SuggestionsConfig } from '@solari/shared';
 import { brandedEmbed } from '../lib/embeds';
 import { buildCustomId } from '../framework/customId';
 import type { Logger } from '../logger';

@@ -4,7 +4,7 @@ import {
   refxAlertShouldMention,
   type RefxAlertData,
   type RefxAlertPayload,
-} from '@helios/shared';
+} from '@solari/shared';
 import { brandedEmbed } from '../lib/embeds';
 import type { ConfigCache } from '../services/configCache';
 import type { Logger } from '../logger';

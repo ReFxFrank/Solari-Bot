@@ -1,4 +1,4 @@
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { GlassCard } from '../../../../components/ui/glass-card';
 

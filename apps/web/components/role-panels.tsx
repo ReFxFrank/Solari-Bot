@@ -9,7 +9,7 @@ import {
   type RolePanelInput,
   type RolePanelMode,
   type RolePanelType,
-} from '@helios/shared';
+} from '@solari/shared';
 import { createRolePanel, deleteRolePanel, redeployRolePanel } from '../lib/panel-actions';
 import { GlassCard } from './ui/glass-card';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';

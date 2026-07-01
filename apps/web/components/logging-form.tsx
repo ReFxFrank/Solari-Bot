@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { LoggingConfig } from '@helios/shared';
+import type { LoggingConfig } from '@solari/shared';
 import { saveLoggingConfig } from '../lib/config-actions';
 import { Field, SaveBar, monoInputClass, type SaveStatus } from './ui/form';
 

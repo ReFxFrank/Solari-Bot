@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, Crown, LayoutDashboard, ScrollText, Settings2 } from 'lucide-react';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { guildIconUrl } from '../../../lib/discord';
 import { MODULE_META } from '../../../lib/modules';

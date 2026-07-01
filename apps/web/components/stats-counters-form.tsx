@@ -8,7 +8,7 @@ import {
   type StatCounter,
   type StatCounterType,
   type StatsCountersConfig,
-} from '@helios/shared';
+} from '@solari/shared';
 import { saveStatsCountersConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 

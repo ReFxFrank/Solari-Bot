@@ -1,4 +1,4 @@
-import type { VoiceXpJob } from '@helios/jobs';
+import type { VoiceXpJob } from '@solari/jobs';
 import { runVoiceXpTick } from '../../modules/leveling';
 import type { JobContext } from '../../services/jobs';
 

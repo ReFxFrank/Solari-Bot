@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
-import { REDIS_CHANNELS, type LiveCommandMessage, type RefxAlertPayload } from '@helios/shared';
-import { prisma } from '@helios/database';
+import { REDIS_CHANNELS, type LiveCommandMessage, type RefxAlertPayload } from '@solari/shared';
+import { prisma } from '@solari/database';
 import { fanOutRefxEvent } from './refx-fanout';
 import { getRedis } from './redis';
 

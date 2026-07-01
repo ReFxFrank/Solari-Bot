@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { suggestionsConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { suggestionsConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { SuggestionsForm } from '../../../../components/suggestions-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

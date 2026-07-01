@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Plus } from 'lucide-react';
-import { prisma } from '@helios/database';
-import { BRAND } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { BRAND } from '@solari/shared';
 import { auth } from '../../auth';
 import { getManageableGuilds } from '../../lib/auth-guards';
 import { guildIconUrl, type ManageableGuild } from '../../lib/discord';

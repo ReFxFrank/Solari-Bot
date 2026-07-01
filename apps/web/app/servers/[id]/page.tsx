@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Crown } from 'lucide-react';
-import { prisma } from '@helios/database';
-import type { Module } from '@helios/shared';
+import { prisma } from '@solari/database';
+import type { Module } from '@solari/shared';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { MODULE_META, type ModuleCategory } from '../../../lib/modules';
 import { ModuleCard } from '../../../components/module-card';

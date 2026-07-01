@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { refxAlertsConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { refxAlertsConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { RefxAlertsForm } from '../../../../components/refx-alerts-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

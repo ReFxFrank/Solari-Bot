@@ -1,5 +1,5 @@
 {
-  "name": "@helios/web",
+  "name": "@solari/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@helios/database": "workspace:*",
-    "@helios/shared": "workspace:*",
+    "@solari/database": "workspace:*",
+    "@solari/shared": "workspace:*",
     "clsx": "^2.1.1",
     "ioredis": "^5.4.2",
     "lucide-react": "^0.469.0",

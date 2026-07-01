@@ -1,11 +1,11 @@
 import type { BaseMessageOptions, Message } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import {
   embedSpecSchema,
   matchAutoResponder,
   type AutoResponder,
   type CustomCommandsConfig,
-} from '@helios/shared';
+} from '@solari/shared';
 import { applyPlaceholders, type PlaceholderMember } from '../lib/placeholders';
 import { buildEmbedFromSpec } from '../lib/embedSpec';
 

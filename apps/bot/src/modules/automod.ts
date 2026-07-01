@@ -6,7 +6,7 @@ import {
   matchBlockedWord,
   type AutomodConfig,
   type AutomodRule,
-} from '@helios/shared';
+} from '@solari/shared';
 import { createModerationCase } from '../lib/cases';
 import { brandedEmbed } from '../lib/embeds';
 import type { BotContext } from '../framework/context';

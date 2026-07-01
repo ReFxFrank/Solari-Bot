@@ -1,5 +1,5 @@
 {
-  "name": "@helios/bot",
+  "name": "@solari/bot",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,9 +11,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@helios/database": "workspace:*",
-    "@helios/jobs": "workspace:*",
-    "@helios/shared": "workspace:*",
+    "@solari/database": "workspace:*",
+    "@solari/jobs": "workspace:*",
+    "@solari/shared": "workspace:*",
     "@napi-rs/canvas": "^1.0.2",
     "bullmq": "^5.34.6",
     "discord.js": "^14.17.3",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { levelUpAnnounceModes, type LevelingConfig } from '@helios/shared';
+import { levelUpAnnounceModes, type LevelingConfig } from '@solari/shared';
 import { saveLevelingConfig } from '../lib/config-actions';
 import { Switch } from './ui/switch';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';

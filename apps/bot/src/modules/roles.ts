@@ -7,7 +7,7 @@ import {
   type BaseMessageOptions,
   type MessageActionRowComponentBuilder,
 } from 'discord.js';
-import type { RolePanelMode, RolePanelOption, RolePanelType } from '@helios/shared';
+import type { RolePanelMode, RolePanelOption, RolePanelType } from '@solari/shared';
 import { brandedEmbed } from '../lib/embeds';
 import { buildCustomId } from '../framework/customId';
 

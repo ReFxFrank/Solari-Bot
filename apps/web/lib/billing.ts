@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import { assertCanManage, requireSession } from './auth-guards';
 import { getStripe } from './stripe';
 

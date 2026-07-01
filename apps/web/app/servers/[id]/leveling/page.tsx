@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { levelingConfigSchema, xpProgress } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { levelingConfigSchema, xpProgress } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { LevelingForm } from '../../../../components/leveling-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

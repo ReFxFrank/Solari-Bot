@@ -14,7 +14,7 @@ WORKDIR /app
 
 COPY . .
 RUN pnpm install --frozen-lockfile \
-  && pnpm --filter @helios/database generate
+  && pnpm --filter @solari/database generate
 
 ENV NODE_ENV=production
-CMD ["pnpm", "--filter", "@helios/bot", "start"]
+CMD ["pnpm", "--filter", "@solari/bot", "start"]

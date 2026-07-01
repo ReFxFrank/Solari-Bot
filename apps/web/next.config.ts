@@ -4,7 +4,7 @@ import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Workspace packages are shipped as TypeScript source, so Next must transpile them.
-  transpilePackages: ['@helios/shared', '@helios/database', '@helios/jobs'],
+  transpilePackages: ['@solari/shared', '@solari/database', '@solari/jobs'],
   // We lint the repo with our own flat ESLint config (`pnpm lint`), so skip
   // Next's separate build-time lint pass.
   eslint: { ignoreDuringBuilds: true },

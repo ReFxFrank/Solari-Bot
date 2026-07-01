@@ -1,4 +1,4 @@
-import type { Module } from '@helios/shared';
+import type { Module } from '@solari/shared';
 import {
   ShieldAlert,
   ShieldBan,

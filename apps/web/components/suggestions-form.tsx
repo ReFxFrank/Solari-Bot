@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { SuggestionsConfig } from '@helios/shared';
+import type { SuggestionsConfig } from '@solari/shared';
 import { saveSuggestionsConfig } from '../lib/config-actions';
 import { Field, SaveBar, monoInputClass, type SaveStatus } from './ui/form';
 

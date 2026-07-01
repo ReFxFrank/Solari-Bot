@@ -1,5 +1,5 @@
 import type { Client } from 'discord.js';
-import type { PrismaClient } from '@helios/database';
+import type { PrismaClient } from '@solari/database';
 import type { Redis } from 'ioredis';
 import type { Logger } from '../logger';
 import type { ConfigCache } from '../services/configCache';

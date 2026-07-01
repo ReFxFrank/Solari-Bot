@@ -7,7 +7,7 @@ import {
   type AutoResponder,
   type AutoResponderMatch,
   type CustomCommandsConfig,
-} from '@helios/shared';
+} from '@solari/shared';
 import { saveCustomCommandsConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 

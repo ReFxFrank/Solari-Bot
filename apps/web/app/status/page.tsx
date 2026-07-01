@@ -6,7 +6,7 @@ import {
   refxStatusEmoji,
   type RefxNodeMetrics,
   type RefxStatus,
-} from '@helios/shared';
+} from '@solari/shared';
 import { GlassCard } from '../../components/ui/glass-card';
 
 export const dynamic = 'force-dynamic';

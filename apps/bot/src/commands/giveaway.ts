@@ -1,6 +1,6 @@
 import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import { QUEUE_NAMES } from '@helios/jobs';
-import { prisma } from '@helios/database';
+import { QUEUE_NAMES } from '@solari/jobs';
+import { prisma } from '@solari/database';
 import { brandedEmbed, errorEmbed } from '../lib/embeds';
 import { RequireGuild, RequireUserPermissions } from '../lib/permissions';
 import { parseDuration, formatDuration } from '../lib/parsing';

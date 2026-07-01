@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { InviteTrackingConfig } from '@helios/shared';
+import type { InviteTrackingConfig } from '@solari/shared';
 import { saveInviteTrackingConfig } from '../lib/config-actions';
 import { Field, SaveBar, monoInputClass, type SaveStatus } from './ui/form';
 

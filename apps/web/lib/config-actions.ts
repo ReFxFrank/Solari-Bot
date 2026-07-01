@@ -18,7 +18,7 @@ import type {
   SuggestionsConfig,
   TicketsConfig,
   WelcomeConfig,
-} from '@helios/shared';
+} from '@solari/shared';
 import { assertCanManage, requireSession } from './auth-guards';
 import {
   applyGuildSettings,

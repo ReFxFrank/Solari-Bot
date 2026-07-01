@@ -1,10 +1,10 @@
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import {
   refxAlertMatches,
   refxAlertsConfigSchema,
   type RefxAlertData,
   type RefxWebhookEvent,
-} from '@helios/shared';
+} from '@solari/shared';
 import { publishLiveCommand } from './redis';
 
 /**

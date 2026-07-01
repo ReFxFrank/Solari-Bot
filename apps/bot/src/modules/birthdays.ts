@@ -1,7 +1,7 @@
 import type { Client, Guild, GuildMember, GuildTextBasedChannel } from 'discord.js';
-import { prisma } from '@helios/database';
-import { nextDailyRunAt, parseModuleConfig, type BirthdaysConfig } from '@helios/shared';
-import { QUEUE_NAMES } from '@helios/jobs';
+import { prisma } from '@solari/database';
+import { nextDailyRunAt, parseModuleConfig, type BirthdaysConfig } from '@solari/shared';
+import { QUEUE_NAMES } from '@solari/jobs';
 import { applyPlaceholders, type PlaceholderMember } from '../lib/placeholders';
 import { birthdayJobId, type JobService } from '../services/jobs';
 import type { Logger } from '../logger';

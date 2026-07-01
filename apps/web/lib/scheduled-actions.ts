@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@helios/database';
-import { scheduledMessageInputSchema, type ScheduledMessageInput } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { scheduledMessageInputSchema, type ScheduledMessageInput } from '@solari/shared';
 import { assertCanManage, requireSession } from './auth-guards';
 import { writeAuditLog } from './audit';
 import { publishLiveCommand } from './redis';

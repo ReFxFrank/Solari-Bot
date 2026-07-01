@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BRAND } from '@helios/shared';
+import { BRAND } from '@solari/shared';
 
 export function SiteFooter() {
   return (

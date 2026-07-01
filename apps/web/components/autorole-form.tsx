@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { AutoroleConfig } from '@helios/shared';
+import type { AutoroleConfig } from '@solari/shared';
 import { saveAutoroleConfig } from '../lib/config-actions';
 import { Field, SaveBar, monoInputClass, type SaveStatus } from './ui/form';
 

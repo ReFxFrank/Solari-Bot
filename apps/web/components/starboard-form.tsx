@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { StarboardConfig } from '@helios/shared';
+import type { StarboardConfig } from '@solari/shared';
 import { saveStarboardConfig } from '../lib/config-actions';
 import { Switch } from './ui/switch';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';

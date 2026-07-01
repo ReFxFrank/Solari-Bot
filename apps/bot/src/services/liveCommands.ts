@@ -1,6 +1,6 @@
 import type { Client } from 'discord.js';
-import { prisma } from '@helios/database';
-import { QUEUE_NAMES } from '@helios/jobs';
+import { prisma } from '@solari/database';
+import { QUEUE_NAMES } from '@solari/jobs';
 import {
   REDIS_CHANNELS,
   type DeletePanelPayload,
@@ -11,7 +11,7 @@ import {
   type RefxAlertPayload,
   type RolePanelOption,
   type ScheduledMessagePayload,
-} from '@helios/shared';
+} from '@solari/shared';
 import type { Logger } from '../logger';
 import { subscriber } from './redis';
 import { buildPanelMessage } from '../modules/roles';

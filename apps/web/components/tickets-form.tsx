@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Send } from 'lucide-react';
-import type { TicketsConfig } from '@helios/shared';
+import type { TicketsConfig } from '@solari/shared';
 import { saveTicketsConfig } from '../lib/config-actions';
 import { deployTicketPanel } from '../lib/tickets-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';

@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { autoroleConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { autoroleConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { AutoroleForm } from '../../../../components/autorole-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

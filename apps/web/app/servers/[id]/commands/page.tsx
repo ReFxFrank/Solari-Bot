@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { customCommandsConfigSchema, embedSpecSchema, type EmbedSpec } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { customCommandsConfigSchema, embedSpecSchema, type EmbedSpec } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { AutoRespondersForm } from '../../../../components/auto-responders-form';
 import {

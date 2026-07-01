@@ -1,12 +1,12 @@
 import type { Client, Guild } from 'discord.js';
-import { prisma } from '@helios/database';
+import { prisma } from '@solari/database';
 import {
   parseModuleConfig,
   renderCounterName,
   type StatCounts,
   type StatsCountersConfig,
-} from '@helios/shared';
-import { QUEUE_NAMES } from '@helios/jobs';
+} from '@solari/shared';
+import { QUEUE_NAMES } from '@solari/jobs';
 import { statsCounterJobId, type JobService } from '../services/jobs';
 import type { Logger } from '../logger';
 

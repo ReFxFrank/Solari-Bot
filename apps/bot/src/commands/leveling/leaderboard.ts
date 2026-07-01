@@ -1,6 +1,6 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { prisma } from '@helios/database';
-import { xpProgress } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { xpProgress } from '@solari/shared';
 import { brandedEmbed } from '../../lib/embeds';
 import { RequireGuild } from '../../lib/permissions';
 import type { Command } from '../../framework/command';

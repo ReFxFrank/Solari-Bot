@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import { starboardConfigSchema } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { starboardConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { StarboardForm } from '../../../../components/starboard-form';
 import { GlassCard } from '../../../../components/ui/glass-card';

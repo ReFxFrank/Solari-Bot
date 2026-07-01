@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { REFX_WEBHOOK_EVENTS, refxWebhookSchema, type RefxAlertData } from '@helios/shared';
+import { REFX_WEBHOOK_EVENTS, refxWebhookSchema, type RefxAlertData } from '@solari/shared';
 import {
   claimDelivery,
   readRawBodyCapped,

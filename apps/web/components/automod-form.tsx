@@ -7,7 +7,7 @@ import {
   type AutomodAction,
   type AutomodConfig,
   type GateAction,
-} from '@helios/shared';
+} from '@solari/shared';
 import { saveAutomodConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 

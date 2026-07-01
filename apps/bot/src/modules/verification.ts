@@ -8,7 +8,7 @@ import {
   type ButtonInteraction,
   type GuildMember,
 } from 'discord.js';
-import type { VerificationConfig } from '@helios/shared';
+import type { VerificationConfig } from '@solari/shared';
 import { brandedEmbed, errorEmbed } from '../lib/embeds';
 import { buildCustomId } from '../framework/customId';
 import type { BotContext } from '../framework/context';

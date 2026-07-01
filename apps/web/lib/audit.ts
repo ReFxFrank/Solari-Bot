@@ -1,5 +1,5 @@
-import { prisma } from '@helios/database';
-import type { Module } from '@helios/shared';
+import { prisma } from '@solari/database';
+import type { Module } from '@solari/shared';
 
 export interface AuditEntry {
   guildId: string;

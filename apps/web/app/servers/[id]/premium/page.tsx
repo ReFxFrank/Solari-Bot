@@ -1,6 +1,6 @@
 import { Check, Crown } from 'lucide-react';
-import { prisma } from '@helios/database';
-import { PREMIUM_PERKS, tierFromSubscription } from '@helios/shared';
+import { prisma } from '@solari/database';
+import { PREMIUM_PERKS, tierFromSubscription } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { startCheckout, openBillingPortal } from '../../../../lib/billing';
 import { isBillingConfigured } from '../../../../lib/stripe';

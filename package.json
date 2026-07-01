@@ -1,5 +1,5 @@
 {
-  "name": "helios",
+  "name": "solari",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,11 +19,11 @@
     "test:watch": "vitest",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css}\"",
-    "db:generate": "pnpm --filter @helios/database generate",
-    "db:migrate": "pnpm --filter @helios/database migrate:dev",
-    "db:deploy": "pnpm --filter @helios/database migrate:deploy",
-    "db:studio": "pnpm --filter @helios/database studio",
-    "deploy:commands": "pnpm --filter @helios/bot deploy:commands"
+    "db:generate": "pnpm --filter @solari/database generate",
+    "db:migrate": "pnpm --filter @solari/database migrate:dev",
+    "db:deploy": "pnpm --filter @solari/database migrate:deploy",
+    "db:studio": "pnpm --filter @solari/database studio",
+    "deploy:commands": "pnpm --filter @solari/bot deploy:commands"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
