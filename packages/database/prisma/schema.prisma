@@ -92,8 +92,23 @@ model Guild {
   birthdays         Birthday[]
   inviteUses        InviteUse[]
   subscription      GuildSubscription?
+  tempVoiceChannels TempVoiceChannel[]
 
   @@index([ownerId])
+}
+
+/// A "join-to-create" temporary voice channel spawned by the Temp Voice module
+/// (premium). Rows let the bot clean up orphaned channels on restart and resolve
+/// a channel's owner for the /voice control commands.
+model TempVoiceChannel {
+  channelId String   @id // the created voice channel's snowflake
+  guildId   String
+  ownerId   String // the member who spawned it
+  createdAt DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
 }
 
 /// Per-server premium subscription (§3). One row per guild. The bot reads the

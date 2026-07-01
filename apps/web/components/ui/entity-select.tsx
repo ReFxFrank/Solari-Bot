@@ -189,6 +189,7 @@ export function EntitySelect({
 
 const TEXT_CHANNEL_TYPES = [0, 5, 15];
 const VOICE_CHANNEL_TYPES_ARR = [2, 13];
+const CATEGORY_CHANNEL_TYPES_ARR = [4];
 
 /** Role picker. Pass `selected` as an array (use `[value]` / `ids[0]` for single). */
 export function RoleSelect({
@@ -216,7 +217,7 @@ export function RoleSelect({
   );
 }
 
-/** Channel picker. `only` narrows to text or voice channels. */
+/** Channel picker. `only` narrows to text, voice, or category channels. */
 export function ChannelSelect({
   channels,
   selected,
@@ -230,14 +231,16 @@ export function ChannelSelect({
   onChange: (ids: string[]) => void;
   multiple?: boolean;
   placeholder?: string;
-  only?: 'text' | 'voice';
+  only?: 'text' | 'voice' | 'category';
 }) {
   const list =
     only === 'text'
       ? channels.filter((c) => TEXT_CHANNEL_TYPES.includes(c.type))
       : only === 'voice'
         ? channels.filter((c) => VOICE_CHANNEL_TYPES_ARR.includes(c.type))
-        : channels;
+        : only === 'category'
+          ? channels.filter((c) => CATEGORY_CHANNEL_TYPES_ARR.includes(c.type))
+          : channels;
   return (
     <EntitySelect
       kind="channel"

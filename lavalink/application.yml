@@ -1,18 +1,21 @@
-# Lavalink v4 configuration. Used by the `music` compose profile and consumed
-# by the bot's Lavalink service in Phase 4. The password here must match
-# LAVALINK_PASSWORD in your .env.
+# Lavalink v4 configuration. Used by the `music` compose profile and consumed by
+# the bot's Lavalink service. The password here must match LAVALINK_PASSWORD in
+# your .env.
 server:
   port: 2333
   address: 0.0.0.0
 
 lavalink:
+  # Lavalink v4 removed the built-in YouTube source, so we load the standalone
+  # youtube-source plugin. Lavalink downloads it from maven.lavalink.dev on first
+  # boot (needs outbound HTTPS). Bump the version as new releases land.
+  plugins:
+    - dependency: 'dev.lavalink.youtube:youtube-plugin:1.18.1'
+      snapshot: false
   server:
     password: '${LAVALINK_SERVER_PASSWORD:youshallnotpass}'
     sources:
-      # Lavalink v4 REMOVED the built-in YouTube source — this flag is inert.
-      # YouTube playback requires the standalone youtube-source plugin, which
-      # lands with the music module (Phase 4). Until then these sources work:
-      # soundcloud, bandcamp, twitch, vimeo, and direct http URLs.
+      # Built-in youtube stays OFF — the plugin below provides YouTube instead.
       youtube: false
       bandcamp: true
       soundcloud: true
@@ -27,6 +30,20 @@ lavalink:
     playerUpdateInterval: 5
     opusEncodingQuality: 10
     resamplingQuality: LOW
+
+# youtube-source plugin config. `clients` is the fallback order of the innerTube
+# clients it impersonates; MUSIC + ANDROID_VR + WEB is the resilient default.
+plugins:
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    clients:
+      - MUSIC
+      - ANDROID_VR
+      - WEB
+      - WEBEMBEDDED
 
 metrics:
   prometheus:

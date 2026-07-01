@@ -30,7 +30,8 @@ export function createMusicManager(
     sendToShard: (guildId, payload) => client.guilds.cache.get(guildId)?.shard?.send(payload),
     autoSkip: true,
     playerOptions: {
-      defaultSearchPlatform: 'scsearch',
+      // Per-guild source is passed on each /play; this is only the fallback.
+      defaultSearchPlatform: 'ytsearch',
       clientBasedPositionUpdateInterval: 5_000,
       onEmptyQueue: { destroyAfterMs: 300_000 },
     },

@@ -253,6 +253,7 @@ export const MODULE_META: ModuleMeta[] = [
     icon: Music,
     category: 'premium',
     accent: 'fuchsia',
+    configSlug: 'music',
   },
   {
     module: 'SOCIAL',
@@ -269,6 +270,7 @@ export const MODULE_META: ModuleMeta[] = [
     icon: Mic,
     category: 'premium',
     accent: 'teal',
+    configSlug: 'temp-voice',
   },
   {
     module: 'REFX_ALERTS',

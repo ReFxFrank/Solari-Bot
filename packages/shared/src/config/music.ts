@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+/** Lavalink search prefixes offered to operators. */
+export const musicSearchSources = ['ytsearch', 'ytmsearch', 'scsearch'] as const;
+export type MusicSearchSource = (typeof musicSearchSources)[number];
+
 /**
  * Music module config (premium). Governs the DJ permission model, queue limits,
  * and playback defaults. The playback engine is Lavalink v4; see the bot's music
@@ -20,6 +24,8 @@ export const musicConfigSchema = z.object({
   announceNowPlaying: z.boolean().default(true),
   /** Seconds to stay connected after the queue empties before auto-leaving. */
   autoLeaveSeconds: z.number().int().min(0).max(3600).default(300),
+  /** Default search backend when a bare query (not a URL) is given to /play. */
+  searchSource: z.enum(musicSearchSources).default('ytsearch'),
 });
 
 export type MusicConfig = z.infer<typeof musicConfigSchema>;

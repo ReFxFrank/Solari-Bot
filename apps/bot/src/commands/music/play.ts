@@ -75,7 +75,11 @@ const command: Command = {
       id: interaction.user.id,
       username: interaction.user.username,
     };
-    const result = (await player.search({ query }, requester)) as SearchResult;
+    // A URL resolves directly; a bare query uses the guild's configured source.
+    const result = (await player.search(
+      { query, source: config.searchSource },
+      requester,
+    )) as SearchResult;
 
     if (result.loadType === 'error' || result.loadType === 'empty' || result.tracks.length === 0) {
       await interaction.editReply({ embeds: [errorEmbed('No results found for that query.')] });

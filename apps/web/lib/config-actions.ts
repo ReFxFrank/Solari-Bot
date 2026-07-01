@@ -12,10 +12,12 @@ import type {
   Module,
   ModerationConfig,
   ModuleWithSchema,
+  MusicConfig,
   RefxAlertsConfig,
   StarboardConfig,
   StatsCountersConfig,
   SuggestionsConfig,
+  TempVoiceConfig,
   TicketsConfig,
   WelcomeConfig,
 } from '@solari/shared';
@@ -149,6 +151,20 @@ export async function saveInviteTrackingConfig(
   input: InviteTrackingConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'INVITE_TRACKING', input, 'invites');
+}
+
+export async function saveMusicConfig(
+  guildId: string,
+  input: MusicConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'MUSIC', input, 'music');
+}
+
+export async function saveTempVoiceConfig(
+  guildId: string,
+  input: TempVoiceConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'TEMP_VOICE', input, 'temp-voice');
 }
 
 export async function saveStatsCountersConfig(

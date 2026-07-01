@@ -3,12 +3,18 @@ import { defineEvent } from '../framework/event';
 import { brandedEmbed } from '../lib/embeds';
 import { sendLog } from '../lib/logging';
 import { ensureVoiceXpTick } from '../modules/leveling';
+import { handleTempVoice } from '../modules/tempVoice';
 
 export default defineEvent({
   name: Events.VoiceStateUpdate,
   async execute(ctx, oldState, newState) {
     const userId = newState.id;
     const guildId = newState.guild.id;
+
+    // Temp Voice: create on hub-join / clean up empty temp channels.
+    await handleTempVoice(ctx, oldState, newState).catch((err: unknown) =>
+      ctx.logger.warn({ err, guildId }, 'Temp voice handler error'),
+    );
 
     // Someone (re)entered voice — wake the per-guild voice-XP loop if it isn't
     // already running. The tick self-validates eligibility and stops when voice

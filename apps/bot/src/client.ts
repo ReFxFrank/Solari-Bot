@@ -32,6 +32,7 @@ import { reconcileAfk } from './modules/afk';
 import { reconcileBirthdays } from './modules/birthdays';
 import { reconcileStatsCounters } from './modules/statsCounters';
 import { reconcileVoiceXp } from './modules/leveling';
+import { reconcileTempVoice } from './modules/tempVoice';
 import { syncAllGuilds } from './lib/guildSync';
 import { cacheAllGuildInvites } from './modules/inviteTracking';
 import { createMusicManager } from './services/music';
@@ -141,6 +142,7 @@ async function bootstrap(): Promise<void> {
       reconcileBirthdays(ready, jobs),
       reconcileStatsCounters(ready, jobs),
       reconcileVoiceXp(ready, jobs),
+      reconcileTempVoice(ready, prisma, logger),
       cacheAllGuildInvites(ready.guilds.cache.values()),
     ]).then((results) => {
       for (const result of results) {
