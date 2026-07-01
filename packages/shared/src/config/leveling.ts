@@ -17,6 +17,8 @@ export const levelingConfigSchema = z.object({
   rewards: z.array(z.object({ level: z.number().int().min(1), roleId: z.string() })).default([]),
   /** Keep lower reward roles (true) or replace with the highest earned (false). */
   roleRewardStack: z.boolean().default(true),
+  /** Expose this server's leaderboard on a public, no-login page. */
+  publicLeaderboard: z.boolean().default(true),
 });
 
 export type LevelingConfig = z.infer<typeof levelingConfigSchema>;

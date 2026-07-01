@@ -169,20 +169,44 @@ export function LevelingForm({
       </SettingsSection>
 
       <SettingsSection
-        title="Rank Card"
-        description="The image shown by /rank with a member's avatar, level, and XP bar."
+        title="Rank Card & Leaderboard"
+        description="The /rank card and whether this server's leaderboard is publicly viewable."
         defaultOpen={false}
       >
-        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
-          <div>
-            <p className="text-sm text-white/90">Enable rank cards</p>
-            <p className="text-xs text-white/50">/rank renders a generated card instead of text.</p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+            <div>
+              <p className="text-sm text-white/90">Enable rank cards</p>
+              <p className="text-xs text-white/50">/rank renders a generated card instead of text.</p>
+            </div>
+            <Switch
+              checked={config.cardEnabled}
+              onChange={(next) => update('cardEnabled', next)}
+              label="Enable rank cards"
+            />
           </div>
-          <Switch
-            checked={config.cardEnabled}
-            onChange={(next) => update('cardEnabled', next)}
-            label="Enable rank cards"
-          />
+          <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+            <div>
+              <p className="text-sm text-white/90">Public leaderboard</p>
+              <p className="text-xs text-white/50">
+                Anyone can view the leaderboard at{' '}
+                <a
+                  href={`/leaderboard/${guildId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-brand-bright)] hover:underline"
+                >
+                  /leaderboard/{guildId}
+                </a>
+                .
+              </p>
+            </div>
+            <Switch
+              checked={config.publicLeaderboard}
+              onChange={(next) => update('publicLeaderboard', next)}
+              label="Public leaderboard"
+            />
+          </div>
         </div>
       </SettingsSection>
 

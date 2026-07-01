@@ -39,6 +39,9 @@ export interface AwardXpParams {
   min: number;
   max: number;
   cooldownSeconds: number;
+  /** Cached identity refreshed on award (display name + avatar hash). */
+  username?: string | null;
+  avatar?: string | null;
   /** Override the clock (tests). */
   now?: number;
 }
@@ -76,7 +79,15 @@ export async function awardXp(params: AwardXpParams): Promise<AwardXpResult> {
 
   await prisma.userLevel.upsert({
     where,
-    update: { xp, level, messages: { increment: 1 }, lastXpAt: new Date(now) },
+    update: {
+      xp,
+      level,
+      messages: { increment: 1 },
+      lastXpAt: new Date(now),
+      // undefined → left unchanged (tests); null → cleared; string → set.
+      username: params.username,
+      avatar: params.avatar,
+    },
     create: {
       guildId: params.guildId,
       userId: params.userId,
@@ -84,6 +95,8 @@ export async function awardXp(params: AwardXpParams): Promise<AwardXpResult> {
       level,
       messages: 1,
       lastXpAt: new Date(now),
+      username: params.username,
+      avatar: params.avatar,
     },
   });
 
@@ -106,6 +119,8 @@ export async function handleMessageXp(message: Message, ctx: BotContext): Promis
     min: config.textXpMin,
     max: config.textXpMax,
     cooldownSeconds: config.xpCooldownSeconds,
+    username: message.member?.displayName ?? message.author.username,
+    avatar: message.author.avatar,
   });
   if (!result.leveledUp) return;
 
@@ -202,17 +217,25 @@ export async function awardVoiceXp(
   guildId: string,
   userId: string,
   amount: number,
+  identity?: { username?: string | null; avatar?: string | null },
 ): Promise<{ level: number; previousLevel: number; leveledUp: boolean }> {
   const where = { guildId_userId: { guildId, userId } };
   const row = await prisma.userLevel.upsert({
     where,
-    update: { xp: { increment: amount }, voiceMinutes: { increment: 1 } },
+    update: {
+      xp: { increment: amount },
+      voiceMinutes: { increment: 1 },
+      username: identity?.username,
+      avatar: identity?.avatar,
+    },
     create: {
       guildId,
       userId,
       xp: amount,
       level: levelFromXp(amount),
       voiceMinutes: 1,
+      username: identity?.username,
+      avatar: identity?.avatar,
     },
   });
   const level = levelFromXp(row.xp);
@@ -316,10 +339,16 @@ export async function runVoiceXpTick(guildId: string, deps: VoiceXpDeps): Promis
 
   for (const userId of recipients) {
     try {
-      const result = await awardVoiceXp(guildId, userId, config.voiceXpPerMinute);
+      // Voice recipients are already in the member cache (they're in a channel),
+      // so capturing their identity for the leaderboard is a cheap cache read.
+      const cached = guild.members.cache.get(userId);
+      const result = await awardVoiceXp(guildId, userId, config.voiceXpPerMinute, {
+        username: cached?.displayName,
+        avatar: cached?.user.avatar,
+      });
       if (!result.leveledUp) continue;
       const member =
-        guild.members.cache.get(userId) ?? (await guild.members.fetch(userId).catch(() => null));
+        cached ?? (await guild.members.fetch(userId).catch(() => null));
       if (!member) continue;
       await announceVoiceLevelUp(member, config, result.level, deps.logger);
       await applyRoleRewards(member, config, result.level);

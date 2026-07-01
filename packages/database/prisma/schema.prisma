@@ -390,6 +390,10 @@ model UserLevel {
   level        Int       @default(0)
   messages     Int       @default(0)
   voiceMinutes Int       @default(0)
+  /// Cached display name + avatar hash, refreshed as the member earns XP, so the
+  /// leaderboard (incl. the public page) renders identities without live Discord calls.
+  username     String?
+  avatar       String?
   lastXpAt     DateTime?
   updatedAt    DateTime  @updatedAt
 

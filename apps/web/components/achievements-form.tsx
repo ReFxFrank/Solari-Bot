@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Sparkles, Trash2 } from 'lucide-react';
 import {
+  ACHIEVEMENT_PRESETS,
   ACHIEVEMENT_TIER_EMOJI,
   ACHIEVEMENT_TIER_LABELS,
   ACHIEVEMENT_TIERS,
@@ -90,6 +91,22 @@ export function AchievementsForm({
       ...prev,
       achievements: prev.achievements.filter((_, i) => i !== index),
     }));
+    setStatus('idle');
+    setError(null);
+  }
+
+  /** Append the curated starter set, skipping names that already exist. */
+  function addPresets(): void {
+    setConfig((prev) => {
+      const existing = new Set(prev.achievements.map((a) => a.name.trim().toLowerCase()));
+      const room = MAX_ACHIEVEMENTS - prev.achievements.length;
+      const toAdd = ACHIEVEMENT_PRESETS.filter(
+        (preset) => !existing.has(preset.name.toLowerCase()),
+      )
+        .slice(0, Math.max(0, room))
+        .map((preset) => ({ ...preset, id: crypto.randomUUID() }));
+      return { ...prev, achievements: [...prev.achievements, ...toAdd] };
+    });
     setStatus('idle');
     setError(null);
   }
@@ -308,14 +325,24 @@ export function AchievementsForm({
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={addAchievement}
-            disabled={config.achievements.length >= MAX_ACHIEVEMENTS}
-            className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-dashed border-white/15 px-3 py-2 text-sm text-white/70 transition-colors hover:border-[var(--color-brand)]/50 hover:text-white/90 disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" /> Add achievement
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={addAchievement}
+              disabled={config.achievements.length >= MAX_ACHIEVEMENTS}
+              className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-dashed border-white/15 px-3 py-2 text-sm text-white/70 transition-colors hover:border-[var(--color-brand)]/50 hover:text-white/90 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" /> Add achievement
+            </button>
+            <button
+              type="button"
+              onClick={addPresets}
+              disabled={config.achievements.length >= MAX_ACHIEVEMENTS}
+              className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 px-3 py-2 text-sm font-medium text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand)]/20 disabled:opacity-50"
+            >
+              <Sparkles className="h-4 w-4" /> Add starter set
+            </button>
+          </div>
         </div>
       </SettingsSection>
 
