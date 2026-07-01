@@ -33,7 +33,7 @@ export function ModuleCard({
             locked
               ? 'bg-[var(--color-premium)]/12 text-[var(--color-premium)]'
               : enabled
-                ? 'bg-[var(--color-blurple)]/15 text-[var(--color-blurple-bright)]'
+                ? 'bg-[var(--color-brand)]/15 text-[var(--color-brand-bright)]'
                 : 'bg-white/5 text-white/50',
           )}
         >
@@ -70,7 +70,7 @@ export function ModuleCard({
         meta.configSlug && (
           <Link
             href={`/servers/${guildId}/${meta.configSlug}`}
-            className="inline-flex items-center gap-1 self-start text-xs font-medium text-[var(--color-info)] hover:underline"
+            className="inline-flex items-center gap-1 self-start text-xs font-medium text-[var(--color-brand-bright)] hover:underline"
           >
             Configure <ArrowRight className="h-3 w-3" />
           </Link>

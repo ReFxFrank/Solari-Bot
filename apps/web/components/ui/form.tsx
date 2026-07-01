@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 export const inputClass =
-  'w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/90 outline-none placeholder:text-white/30 focus:border-[var(--color-blurple)]/60';
+  'w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/90 outline-none placeholder:text-white/30 focus:border-[var(--color-brand)]/60';
 export const monoInputClass = `${inputClass} font-mono`;
 
 export type SaveStatus = 'idle' | 'saved' | 'error';
@@ -43,7 +43,7 @@ export function SaveBar({
         type="button"
         onClick={onSave}
         disabled={pending}
-        className="rounded-lg bg-[var(--color-blurple)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-blurple)]/85 disabled:opacity-50"
+        className="rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand)]/85 disabled:opacity-50"
       >
         {pending ? 'Saving…' : label}
       </button>

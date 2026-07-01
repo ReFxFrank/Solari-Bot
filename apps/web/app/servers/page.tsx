@@ -131,7 +131,7 @@ function GuildRow({
           <p className="font-mono text-xs text-white/40">{memberCount.toLocaleString()} members</p>
         )}
       </div>
-      <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-info)]">
+      <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-brand-bright)]">
         {cta === 'Invite' ? <Plus className="h-4 w-4" /> : null}
         {cta}
         {cta !== 'Invite' && <ArrowRight className="h-4 w-4" />}

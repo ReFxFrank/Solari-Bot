@@ -39,10 +39,10 @@ export interface RankCardInput {
 
 const WIDTH = 900;
 const HEIGHT = 270;
-const ACCENT = '#5865f2';
-const BG = '#15161f';
-const PANEL = '#1f2030';
-const TRACK = '#33344a';
+const ACCENT = '#8b5cf6';
+const BG = '#141020';
+const PANEL = '#1e1830';
+const TRACK = '#332a4a';
 const TEXT = '#ffffff';
 const MUTED = '#9aa0b4';
 

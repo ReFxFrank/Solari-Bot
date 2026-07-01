@@ -22,7 +22,7 @@ export function Switch({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blurple)]',
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]',
         checked ? 'bg-[var(--color-success)]' : 'bg-white/15',
         disabled && 'cursor-not-allowed opacity-50',
       )}

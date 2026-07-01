@@ -27,18 +27,24 @@ export default async function GuildLayout({
   const isPremium = guild.premiumTier === 'PREMIUM';
   const icon = guildIconUrl(id, guild.icon, 48);
 
+  // Icons are rendered to elements here (server-side). NavLink is a client
+  // component and React cannot serialize a component/function across that
+  // boundary, so we must pass `<Icon />`, never `Icon`.
   const serverNav = [
-    { href: `/servers/${id}`, label: 'Overview', icon: LayoutDashboard },
-    { href: `/servers/${id}/settings`, label: 'Settings', icon: Settings2 },
-    { href: `/servers/${id}/audit`, label: 'Audit log', icon: ScrollText },
+    { href: `/servers/${id}`, label: 'Overview', icon: <LayoutDashboard className="h-4 w-4 shrink-0" /> },
+    { href: `/servers/${id}/settings`, label: 'Settings', icon: <Settings2 className="h-4 w-4 shrink-0" /> },
+    { href: `/servers/${id}/audit`, label: 'Audit log', icon: <ScrollText className="h-4 w-4 shrink-0" /> },
   ];
   // Module links derive from MODULE_META so the sidebar grows as config pages land.
-  const moduleNav = MODULE_META.filter((m) => m.configSlug).map((m) => ({
-    href: `/servers/${id}/${m.configSlug}`,
-    label: m.name,
-    icon: m.icon,
-    locked: m.category === 'premium' && !isPremium,
-  }));
+  const moduleNav = MODULE_META.filter((m) => m.configSlug).map((m) => {
+    const Icon = m.icon;
+    return {
+      href: `/servers/${id}/${m.configSlug}`,
+      label: m.name,
+      icon: <Icon className="h-4 w-4 shrink-0" />,
+      locked: m.category === 'premium' && !isPremium,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">

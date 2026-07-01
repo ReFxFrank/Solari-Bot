@@ -12,7 +12,7 @@ export function LoginButton({ className }: { className?: string }) {
         type="submit"
         className={
           className ??
-          'inline-flex items-center gap-2 rounded-full bg-[var(--color-blurple)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-blurple)]/85'
+          'inline-flex items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand)]/85'
         }
       >
         Continue with Discord

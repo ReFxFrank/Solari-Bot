@@ -12,7 +12,7 @@ export const embedSpecSchema = z.object({
   /** Hex color, with or without a leading '#'. */
   color: z
     .string()
-    .regex(/^#?[0-9a-fA-F]{6}$/, 'Use a hex color like #5865F2')
+    .regex(/^#?[0-9a-fA-F]{6}$/, 'Use a hex color like #8B5CF6')
     .optional(),
   url: z.string().url().optional(),
   imageUrl: z.string().url().optional(),

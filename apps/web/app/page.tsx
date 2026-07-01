@@ -41,11 +41,11 @@ export default async function HomePage() {
       <section className="relative overflow-hidden px-6">
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[-10%] h-[420px] w-[820px] max-w-[95vw] -translate-x-1/2 rounded-full bg-[var(--color-blurple)]/20 blur-[120px]"
+          className="pointer-events-none absolute left-1/2 top-[-10%] h-[420px] w-[820px] max-w-[95vw] -translate-x-1/2 rounded-full bg-[var(--color-brand)]/20 blur-[120px]"
         />
         <div className="relative mx-auto max-w-3xl py-24 text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/60">
-            <Zap className="h-3.5 w-3.5 text-[var(--color-info)]" /> {moduleCount} modules · config
+            <Zap className="h-3.5 w-3.5 text-[var(--color-brand-bright)]" /> {moduleCount} modules · config
             live in under a second
           </span>
           <h1 className="mt-6 text-balance text-5xl font-bold tracking-tight text-white sm:text-6xl">
@@ -60,7 +60,7 @@ export default async function HomePage() {
               href={invite}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--color-blurple)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-blurple)]/85"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand)]/85"
             >
               Add to Discord <ArrowRight className="h-4 w-4" />
             </a>
@@ -104,7 +104,7 @@ export default async function HomePage() {
                       <Crown className="h-3 w-3" /> PREMIUM
                     </span>
                   )}
-                  <Icon className="h-6 w-6 text-[var(--color-blurple)]" />
+                  <Icon className="h-6 w-6 text-[var(--color-brand)]" />
                   <h3 className="mt-3 font-medium text-white/90">{m.name}</h3>
                   <p className="mt-1 text-sm text-white/50">{m.description}</p>
                 </div>
@@ -116,7 +116,7 @@ export default async function HomePage() {
 
       {/* Premium teaser */}
       <section className="px-6 py-16">
-        <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-amber-300/20 bg-gradient-to-br from-amber-300/[0.07] via-transparent to-[var(--color-blurple)]/[0.07] p-10">
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-amber-300/20 bg-gradient-to-br from-amber-300/[0.07] via-transparent to-[var(--color-brand)]/[0.07] p-10">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-300">

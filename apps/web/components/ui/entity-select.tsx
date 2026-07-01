@@ -37,7 +37,7 @@ function OptionGlyph({ option }: { option: PickerOption }): React.ReactNode {
 }
 
 const triggerClass =
-  'flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/90 outline-none focus:border-[var(--color-blurple)]/60';
+  'flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/90 outline-none focus:border-[var(--color-brand)]/60';
 
 export function EntitySelect({
   options,
@@ -173,7 +173,7 @@ export function EntitySelect({
                   >
                     <OptionGlyph option={option} />
                     <span className="flex-1 truncate">{option.label}</span>
-                    {isSelected && <Check className="h-4 w-4 text-[var(--color-blurple)]" />}
+                    {isSelected && <Check className="h-4 w-4 text-[var(--color-brand)]" />}
                   </button>
                 );
               })

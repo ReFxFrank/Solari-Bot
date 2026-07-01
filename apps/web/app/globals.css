@@ -3,14 +3,15 @@
 /*
  * Solari design system (§7). Dark, glassmorphic, premium. Tailwind v4 reads
  * these tokens via the CSS-first `@theme` block, exposing utilities like
- * `text-blurple` / `bg-base`. The monospace-numeral rule for data surfaces is
+ * `text-brand` / `bg-base`. The monospace-numeral rule for data surfaces is
  * enforced via the `--font-mono` token applied to stat/leaderboard panels.
+ * The brand accent is a premium violet, paired with the gold premium tier.
  */
 @theme {
-  --color-base: #0a0a0f;
-  --color-base-elevated: #14141f;
-  --color-blurple: #5865f2;
-  --color-blurple-bright: #7c86ff;
+  --color-base: #0a0810;
+  --color-base-elevated: #161221;
+  --color-brand: #8b5cf6;
+  --color-brand-bright: #a78bfa;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #f43f5e;
@@ -33,10 +34,10 @@ body {
 
 body {
   background:
-    radial-gradient(900px 600px at 12% -8%, rgba(88, 101, 242, 0.14), transparent 60%) fixed,
-    radial-gradient(1000px 700px at 92% 4%, rgba(124, 134, 255, 0.08), transparent 55%) fixed,
-    radial-gradient(1200px 900px at 50% -10%, #101019 0%, #0a0a0f 60%) fixed,
-    #0a0a0f;
+    radial-gradient(900px 600px at 12% -8%, rgba(139, 92, 246, 0.18), transparent 60%) fixed,
+    radial-gradient(1000px 700px at 92% 4%, rgba(167, 139, 250, 0.1), transparent 55%) fixed,
+    radial-gradient(1200px 900px at 50% -10%, #130d20 0%, #0a0810 60%) fixed,
+    #0a0810;
   color: #e7e7ee;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

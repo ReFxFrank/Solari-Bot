@@ -4,7 +4,7 @@ import { EmbedBuilder, type ColorResolvable } from 'discord.js';
 type EmbedKind = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
 const KIND_COLOR: Record<EmbedKind, number> = {
-  default: COLORS.blurple,
+  default: COLORS.brand,
   success: COLORS.success,
   warning: COLORS.warning,
   danger: COLORS.danger,
