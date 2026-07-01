@@ -140,6 +140,36 @@ export class JobService {
     );
   }
 
+  /**
+   * Arm a job on a cron schedule (e.g. a daily run at a fixed UTC hour) via
+   * BullMQ's native scheduler. Same rationale as `scheduleRecurring`: a handler
+   * can't reliably re-arm its own jobId, so the scheduler owns the cadence.
+   * Idempotent per `schedulerId`; re-calling updates the pattern.
+   */
+  async scheduleCron(
+    queueName: string,
+    schedulerId: string,
+    pattern: string,
+    jobName: string,
+    data: unknown,
+    tz = 'UTC',
+  ): Promise<void> {
+    await this.queue(queueName).upsertJobScheduler(
+      schedulerId,
+      { pattern, tz },
+      {
+        name: jobName,
+        data,
+        opts: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 10_000 },
+          removeOnComplete: true,
+          removeOnFail: 100,
+        },
+      },
+    );
+  }
+
   /** Stop a repeating job scheduler (safe if it doesn't exist). */
   async cancelRecurring(queueName: string, schedulerId: string): Promise<void> {
     await this.queue(queueName)

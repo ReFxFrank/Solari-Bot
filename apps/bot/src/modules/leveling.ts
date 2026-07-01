@@ -249,36 +249,38 @@ async function announceVoiceLevelUp(
   }
 }
 
-/** Re-arm the per-guild voice tick 60s out (idempotent; resets the delay). */
-export async function scheduleNextVoiceXp(guildId: string, jobs: JobService): Promise<void> {
-  await jobs.schedule(
-    QUEUE_NAMES.voiceXp,
-    'voiceXp',
-    { guildId },
-    { delayMs: 60_000, jobId: voiceXpJobId(guildId) },
-  );
+/**
+ * Start the per-guild voice tick as a recurring 60s scheduler (idempotent — a
+ * repeat join won't reset the delay or double-arm). BullMQ's native scheduler
+ * owns the cadence because a handler can't re-arm its own jobId reliably (the
+ * active key is locked, then removeOnComplete deletes it — the loop would die
+ * after one run). The tick self-cancels when voice empties (see below).
+ */
+export async function ensureVoiceXpTick(guildId: string, jobs: JobService): Promise<void> {
+  await jobs.scheduleRecurring(QUEUE_NAMES.voiceXp, voiceXpJobId(guildId), 60_000, 'voiceXp', {
+    guildId,
+  });
 }
 
-/** Start the voice tick for a guild only if it isn't already running (no starve). */
-export async function ensureVoiceXpTick(guildId: string, jobs: JobService): Promise<void> {
-  await jobs.ensureScheduled(
-    QUEUE_NAMES.voiceXp,
-    'voiceXp',
-    { guildId },
-    { delayMs: 60_000, jobId: voiceXpJobId(guildId) },
-  );
+/** Stop the recurring voice tick (voice emptied or leveling disabled). */
+export async function cancelVoiceXpTick(guildId: string, jobs: JobService): Promise<void> {
+  await jobs.cancelRecurring(QUEUE_NAMES.voiceXp, voiceXpJobId(guildId));
 }
 
 /**
  * One voice-XP tick for a guild: award the per-minute amount to every eligible
- * member in voice, announce/reward level-ups, then re-arm — but only while
- * there's still someone to reward. When voice empties out the loop stops
- * (re-armed again by `voiceStateUpdate` on the next join). Re-arm hinges on the
- * DB-enabled flag (not cache presence) so a wrong-shard pickup ends cleanly.
+ * member in voice and announce/reward level-ups. The scheduler re-arms the next
+ * tick automatically; the loop stops itself (cancelVoiceXpTick) when voice
+ * empties or the module is disabled, and `voiceStateUpdate` re-arms it on the
+ * next join. Enablement hinges on the DB flag (not cache) so a wrong-shard
+ * pickup ends cleanly.
  */
 export async function runVoiceXpTick(guildId: string, deps: VoiceXpDeps): Promise<void> {
   const { enabled, config } = await getLevelingState(guildId);
-  if (!enabled || config.voiceXpPerMinute <= 0) return;
+  if (!enabled || config.voiceXpPerMinute <= 0) {
+    await cancelVoiceXpTick(guildId, deps.jobs);
+    return;
+  }
 
   const guild = deps.client.guilds.cache.get(guildId);
   if (!guild) return; // not this shard's guild → let the owning shard run it
@@ -302,7 +304,10 @@ export async function runVoiceXpTick(guildId: string, deps: VoiceXpDeps): Promis
     recipients.push(...eligibleVoiceMembers(view, config.noXpChannelIds, config.noXpRoleIds));
   }
 
-  if (recipients.length === 0) return; // voice is empty/idle → let the loop rest
+  if (recipients.length === 0) {
+    await cancelVoiceXpTick(guildId, deps.jobs); // voice empty → stop; a join re-arms
+    return;
+  }
 
   for (const userId of recipients) {
     try {
@@ -317,8 +322,7 @@ export async function runVoiceXpTick(guildId: string, deps: VoiceXpDeps): Promis
       deps.logger.warn({ err, guildId, userId }, 'Voice XP award failed');
     }
   }
-
-  await scheduleNextVoiceXp(guildId, deps.jobs);
+  // No self-reschedule: the recurring scheduler arms the next tick.
 }
 
 /** Re-arm voice ticks for guilds this shard owns that currently have voice members. */

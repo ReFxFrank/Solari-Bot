@@ -1,6 +1,6 @@
 import type { Client, Guild, GuildMember, GuildTextBasedChannel } from 'discord.js';
 import { prisma } from '@solari/database';
-import { nextDailyRunAt, parseModuleConfig, type BirthdaysConfig } from '@solari/shared';
+import { parseModuleConfig, type BirthdaysConfig } from '@solari/shared';
 import { QUEUE_NAMES } from '@solari/jobs';
 import { applyPlaceholders, type PlaceholderMember } from '../lib/placeholders';
 import { birthdayJobId, type JobService } from '../services/jobs';
@@ -37,18 +37,24 @@ function memberPlaceholder(member: GuildMember, guild: Guild): PlaceholderMember
   };
 }
 
-/** (Re)schedule a guild's daily birthday job for the next configured UTC hour. */
+/**
+ * Arm a guild's daily birthday run at the configured UTC hour via BullMQ's
+ * native cron scheduler. A handler can't re-arm its own jobId (the active key
+ * is locked, then removeOnComplete deletes it — the daily loop would die after
+ * one run), so the scheduler owns the cadence. Idempotent per guild; re-calling
+ * updates the hour.
+ */
 export async function scheduleNextBirthdayRun(
   guildId: string,
   config: BirthdaysConfig,
   jobs: JobService,
 ): Promise<void> {
-  const next = nextDailyRunAt(config.announceHourUtc, new Date());
-  await jobs.schedule(
+  await jobs.scheduleCron(
     QUEUE_NAMES.birthdayAnnounce,
+    birthdayJobId(guildId),
+    `0 ${config.announceHourUtc} * * *`,
     'birthdayAnnounce',
     { guildId },
-    { delayMs: next.getTime() - Date.now(), jobId: birthdayJobId(guildId) },
   );
 }
 
@@ -113,8 +119,7 @@ export async function runBirthdayAnnounce(guildId: string, deps: BirthdayDeps): 
       }
     }
   }
-
-  await scheduleNextBirthdayRun(guildId, config, deps.jobs);
+  // No self-reschedule: the cron scheduler arms tomorrow's run.
 }
 
 /** Re-arm daily birthday jobs for enabled guilds this shard owns. */

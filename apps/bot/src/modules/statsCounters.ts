@@ -38,46 +38,57 @@ function countsFor(guild: Guild): StatCounts {
   };
 }
 
-export async function scheduleNextStatsRefresh(
+/**
+ * Arm the recurring stats refresh via BullMQ's native scheduler. A handler
+ * can't re-arm its own jobId (the active key is locked, then removeOnComplete
+ * deletes it — the loop dies after one run), so the scheduler owns the cadence.
+ * Idempotent per guild; re-calling updates the interval.
+ */
+export async function scheduleStatsRefresh(
   guildId: string,
   intervalMinutes: number,
   jobs: JobService,
 ): Promise<void> {
-  await jobs.schedule(
+  await jobs.scheduleRecurring(
     QUEUE_NAMES.statsCounterRefresh,
+    statsCounterJobId(guildId),
+    intervalMinutes * 60_000,
     'statsCounterRefresh',
     { guildId },
-    { delayMs: intervalMinutes * 60_000, jobId: statsCounterJobId(guildId) },
   );
 }
 
+export async function cancelStatsRefresh(guildId: string, jobs: JobService): Promise<void> {
+  await jobs.cancelRecurring(QUEUE_NAMES.statsCounterRefresh, statsCounterJobId(guildId));
+}
+
 /**
- * Rename each configured counter channel to its live count, then re-arm the
- * next refresh. Channel renames are heavily rate-limited by Discord, so the
- * cadence is bounded (min 5 min) and individual rename failures are swallowed.
- * Re-arms only while enabled, so disabling stops the loop.
+ * Rename each configured counter channel to its live count. Channel renames are
+ * heavily rate-limited by Discord, so the cadence is bounded (min 5 min) and
+ * individual rename failures are swallowed. The scheduler re-arms automatically;
+ * a guild with no counters left cancels it, and merely-disabled ticks idle so
+ * re-enabling resumes without a restart.
  */
 export async function refreshStatsCounters(guildId: string, deps: StatsDeps): Promise<void> {
   const { enabled, config } = await getStatsState(guildId);
-  // Re-arm on enabled state (DB), not guild-cache presence, so the loop survives
-  // a wrong-shard pickup; disabling or removing all counters stops it.
-  if (!enabled || config.counters.length === 0) return;
+  if (config.counters.length === 0) {
+    await cancelStatsRefresh(guildId, deps.jobs); // nothing to ever do — stop ticking
+    return;
+  }
+  if (!enabled) return; // idle tick; re-enabling takes effect on the next run
 
   const guild = deps.client.guilds.cache.get(guildId);
-  if (guild) {
-    const counts = countsFor(guild);
-    for (const counter of config.counters) {
-      const channel =
-        guild.channels.cache.get(counter.channelId) ??
-        (await guild.channels.fetch(counter.channelId).catch(() => null));
-      // Any guild channel (voice/category/text) can be renamed via setName.
-      if (!channel || channel.isDMBased()) continue;
-      const name = renderCounterName(counter, counts);
-      if (channel.name !== name) await channel.setName(name).catch(() => undefined);
-    }
+  if (!guild) return;
+  const counts = countsFor(guild);
+  for (const counter of config.counters) {
+    const channel =
+      guild.channels.cache.get(counter.channelId) ??
+      (await guild.channels.fetch(counter.channelId).catch(() => null));
+    // Any guild channel (voice/category/text) can be renamed via setName.
+    if (!channel || channel.isDMBased()) continue;
+    const name = renderCounterName(counter, counts);
+    if (channel.name !== name) await channel.setName(name).catch(() => undefined);
   }
-
-  await scheduleNextStatsRefresh(guildId, config.intervalMinutes, deps.jobs);
 }
 
 /** Re-arm stats-counter refresh for enabled guilds this shard owns. */
@@ -91,7 +102,7 @@ export async function reconcileStatsCounters(client: Client, jobs: JobService): 
   for (const row of rows) {
     const config = parseModuleConfig('STATS_COUNTERS', row.config ?? {});
     if (config.counters.length > 0) {
-      await scheduleNextStatsRefresh(row.guildId, config.intervalMinutes, jobs);
+      await scheduleStatsRefresh(row.guildId, config.intervalMinutes, jobs);
     }
   }
 }
