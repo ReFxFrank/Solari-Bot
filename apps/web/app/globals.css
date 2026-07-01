@@ -63,9 +63,102 @@ body {
     0 18px 48px -22px rgba(245, 196, 81, 0.4);
 }
 
+/* ── Motion — Solari's own animated feel (landing + accents) ──────────────── */
+@keyframes aurora-drift {
+  0% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-44%, 5%) scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 0.7;
+  }
+}
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-aurora {
+  animation: aurora-drift 15s ease-in-out infinite;
+}
+.animate-float {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+/* Above-the-fold entrance: runs on load (pair with an inline animation-delay). */
+.enter {
+  opacity: 0;
+  animation: reveal-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Scroll reveal: hidden until the Reveal observer adds .is-visible. */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.reveal.is-visible {
+  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Animated violet→fuchsia gradient text for hero accents. */
+.text-gradient {
+  background-image: linear-gradient(100deg, #a78bfa, #8b5cf6, #d946ef, #a78bfa);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 7s ease-in-out infinite;
+}
+
+/* Card hover lift used across the module/feature grids. */
+.lift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.25s ease,
+    border-color 0.25s ease;
+}
+.lift:hover {
+  transform: translateY(-4px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  .reveal,
+  .enter {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
