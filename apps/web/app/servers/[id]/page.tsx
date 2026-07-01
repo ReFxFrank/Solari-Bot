@@ -1,4 +1,5 @@
 import { prisma } from '@solari/database';
+import { isModuleLocked } from '@solari/shared';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { MODULE_META } from '../../../lib/modules';
 import { DashboardHero } from '../../../components/dashboard-hero';
@@ -26,12 +27,15 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
     }),
   ]);
 
-  const isPremium = guild?.premiumTier === 'PREMIUM';
+  const tier = guild?.premiumTier ?? 'FREE';
+  const isPremium = tier === 'PREMIUM';
   // Plain object so it serializes into the client <ModuleGrid />.
   const enabled: Record<string, boolean> = Object.fromEntries(
     configs.map((c) => [c.module, c.enabled]),
   );
-  const enabledCount = configs.filter((c) => c.enabled).length;
+  // Count only modules the guild can actually use — a premium module left enabled
+  // after a downgrade renders as "Locked" in the grid, so it shouldn't inflate this.
+  const enabledCount = configs.filter((c) => c.enabled && !isModuleLocked(c.module, tier)).length;
 
   return (
     <div className="flex flex-col gap-8">

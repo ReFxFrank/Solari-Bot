@@ -17,8 +17,9 @@ export function ModuleCard({
   locked?: boolean;
 }) {
   const Icon = meta.icon;
-  const [from, to] = MODULE_ACCENTS[meta.accent];
-  const glow = locked ? '#f5c451' : from;
+  // Locked/premium tiles use the reserved gold; everything else its category accent.
+  const [from, to] = locked ? MODULE_ACCENTS.gold : MODULE_ACCENTS[meta.accent];
+  const glow = from;
 
   return (
     <div
@@ -42,7 +43,7 @@ export function ModuleCard({
             !enabled && !locked && 'opacity-55 saturate-50 group-hover:opacity-90 group-hover:saturate-100',
           )}
           style={{
-            background: `linear-gradient(140deg, ${locked ? '#f5c451' : from}, ${locked ? '#cf9e2f' : to})`,
+            background: `linear-gradient(140deg, ${from}, ${to})`,
             boxShadow: `0 10px 22px -10px ${glow}80`,
           }}
         >
@@ -111,7 +112,7 @@ function StatusChip({ tone, label }: { tone: 'on' | 'off' | 'premium'; label: st
         ? 'bg-[var(--color-premium)]'
         : 'bg-white/25';
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/45">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60">
       <span className={cn('h-1.5 w-1.5 rounded-full', dot)} />
       {label}
     </span>
