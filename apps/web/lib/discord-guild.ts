@@ -6,7 +6,10 @@
  */
 
 const DISCORD_API = 'https://discord.com/api/v10';
-const CACHE_SECONDS = 60;
+// Roles/channels change rarely, but every config page fetches them on navigation.
+// A longer window means most page-to-page moves hit Next's fetch cache instead of
+// round-tripping to Discord — the main source of "clicking Configure feels slow".
+const CACHE_SECONDS = 300;
 
 export interface RoleOption {
   id: string;
