@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Crown } from 'lucide-react';
-import { MODULE_META, type ModuleCategory } from '../lib/modules';
+import { MODULE_META, groupedModuleMeta, type ModuleCategory } from '../lib/modules';
 import { cn } from '../lib/utils';
 import { ModuleCard } from './module-card';
 
@@ -30,10 +30,22 @@ export function ModuleGrid({
   isPremium: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>('all');
-  const visible = MODULE_META.filter((m) => filter === 'all' || m.category === filter);
+
+  // Cards render grouped MEE6-style: for each group, its cards under a heading.
+  // The active filter narrows each group's cards; empty groups drop out.
+  const groups = useMemo(
+    () =>
+      groupedModuleMeta()
+        .map((entry) => ({
+          ...entry,
+          modules: entry.modules.filter((m) => filter === 'all' || m.category === filter),
+        }))
+        .filter((entry) => entry.modules.length > 0),
+    [filter],
+  );
 
   return (
-    <section className="flex flex-col gap-5">
+    <section className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-1.5 border-b border-white/[0.06] pb-3">
         {TABS.map((t) => {
           const active = filter === t.key;
@@ -60,17 +72,22 @@ export function ModuleGrid({
         })}
       </div>
 
-      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
-        {visible.map((meta) => (
-          <ModuleCard
-            key={meta.module}
-            guildId={guildId}
-            meta={meta}
-            enabled={enabled[meta.module] ?? false}
-            locked={meta.category === 'premium' && !isPremium}
-          />
-        ))}
-      </div>
+      {groups.map(({ group, modules }) => (
+        <div key={group} className="flex flex-col gap-3.5">
+          <h3 className="text-sm font-semibold text-white/80">{group}</h3>
+          <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
+            {modules.map((meta) => (
+              <ModuleCard
+                key={meta.module}
+                guildId={guildId}
+                meta={meta}
+                enabled={enabled[meta.module] ?? false}
+                locked={meta.category === 'premium' && !isPremium}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }

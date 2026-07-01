@@ -313,3 +313,57 @@ export const MODULE_META: ModuleMeta[] = [
 export const MODULE_META_BY_KEY: Record<Module, ModuleMeta> = Object.fromEntries(
   MODULE_META.map((meta) => [meta.module, meta]),
 ) as Record<Module, ModuleMeta>;
+
+// ── MEE6-style grouping (sidebar sections + categorized plugin grid) ──────────
+
+export const MODULE_GROUPS = [
+  'Essentials',
+  'Server Management',
+  'Utilities',
+  'Social Alerts',
+  'Games & Fun',
+] as const;
+export type ModuleGroup = (typeof MODULE_GROUPS)[number];
+
+const GROUP_BY_MODULE: Partial<Record<Module, ModuleGroup>> = {
+  MODERATION: 'Essentials',
+  AUTOMOD: 'Essentials',
+  LOGGING: 'Essentials',
+  WELCOME: 'Essentials',
+  AUTOROLE: 'Essentials',
+  LEVELING: 'Essentials',
+  ACHIEVEMENTS: 'Essentials',
+  ROLES: 'Essentials',
+  STARBOARD: 'Essentials',
+  CUSTOM_COMMANDS: 'Server Management',
+  INVITE_TRACKING: 'Server Management',
+  TICKETS: 'Server Management',
+  POLLS: 'Utilities',
+  REMINDERS: 'Utilities',
+  SCHEDULED_MESSAGES: 'Utilities',
+  STATS_COUNTERS: 'Utilities',
+  TEMP_VOICE: 'Utilities',
+  SUGGESTIONS: 'Utilities',
+  AFK: 'Utilities',
+  SOCIAL: 'Social Alerts',
+  REFX_ALERTS: 'Social Alerts',
+  GIVEAWAYS: 'Games & Fun',
+  BIRTHDAYS: 'Games & Fun',
+  ECONOMY: 'Games & Fun',
+  MUSIC: 'Games & Fun',
+};
+
+export function moduleGroup(module: Module): ModuleGroup {
+  return GROUP_BY_MODULE[module] ?? 'Utilities';
+}
+
+/**
+ * MODULE_META split into MEE6-style groups, in group order, each group keeping
+ * MODULE_META order. Only groups with at least one module are returned.
+ */
+export function groupedModuleMeta(): { group: ModuleGroup; modules: ModuleMeta[] }[] {
+  return MODULE_GROUPS.map((group) => ({
+    group,
+    modules: MODULE_META.filter((meta) => meta.configSlug && moduleGroup(meta.module) === group),
+  })).filter((entry) => entry.modules.length > 0);
+}
