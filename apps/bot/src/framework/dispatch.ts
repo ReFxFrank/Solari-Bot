@@ -66,6 +66,23 @@ export async function dispatchInteraction(
       }
     }
 
+    // Per-command kill-switch: guild admins can turn individual commands off
+    // from the dashboard (applies to everyone, moderators included).
+    if (interaction.inGuild()) {
+      const disabled = await ctx.config.getDisabledCommands(interaction.guildId);
+      if (disabled.has(interaction.commandName)) {
+        commandCounter.inc({ command: interaction.commandName, status: 'denied' });
+        await respond(
+          interaction,
+          brandedEmbed({
+            kind: 'warning',
+            description: 'This command is disabled on this server.',
+          }),
+        );
+        return;
+      }
+    }
+
     // Module gate (commands may require a module to be enabled).
     if (command.module && interaction.inGuild()) {
       const enabled = await ctx.config.isEnabled(interaction.guildId, command.module);

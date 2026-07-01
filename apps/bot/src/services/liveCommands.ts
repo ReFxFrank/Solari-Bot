@@ -96,6 +96,9 @@ export class LiveCommandService {
           (message.payload as DeployTicketPanelPayload).channelId,
         );
         return;
+      case 'REFRESH_COMMAND_TOGGLES':
+        this.config.invalidateCommandToggles(message.guildId);
+        return;
       case 'DEPLOY_VERIFY_PANEL':
         await this.deployVerifyPanel(
           message.guildId,

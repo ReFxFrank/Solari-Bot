@@ -39,6 +39,9 @@ export class ConfigCache {
   private globalDisabled = new Set<Module>();
   private globalLoadedAt = 0;
   private readonly globalTtlMs = 30_000;
+  /** Per-guild command kill-switches (Guild.disabledCommands), short-TTL cached. */
+  private readonly commandToggles = new Map<string, { set: Set<string>; loadedAt: number }>();
+  private readonly commandTogglesTtlMs = 30_000;
 
   constructor(private readonly ttlMs = 5 * 60 * 1000) {}
 
@@ -124,8 +127,36 @@ export class ConfigCache {
     return entry.enabled;
   }
 
+  /**
+   * The set of slash commands this guild's admins have disabled. Served from a
+   * short-TTL cache; the dashboard publishes REFRESH_COMMAND_TOGGLES on change
+   * so it goes live in ~1s, with the TTL as the pub/sub safety net. Fails OPEN
+   * (empty set) on a DB error — a hiccup must not turn every command off.
+   */
+  async getDisabledCommands(guildId: string): Promise<Set<string>> {
+    const cached = this.commandToggles.get(guildId);
+    if (cached && Date.now() - cached.loadedAt < this.commandTogglesTtlMs) return cached.set;
+    try {
+      const row = await prisma.guild.findUnique({
+        where: { id: guildId },
+        select: { disabledCommands: true },
+      });
+      const set = new Set(row?.disabledCommands ?? []);
+      this.commandToggles.set(guildId, { set, loadedAt: Date.now() });
+      return set;
+    } catch {
+      return cached?.set ?? new Set();
+    }
+  }
+
+  /** Evict a guild's command-toggle entry (REFRESH_COMMAND_TOGGLES live command). */
+  invalidateCommandToggles(guildId: string): void {
+    this.commandToggles.delete(guildId);
+  }
+
   /** Test/diagnostic helper. */
   clear(): void {
     this.store.clear();
+    this.commandToggles.clear();
   }
 }
