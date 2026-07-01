@@ -26,6 +26,7 @@ import {
   ServerCog,
   Wrench,
   Sparkles,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -237,6 +238,15 @@ export const MODULE_META: ModuleMeta[] = [
     icon: Moon,
     category: 'core',
     accent: 'slate',
+  },
+  {
+    module: 'ACHIEVEMENTS',
+    name: 'Achievements',
+    description: 'Milestone rewards for level, messages, coins, and voice time.',
+    icon: Trophy,
+    category: 'core',
+    accent: 'gold',
+    configSlug: 'achievements',
   },
   {
     module: 'ECONOMY',

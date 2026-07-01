@@ -10,6 +10,7 @@ import {
 import { QUEUE_NAMES } from '@solari/jobs';
 import { applyPlaceholders, type PlaceholderMember } from '../lib/placeholders';
 import { voiceXpJobId, type JobService } from '../services/jobs';
+import { evaluateAchievements } from './achievements';
 import type { Logger } from '../logger';
 import type { BotContext } from '../framework/context';
 
@@ -110,6 +111,10 @@ export async function handleMessageXp(message: Message, ctx: BotContext): Promis
 
   await announceLevelUp(message, config, result.level, ctx);
   await applyRoleRewards(message.member, config, result.level);
+  await evaluateAchievements(message.guildId, message.author.id, {
+    client: ctx.client,
+    logger: ctx.logger,
+  });
 }
 
 async function announceLevelUp(
@@ -318,6 +323,7 @@ export async function runVoiceXpTick(guildId: string, deps: VoiceXpDeps): Promis
       if (!member) continue;
       await announceVoiceLevelUp(member, config, result.level, deps.logger);
       await applyRoleRewards(member, config, result.level);
+      await evaluateAchievements(guildId, userId, { client: deps.client, logger: deps.logger });
     } catch (err) {
       deps.logger.warn({ err, guildId, userId }, 'Voice XP award failed');
     }

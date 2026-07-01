@@ -23,6 +23,7 @@ enum Module {
   WELCOME
   AUTOROLE
   LEVELING
+  ACHIEVEMENTS
   ROLES
   CUSTOM_COMMANDS
   STARBOARD
@@ -150,8 +151,25 @@ model Guild {
   economyUsers      EconomyUser[]
   socialSubscriptions SocialSubscription[]
   customBot         CustomBot?
+  userAchievements  UserAchievement[]
 
   @@index([ownerId])
+}
+
+/// A member's unlocked achievement (Achievements module). The `achievementId`
+/// matches the id in the guild's ACHIEVEMENTS config; the unique constraint
+/// makes unlocking idempotent (rewards granted exactly once).
+model UserAchievement {
+  id            String   @id @default(cuid())
+  guildId       String
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId, achievementId])
+  @@index([guildId, userId])
 }
 
 /// A Social Alerts subscription (premium): watch a Twitch/YouTube/Reddit/RSS

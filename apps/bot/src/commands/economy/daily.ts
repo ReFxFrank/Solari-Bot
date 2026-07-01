@@ -3,6 +3,7 @@ import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed } from '../../lib/embeds';
 import { cooldownRemaining, formatDuration, formatMoney, getEconomyUser, tryClaimDaily } from '../../lib/economy';
+import { evaluateAchievements } from '../../modules/achievements';
 
 const DAY_SECONDS = 86_400;
 
@@ -38,6 +39,10 @@ const command: Command = {
           description: `🎁 You claimed your daily ${formatMoney(config.dailyAmount, config)}!`,
         }),
       ],
+    });
+    await evaluateAchievements(interaction.guildId, interaction.user.id, {
+      client: ctx.client,
+      logger: ctx.logger,
     });
   },
 };

@@ -10,6 +10,7 @@ export const MODULES = [
   'WELCOME',
   'AUTOROLE',
   'LEVELING',
+  'ACHIEVEMENTS',
   'ROLES',
   'CUSTOM_COMMANDS',
   'STARBOARD',

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import type {
+  AchievementsConfig,
   AutomodConfig,
   AutoroleConfig,
   BirthdaysConfig,
@@ -183,6 +184,13 @@ export async function saveStatsCountersConfig(
   // Nudge the bot to refresh channel names immediately (and re-arm the loop).
   if (result.ok) await publishLiveCommand(guildId, 'REFRESH_STATS').catch(() => undefined);
   return result;
+}
+
+export async function saveAchievementsConfig(
+  guildId: string,
+  input: AchievementsConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'ACHIEVEMENTS', input, 'achievements');
 }
 
 export async function saveGuildSettings(

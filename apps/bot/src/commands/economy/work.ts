@@ -3,6 +3,7 @@ import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed } from '../../lib/embeds';
 import { cooldownRemaining, formatDuration, formatMoney, getEconomyUser, tryClaimWork } from '../../lib/economy';
+import { evaluateAchievements } from '../../modules/achievements';
 
 const FLAVOURS = [
   'You delivered pizzas',
@@ -50,6 +51,10 @@ const command: Command = {
           description: `🛠️ ${flavour} and earned ${formatMoney(earned, config)}.`,
         }),
       ],
+    });
+    await evaluateAchievements(interaction.guildId, interaction.user.id, {
+      client: ctx.client,
+      logger: ctx.logger,
     });
   },
 };
