@@ -5,7 +5,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { customCommandInputSchema, type CustomCommandInput, type EmbedSpec } from '@solari/shared';
 import { deleteCustomCommand, upsertCustomCommand } from '../lib/customcommands-actions';
 import { GlassCard } from './ui/glass-card';
-import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
+import { Field, SaveBar, monoInputClass, type SaveStatus } from './ui/form';
 import {
   EMPTY_EMBED_DRAFT,
   EmbedBuilder,
@@ -101,30 +101,19 @@ export function CustomCommandsManager({ guildId, tags }: { guildId: string; tags
             />
           </Field>
         </div>
-        <Field
-          label="Text response"
-          hint="Optional if you set an embed. Supports {user}, {server}."
-        >
-          <textarea
-            className={`${inputClass} min-h-20 resize-y`}
-            value={form.content}
-            onChange={(e) => set('content', e.target.value)}
-            maxLength={2000}
+        <div>
+          <p className="mb-2 text-sm font-medium text-white/80">Message builder</p>
+          <p className="mb-3 text-xs text-white/45">
+            A plain message, a rich embed, or both. Supports {'{user}'} and {'{server}'}.
+          </p>
+          <EmbedBuilder
+            value={form.embed}
+            onChange={(embed) => set('embed', embed)}
+            variables={TAG_VARIABLES}
+            content={form.content}
+            onContentChange={(v) => set('content', v)}
           />
-        </Field>
-
-        <details className="rounded-lg border border-white/10 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-white/80">
-            Embed (optional)
-          </summary>
-          <div className="mt-3">
-            <EmbedBuilder
-              value={form.embed}
-              onChange={(embed) => set('embed', embed)}
-              variables={TAG_VARIABLES}
-            />
-          </div>
-        </details>
+        </div>
 
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
         <SaveBar

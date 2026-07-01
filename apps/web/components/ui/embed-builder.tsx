@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, Clock, Code2, Plus, X } from 'lucide-react';
 import type { EmbedSpec } from '@solari/shared';
 import { Field } from './form';
@@ -200,83 +200,157 @@ function jsonToDraft(raw: string): EmbedDraft | null {
   };
 }
 
-// ── Live preview ─────────────────────────────────────────────────────────────
+// ── Live preview (Discord message chrome, MEE6-style) ────────────────────────
 
-function Preview({ draft }: { draft: EmbedDraft }) {
-  const accent = /^#?[0-9a-fA-F]{6}$/.test(draft.color) ? `#${draft.color.replace('#', '')}` : DEFAULT_COLOR;
-  const spec = draftToSpec(draft);
-  if (!spec) {
-    return (
-      <div className="rounded-md border border-dashed border-white/10 p-6 text-center text-xs text-white/30">
-        Nothing to preview yet.
-      </div>
-    );
-  }
+/** Client-only "Today at H:MM" label — computed after mount to avoid SSR skew. */
+function useTodayLabel(): string {
+  const [label, setLabel] = useState('Today');
+  useEffect(() => {
+    const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    setLabel(`Today at ${time}`);
+  }, []);
+  return label;
+}
+
+/**
+ * The Discord message frame — bot avatar, name, BOT badge, timestamp — wrapping
+ * whatever message body you give it. Exported so the reaction-role builder can
+ * render its panel inside the same chrome.
+ */
+export function MessagePreviewShell({
+  botName = 'Solari',
+  botAvatarUrl,
+  children,
+}: {
+  botName?: string;
+  botAvatarUrl?: string;
+  children: React.ReactNode;
+}) {
+  const time = useTodayLabel();
+  const initial = botName.trim().charAt(0).toUpperCase() || 'S';
   return (
     <div className="rounded-md bg-[#313338] p-3 text-[13px] leading-snug text-[#dbdee1]">
-      <div
-        className="max-w-[420px] rounded-[4px] bg-[#2b2d31] px-3 py-2.5"
-        style={{ borderLeft: `4px solid ${accent}` }}
-      >
-        <div className="flex gap-3">
-          <div className="min-w-0 flex-1">
-            {spec.author?.name && (
-              <div className="mb-1.5 flex items-center gap-1.5">
-                {spec.author.iconUrl && (
-                  <img src={spec.author.iconUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
-                )}
-                <span className="text-xs font-semibold text-white">{spec.author.name}</span>
-              </div>
-            )}
-            {spec.title && (
-              <div className={`mb-1 font-semibold ${spec.url ? 'text-[#00a8fc]' : 'text-white'}`}>
-                {spec.title}
-              </div>
-            )}
-            {spec.description && (
-              <div className="whitespace-pre-wrap break-words text-[#dbdee1]/90">
-                {spec.description}
-              </div>
-            )}
-            {spec.fields && spec.fields.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {spec.fields.map((f, i) => (
-                  <div
-                    key={i}
-                    className={f.inline ? 'min-w-[30%] flex-1 basis-[30%]' : 'w-full basis-full'}
-                  >
-                    <div className="text-xs font-semibold text-white">{f.name}</div>
-                    <div className="whitespace-pre-wrap break-words text-xs text-[#dbdee1]/90">
-                      {f.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {spec.imageUrl && (
-              <img src={spec.imageUrl} alt="" className="mt-2 max-h-52 rounded-[4px] object-cover" />
-            )}
-            {(spec.footer || spec.timestamp) && (
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#dbdee1]/60">
-                {spec.footerIconUrl && spec.footer && (
-                  <img src={spec.footerIconUrl} alt="" className="h-4 w-4 rounded-full object-cover" />
-                )}
-                {spec.footer && <span>{spec.footer}</span>}
-                {spec.footer && spec.timestamp && <span>•</span>}
-                {spec.timestamp && <span>just now</span>}
-              </div>
-            )}
+      <div className="flex gap-3">
+        {botAvatarUrl ? (
+          <img src={botAvatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+        ) : (
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg,#a78bfa,#7c3aed)' }}
+          >
+            {initial}
           </div>
-          {spec.thumbnailUrl && (
-            <img
-              src={spec.thumbnailUrl}
-              alt=""
-              className="h-16 w-16 shrink-0 rounded-[4px] object-cover"
-            />
-          )}
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="text-[15px] font-medium leading-none text-white">{botName}</span>
+            <span className="rounded bg-[var(--color-brand-strong)] px-1 py-px text-[10px] font-semibold uppercase leading-none text-white">
+              Bot
+            </span>
+            <span className="text-xs text-[#949ba4]">{time}</span>
+          </div>
+          {children}
         </div>
       </div>
     </div>
+  );
+}
+
+/** The embed card itself (colored left bar + fields), without the message frame. */
+export function DiscordEmbedCard({ spec }: { spec: EmbedSpec }) {
+  const accent = spec.color && /^#?[0-9a-fA-F]{6}$/.test(spec.color)
+    ? `#${spec.color.replace('#', '')}`
+    : DEFAULT_COLOR;
+  return (
+    <div
+      className="max-w-[440px] rounded-[4px] bg-[#2b2d31] px-3 py-2.5"
+      style={{ borderLeft: `4px solid ${accent}` }}
+    >
+      <div className="flex gap-3">
+        <div className="min-w-0 flex-1">
+          {spec.author?.name && (
+            <div className="mb-1.5 flex items-center gap-1.5">
+              {spec.author.iconUrl && (
+                <img src={spec.author.iconUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
+              )}
+              <span className="text-xs font-semibold text-white">{spec.author.name}</span>
+            </div>
+          )}
+          {spec.title && (
+            <div className={`mb-1 font-semibold ${spec.url ? 'text-[#00a8fc]' : 'text-white'}`}>
+              {spec.title}
+            </div>
+          )}
+          {spec.description && (
+            <div className="whitespace-pre-wrap break-words text-[#dbdee1]/90">
+              {spec.description}
+            </div>
+          )}
+          {spec.fields && spec.fields.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {spec.fields.map((f, i) => (
+                <div
+                  key={i}
+                  className={f.inline ? 'min-w-[30%] flex-1 basis-[30%]' : 'w-full basis-full'}
+                >
+                  <div className="text-xs font-semibold text-white">{f.name}</div>
+                  <div className="whitespace-pre-wrap break-words text-xs text-[#dbdee1]/90">
+                    {f.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {spec.imageUrl && (
+            <img src={spec.imageUrl} alt="" className="mt-2 max-h-52 rounded-[4px] object-cover" />
+          )}
+          {(spec.footer || spec.timestamp) && (
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#dbdee1]/60">
+              {spec.footerIconUrl && spec.footer && (
+                <img src={spec.footerIconUrl} alt="" className="h-4 w-4 rounded-full object-cover" />
+              )}
+              {spec.footer && <span>{spec.footer}</span>}
+              {spec.footer && spec.timestamp && <span>•</span>}
+              {spec.timestamp && <span>just now</span>}
+            </div>
+          )}
+        </div>
+        {spec.thumbnailUrl && (
+          <img
+            src={spec.thumbnailUrl}
+            alt=""
+            className="h-16 w-16 shrink-0 rounded-[4px] object-cover"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Preview({
+  draft,
+  content,
+  botName,
+  botAvatarUrl,
+}: {
+  draft: EmbedDraft;
+  content?: string;
+  botName?: string;
+  botAvatarUrl?: string;
+}) {
+  const spec = draftToSpec(draft);
+  const hasContent = Boolean(content && content.trim());
+  return (
+    <MessagePreviewShell botName={botName} botAvatarUrl={botAvatarUrl}>
+      {hasContent && (
+        <div className="mb-1.5 whitespace-pre-wrap break-words text-[#dbdee1]">{content}</div>
+      )}
+      {spec ? (
+        <DiscordEmbedCard spec={spec} />
+      ) : (
+        !hasContent && <div className="text-xs text-[#949ba4]">Your message will appear here.</div>
+      )}
+    </MessagePreviewShell>
   );
 }
 
@@ -294,17 +368,34 @@ export function EmbedBuilder({
   value,
   onChange,
   variables,
+  content,
+  onContentChange,
+  contentPlaceholder = 'Write your message here!',
+  botName,
+  botAvatarUrl,
 }: {
   value: EmbedDraft;
   onChange: (draft: EmbedDraft) => void;
-  /** Optional placeholder reference chips shown beneath the description. */
+  /** Optional placeholder reference chips shown beneath the message/description. */
   variables?: EmbedVariable[];
+  /** Optional plain message shown above the embed (the full "message builder"). */
+  content?: string;
+  onContentChange?: (value: string) => void;
+  contentPlaceholder?: string;
+  /** Preview identity — defaults to the Solari bot. */
+  botName?: string;
+  botAvatarUrl?: string;
 }) {
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
 
   const patch = (partial: Partial<EmbedDraft>): void => onChange({ ...value, ...partial });
+  // Variable chips append to the message when it's editable here, else the embed body.
+  const appendVar = (token: string): void => {
+    if (onContentChange) onContentChange(`${content ?? ''}${token}`);
+    else patch({ description: `${value.description}${token}` });
+  };
 
   function patchField(index: number, partial: Partial<EmbedFieldDraft>): void {
     patch({ fields: value.fields.map((f, i) => (i === index ? { ...f, ...partial } : f)) });
@@ -342,6 +433,17 @@ export function EmbedBuilder({
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Editor column */}
         <div className="flex flex-col gap-3">
+          {onContentChange && (
+            <Field label="Message" hint="Optional text sent above the embed.">
+              <textarea
+                className={`${smallInput} min-h-16 resize-y`}
+                value={content ?? ''}
+                onChange={(e) => onContentChange(e.target.value)}
+                placeholder={contentPlaceholder}
+                maxLength={2000}
+              />
+            </Field>
+          )}
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <Field label="Author name">
               <input
@@ -419,7 +521,7 @@ export function EmbedBuilder({
                   key={v.token}
                   type="button"
                   title={v.desc}
-                  onClick={() => patch({ description: `${value.description}${v.token}` })}
+                  onClick={() => appendVar(v.token)}
                   className="rounded-md border border-white/10 bg-white/[0.03] px-1.5 py-0.5 font-mono text-[11px] text-white/55 hover:text-white/90"
                 >
                   {v.token}
@@ -565,7 +667,7 @@ export function EmbedBuilder({
         {/* Preview column */}
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-white/80">Preview</span>
-          <Preview draft={value} />
+          <Preview draft={value} content={content} botName={botName} botAvatarUrl={botAvatarUrl} />
         </div>
       </div>
     </div>

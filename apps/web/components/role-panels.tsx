@@ -15,6 +15,7 @@ import { createRolePanel, deleteRolePanel, redeployRolePanel } from '../lib/pane
 import { GlassCard } from './ui/glass-card';
 import { Field, SaveBar, inputClass, type SaveStatus } from './ui/form';
 import { ChannelSelect, RoleSelect } from './ui/entity-select';
+import { MessagePreviewShell } from './ui/embed-builder';
 
 export interface PanelSummary {
   id: string;
@@ -117,19 +118,22 @@ function EmojiField({ value, onChange }: { value: string; onChange: (v: string) 
 function PanelPreview({ form }: { form: FormState }) {
   const options = form.options.filter((o) => o.roleId);
   return (
-    <div className="rounded-md bg-[#313338] p-3 text-[13px] text-[#dbdee1]">
+    <MessagePreviewShell>
       {(form.title || form.description) && (
-        <div className="mb-2 max-w-[440px] rounded-[4px] bg-[#2b2d31] px-3 py-2.5">
+        <div
+          className="mb-2 max-w-[440px] rounded-[4px] bg-[#2b2d31] px-3 py-2.5"
+          style={{ borderLeft: '4px solid #8b5cf6' }}
+        >
           {form.title && <div className="mb-1 font-semibold text-white">{form.title}</div>}
           {form.description && (
-            <div className="whitespace-pre-wrap break-words text-[#dbdee1]/90">
+            <div className="whitespace-pre-wrap break-words text-[13px] text-[#dbdee1]/90">
               {form.description}
             </div>
           )}
         </div>
       )}
       {options.length === 0 ? (
-        <p className="text-xs text-white/30">Add a role to preview the buttons.</p>
+        <p className="text-xs text-[#949ba4]">Add a role to preview the panel.</p>
       ) : form.type === 'BUTTON' ? (
         <div className="flex flex-wrap gap-2">
           {options.map((o, i) => (
@@ -150,7 +154,7 @@ function PanelPreview({ form }: { form: FormState }) {
           </div>
         </div>
       )}
-    </div>
+    </MessagePreviewShell>
   );
 }
 
@@ -302,7 +306,25 @@ export function RolePanels({
             onChange={(e) => patch({ description: e.target.value })}
           />
         </Field>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="Type">
+          <div className="inline-flex rounded-lg border border-white/10 bg-white/[0.03] p-0.5">
+            {rolePanelTypes.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => patch({ type })}
+                className={`rounded-md px-5 py-1.5 text-sm font-medium transition-colors ${
+                  form.type === type
+                    ? 'bg-[var(--color-brand-strong)] text-white'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {type === 'BUTTON' ? 'Buttons' : 'Dropdown'}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Channel">
             <ChannelSelect
               channels={channels}
@@ -310,19 +332,6 @@ export function RolePanels({
               selected={form.channelId ? [form.channelId] : []}
               onChange={(ids) => patch({ channelId: ids[0] ?? '' })}
             />
-          </Field>
-          <Field label="Type">
-            <select
-              className={inputClass}
-              value={form.type}
-              onChange={(e) => patch({ type: e.target.value as RolePanelType })}
-            >
-              {rolePanelTypes.map((type) => (
-                <option key={type} value={type} className="bg-[var(--color-base-elevated)]">
-                  {type === 'BUTTON' ? 'Buttons' : 'Dropdown menu'}
-                </option>
-              ))}
-            </select>
           </Field>
           <Field label="Mode" hint={MODE_HINT[form.mode]}>
             <select
