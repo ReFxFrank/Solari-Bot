@@ -1,0 +1,47 @@
+name: helios
+
+# Production overlay for a VPS with a real domain, fronted by Cloudflare (proxied
+# / orange cloud) with a Cloudflare Origin Certificate. Layer it on top of the
+# base compose file and the `apps` profile:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#     --profile apps up -d --build
+#
+# What it changes vs. the base file:
+#   * Adds a Caddy edge that serves the Cloudflare Origin Certificate for
+#     SOLARI_DOMAIN and reverse-proxies to the dashboard over the internal network.
+#   * Stops publishing the dashboard's plaintext :3000 to the world — it's bound
+#     to localhost only, so Cloudflare → Caddy is the single public entrypoint.
+#
+# `restart: unless-stopped` on every service (base file) gives you the keep-alive:
+# the stack comes back on VPS reboot / crash without any systemd unit.
+
+services:
+  # Only reachable from the host itself now; Caddy proxies to it internally.
+  web:
+    ports: !override
+      - '127.0.0.1:${WEB_PORT:-3000}:3000'
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    profiles: ['apps']
+    environment:
+      # Fail fast with a clear message if the domain wasn't set.
+      SOLARI_DOMAIN: ${SOLARI_DOMAIN:?set SOLARI_DOMAIN to your dashboard domain (e.g. solari.gg)}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Cloudflare Origin Certificate — place origin.pem + origin.key here.
+      - ./infra/caddy/certs:/etc/caddy/certs:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy-data:
+  caddy-config:

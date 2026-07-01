@@ -1,4 +1,4 @@
-# Helios
+# Solari
 
 A fully self-hosted, premium-grade Discord bot **and** web dashboard. Because
 it's self-hosted, every feature is unlocked — there's no paywall — while an

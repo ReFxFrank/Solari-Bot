@@ -18,6 +18,11 @@ packages/database/src/generated/
 .env.*.local
 *.pem
 
+# Cloudflare origin certificate (mounted into Caddy in production) — never commit
+infra/caddy/certs/*
+!infra/caddy/certs/.gitkeep
+!infra/caddy/certs/README.md
+
 # Logs
 logs/
 *.log

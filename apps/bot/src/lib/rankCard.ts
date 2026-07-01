@@ -9,8 +9,8 @@ import { logger } from '../logger';
  * image has no system fonts.
  */
 
-const FONT_REGULAR = 'HeliosSans';
-const FONT_BOLD = 'HeliosSans Bold';
+const FONT_REGULAR = 'SolariSans';
+const FONT_BOLD = 'SolariSans Bold';
 
 function fontPath(file: string): string {
   return fileURLToPath(new URL(`../../assets/fonts/${file}`, import.meta.url));

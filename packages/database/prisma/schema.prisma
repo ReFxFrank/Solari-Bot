@@ -1,4 +1,4 @@
-// Helios — Prisma schema (single source of truth for the data model).
+// Solari — Prisma schema (single source of truth for the data model).
 //
 // Phase 0 ships the foundational models needed for the config-sync spine:
 // Guild metadata, per-(guild, module) configuration, and the dashboard audit

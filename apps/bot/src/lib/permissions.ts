@@ -17,7 +17,7 @@ export function isBotOwner(userId: string): boolean {
 }
 
 /**
- * Resolve a member's effective Helios permission level (§5.2):
+ * Resolve a member's effective Solari permission level (§5.2):
  * bot owner -> Discord Administrator / configured admin role -> ModerateMembers
  * / configured mod role -> plain member.
  */

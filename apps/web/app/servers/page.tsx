@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Plus } from 'lucide-react';
 import { prisma } from '@helios/database';
+import { BRAND } from '@helios/shared';
 import { auth } from '../../auth';
 import { getManageableGuilds } from '../../lib/auth-guards';
 import { guildIconUrl, type ManageableGuild } from '../../lib/discord';
@@ -52,7 +53,7 @@ export default async function ServersPage() {
         <GlassCard className="p-10 text-center">
           <p className="text-white/70">No servers found where you can manage settings.</p>
           <p className="mt-1 text-sm text-white/40">
-            You need the Manage Server permission on a server to configure Helios there.
+            You need the Manage Server permission on a server to configure {BRAND.name} there.
           </p>
         </GlassCard>
       ) : (
@@ -71,7 +72,7 @@ export default async function ServersPage() {
             </Section>
           )}
           {invitable.length > 0 && (
-            <Section title="Add Helios">
+            <Section title={`Add ${BRAND.name}`}>
               {invitable.map((g) => (
                 <GuildRow
                   key={g.id}

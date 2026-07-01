@@ -1,10 +1,10 @@
 /** Brand + design tokens shared between the bot (embeds) and the dashboard. */
 
 export const BRAND = {
-  name: 'Helios',
+  name: 'Solari',
   /** Primary accent — Discord blurple. */
   color: 0x5865f2,
-  footer: 'Helios',
+  footer: 'Solari',
 } as const;
 
 /** Semantic colors as integers for discord.js embeds. */

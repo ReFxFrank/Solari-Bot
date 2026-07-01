@@ -1,4 +1,4 @@
-# Helios — Setup & Local Testing Guide
+# Solari — Setup & Local Testing Guide
 
 This walks you from a fresh clone to a **running bot + dashboard you can test in
 your own Discord server**. Every command below is the real one from this repo.
@@ -30,7 +30,7 @@ You also need a **Discord application** (next section).
 
 ### Windows
 
-Helios runs on Windows — nothing in the stack needs native build tools (the one
+Solari runs on Windows — nothing in the stack needs native build tools (the one
 native module, `@napi-rs/canvas`, ships Windows prebuilds, and audio is handled
 by Lavalink inside Docker).
 
@@ -302,6 +302,91 @@ The app containers read `.env` and automatically rewrite `DATABASE_URL`,
 | **Postgres/Redis connection refused** | `docker compose up -d` and wait for healthy; confirm `DATABASE_URL`/`REDIS_URL` hosts/ports. |
 | **Prisma client / type errors** | `pnpm db:generate` (normally automatic via `pnpm install`). |
 | **Moderation action fails** | The bot's highest role must be **above** the target's, and it needs the relevant permission. |
+| **Caddy fails to start (§11)** | The origin cert must exist at `infra/caddy/certs/origin.pem` + `origin.key`, and ports 80+443 must be free. Check `docker compose logs caddy`; an existing web server on :80/:443 will block it. |
+| **Cloudflare "525 / 526" (SSL handshake)** | Origin cert missing or SSL mode set to Full (strict) without a valid origin cert. Confirm the two files exist and re-create the Origin Certificate if needed (§11 step 2). |
+| **After going HTTPS, OAuth or Stripe break** | `AUTH_URL` must be the `https://` domain; the Discord redirect + Stripe webhook must point at that same domain (§11 steps 4–5); and Cloudflare Bot Fight Mode / WAF must not block `/api/*`. |
+
+---
+
+## 11. Production deployment (domain + HTTPS via Cloudflare)
+
+Running on a VPS for real, with your domain on **Cloudflare** (proxied / orange
+cloud)? This puts the dashboard behind Cloudflare's CDN + DDoS protection with
+end-to-end HTTPS, and keeps the whole stack self-restarting on crash or reboot.
+[Caddy](https://caddyserver.com) is the origin proxy; it serves a **Cloudflare
+Origin Certificate** so you can run SSL/TLS mode **Full (strict)**. (Example
+domain below: `solari.gg`.)
+
+**1. DNS — point the domain at the VPS (proxied).** In Cloudflare → DNS, add an
+`A` record for `solari.gg` (and a `CNAME` `www` → `solari.gg` if you want) to your
+VPS's public IP, with the **orange cloud on** (Proxied). If you have IPv6, add an
+`AAAA` too.
+
+**2. Create the Cloudflare Origin Certificate.** Cloudflare → **SSL/TLS → Origin
+Server → Create Certificate** (accept the defaults — RSA, `*.solari.gg, solari.gg`,
+15-year). Copy the two blocks onto the VPS as:
+
+```
+infra/caddy/certs/origin.pem     # the certificate
+infra/caddy/certs/origin.key     # the private key  (git-ignored)
+```
+
+Then set Cloudflare → **SSL/TLS → Overview → Full (strict)**, and turn on
+**Always Use HTTPS** (SSL/TLS → Edge Certificates). (See
+`infra/caddy/certs/README.md` for the same steps.)
+
+**3. Open the firewall** for HTTP/HTTPS on the VPS:
+
+```bash
+sudo ufw allow 80,443/tcp     # if you use ufw
+```
+
+**4. Fill in the production values in `.env`:**
+
+```dotenv
+NODE_ENV=production
+SOLARI_DOMAIN=solari.gg                  # your domain (no https://)
+AUTH_URL=https://solari.gg               # must be the https domain
+```
+
+**5. Update Discord + Stripe to the new URL:**
+
+- **Discord** → Developer Portal → your app → OAuth2 → add redirect
+  `https://solari.gg/api/auth/callback/discord` (keep the localhost one too if you
+  still dev locally).
+- **Stripe** → Developers → Webhooks → add endpoint
+  `https://solari.gg/api/stripe/webhook`, subscribe to
+  `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`. Copy
+  the new **signing secret** into `STRIPE_WEBHOOK_SECRET`. (In live mode, also
+  swap `STRIPE_SECRET_KEY` / `STRIPE_PREMIUM_PRICE_ID` to their live values.)
+
+**6. Launch the stack with the production overlay:**
+
+```bash
+docker compose up -d                                   # Postgres + Redis
+pnpm db:deploy                                          # apply migrations (from host)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  --profile apps up -d --build                          # bot + web + Caddy
+```
+
+Add `--profile music` to that last command if you want Lavalink too.
+
+Watch `docker compose logs -f caddy`; once it's serving, `https://solari.gg` is
+live through Cloudflare. The dashboard's plaintext `:3000` is now bound to
+localhost only — Cloudflare → Caddy is the single public entrypoint. Every service
+has `restart: unless-stopped`, so the stack comes back automatically after a
+reboot or crash. To update after a `git pull`, re-run the same `up -d --build`
+command.
+
+> **Keeping it alive across reboots:** Docker's own service must start on boot —
+> `sudo systemctl enable docker`. That plus `restart: unless-stopped` is all the
+> keep-alive you need; no extra systemd unit required.
+
+> **Cloudflare gotchas:** if Discord login or Stripe webhooks get blocked, check
+> **Security → Bots** (turn off "Bot Fight Mode") and make sure no aggressive WAF
+> rule matches `/api/*` — Stripe and Discord's callbacks are server-to-server and
+> must pass through. Keep proxied Cloudflare caching off for `/api/*` (it is by
+> default).
 
 ---
 
@@ -319,4 +404,7 @@ pnpm dev                         # run bot + dashboard
 pnpm db:studio                   # browse the database (Prisma Studio)
 pnpm typecheck && pnpm lint && pnpm test
 docker compose --profile music up -d lavalink   # Lavalink (music backend)
+
+# production (VPS behind Cloudflare — see §11)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile apps up -d --build
 ```

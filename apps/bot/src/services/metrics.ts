@@ -3,7 +3,7 @@ import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom
 import { env } from '../env';
 import { logger } from '../logger';
 
-/** Prometheus registry + Helios metrics (§5.7). One registry per shard process. */
+/** Prometheus registry + Solari metrics (§5.7). One registry per shard process. */
 export const registry = new Registry();
 collectDefaultMetrics({ register: registry });
 

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Helios design system (§7). Dark, glassmorphic, premium. Tailwind v4 reads
+ * Solari design system (§7). Dark, glassmorphic, premium. Tailwind v4 reads
  * these tokens via the CSS-first `@theme` block, exposing utilities like
  * `text-blurple` / `bg-base`. The monospace-numeral rule for data surfaces is
  * enforced via the `--font-mono` token applied to stat/leaderboard panels.

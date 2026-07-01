@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Helios — a self-hosted, premium-grade Discord bot and dashboard.",
+  "description": "Solari — a self-hosted, premium-grade Discord bot and dashboard.",
   "engines": {
     "node": ">=20",
     "pnpm": ">=9"
