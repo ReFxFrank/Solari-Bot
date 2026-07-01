@@ -73,6 +73,40 @@ services:
       redis:
         condition: service_healthy
 
+  # Nightly logical backups of Postgres to the `postgres-backups` volume, with
+  # rolling retention. Restore with `scripts/restore-db.sh` (see its header).
+  # Copy backups off-host with: docker compose cp backup:/backups ./backups
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    profiles: ['apps']
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-helios}
+      POSTGRES_USER: ${POSTGRES_USER:-helios}
+      POSTGRES_DB: ${POSTGRES_DB:-helios}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "backup: nightly pg_dump, $${BACKUP_RETENTION_DAYS}-day retention"
+        while true; do
+          ts=$$(date +%Y%m%d-%H%M%S)
+          if pg_dump -h postgres -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" | gzip > "/backups/helios-$$ts.sql.gz"; then
+            echo "backup: wrote helios-$$ts.sql.gz ($$(du -h /backups/helios-$$ts.sql.gz | cut -f1))"
+          else
+            echo "backup: pg_dump FAILED" >&2
+            rm -f "/backups/helios-$$ts.sql.gz"
+          fi
+          find /backups -name 'helios-*.sql.gz' -mtime +"$$BACKUP_RETENTION_DAYS" -delete
+          sleep 86400
+        done
+    volumes:
+      - postgres-backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   web:
     build:
       context: .
@@ -94,4 +128,5 @@ services:
 
 volumes:
   postgres-data:
+  postgres-backups:
   redis-data:

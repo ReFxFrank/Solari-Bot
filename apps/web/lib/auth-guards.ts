@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import type { Session } from 'next-auth';
 import { auth } from '../auth';
 import type { ManageableGuild } from './discord';
+import { enforceMutationRateLimit } from './rate-limit';
 
 /**
  * Manageable guilds for the signed-in user. This list is derived server-side in
@@ -43,6 +44,7 @@ export function isOwner(session: Session): boolean {
 export async function requireOwner(): Promise<Session & { user: { id: string } }> {
   const session = await requireSession();
   if (!isOwner(session)) throw new Error('Forbidden: owner only.');
+  await enforceMutationRateLimit(session.user.id);
   return session;
 }
 
@@ -56,11 +58,16 @@ export async function guardOwnerPage(): Promise<Session> {
   return session;
 }
 
-/** Assert the session can manage the guild. Re-checked on every mutation. */
+/**
+ * Assert the session can manage the guild. Re-checked on every mutation — and
+ * because every guild-scoped server action calls this, it doubles as the
+ * per-user mutation rate-limit choke point.
+ */
 export async function assertCanManage(session: Session, guildId: string): Promise<void> {
   if (!getManageableGuilds(session).some((guild) => guild.id === guildId)) {
     throw new Error('Forbidden: you do not have Manage Server on this guild.');
   }
+  await enforceMutationRateLimit(session.user?.id ?? 'anonymous');
 }
 
 /**
