@@ -6,6 +6,7 @@ import type {
   AutoroleConfig,
   BirthdaysConfig,
   CustomCommandsConfig,
+  EconomyConfig,
   InviteTrackingConfig,
   LevelingConfig,
   LoggingConfig,
@@ -165,6 +166,13 @@ export async function saveTempVoiceConfig(
   input: TempVoiceConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'TEMP_VOICE', input, 'temp-voice');
+}
+
+export async function saveEconomyConfig(
+  guildId: string,
+  input: EconomyConfig,
+): Promise<ActionResult> {
+  return saveConfig(guildId, 'ECONOMY', input, 'economy');
 }
 
 export async function saveStatsCountersConfig(

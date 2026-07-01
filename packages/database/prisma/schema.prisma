@@ -93,8 +93,29 @@ model Guild {
   inviteUses        InviteUse[]
   subscription      GuildSubscription?
   tempVoiceChannels TempVoiceChannel[]
+  economyUsers      EconomyUser[]
 
   @@index([ownerId])
+}
+
+/// Per-(guild, user) economy balance (premium). `wallet` is spendable/robbable;
+/// `bank` is safe. Cooldowns for /daily and /work are timestamp-based (no jobs).
+model EconomyUser {
+  id        String    @id @default(cuid())
+  guildId   String
+  userId    String
+  wallet    Int       @default(0)
+  bank      Int       @default(0)
+  lastDaily DateTime?
+  lastWork  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId])
+  @@index([guildId, wallet])
 }
 
 /// A "join-to-create" temporary voice channel spawned by the Temp Voice module

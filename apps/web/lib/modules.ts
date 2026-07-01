@@ -245,6 +245,7 @@ export const MODULE_META: ModuleMeta[] = [
     icon: Coins,
     category: 'premium',
     accent: 'amber',
+    configSlug: 'economy',
   },
   {
     module: 'MUSIC',

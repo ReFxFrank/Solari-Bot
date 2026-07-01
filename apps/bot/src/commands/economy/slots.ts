@@ -1,0 +1,66 @@
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
+import type { Command } from '../../framework/command';
+import { RequireGuild, RequirePremium } from '../../lib/permissions';
+import { brandedEmbed, errorEmbed } from '../../lib/embeds';
+import { addWallet, formatMoney, getEconomyUser, resolveBet, trySpendWallet } from '../../lib/economy';
+
+const REELS = ['🍒', '🍋', '🍇', '🔔', '💎', '7️⃣'];
+
+function spin(): string[] {
+  return [0, 1, 2].map(() => REELS[Math.floor(Math.random() * REELS.length)] ?? '🍒');
+}
+
+const command: Command = {
+  data: new SlashCommandBuilder()
+    .setName('slots')
+    .setDescription('Spin the slot machine.')
+    .addIntegerOption((o) =>
+      o.setName('amount').setDescription('How much to bet').setRequired(true).setMinValue(1),
+    ),
+  module: 'ECONOMY',
+  preconditions: [RequireGuild, RequirePremium('ECONOMY')],
+  async execute(interaction, ctx) {
+    if (!interaction.inCachedGuild()) return;
+    const amount = interaction.options.getInteger('amount', true);
+    const config = await ctx.config.getConfig(interaction.guildId, 'ECONOMY');
+    const eco = await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
+
+    const bet = resolveBet(amount, eco.wallet, config.maxBet);
+    if (!bet.ok) {
+      await interaction.reply({ embeds: [errorEmbed(bet.error)], flags: MessageFlags.Ephemeral });
+      return;
+    }
+    if (!(await trySpendWallet(interaction.guildId, interaction.user.id, amount))) {
+      await interaction.reply({
+        embeds: [errorEmbed("You don't have that much in your wallet.")],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const reels = spin();
+    const [a, b, c] = reels;
+    // Payout is the TOTAL returned (bet already escrowed): 3-of-a-kind = 3x,
+    // any pair = 1.5x, otherwise nothing.
+    let payout = 0;
+    if (a === b && b === c) payout = amount * 3;
+    else if (a === b || b === c || a === c) payout = Math.floor(amount * 1.5);
+    if (payout > 0) await addWallet(interaction.guildId, interaction.user.id, payout);
+
+    const net = payout - amount;
+    await interaction.reply({
+      embeds: [
+        brandedEmbed({
+          kind: net > 0 ? 'success' : 'danger',
+          title: `🎰  ${reels.join('  ')}`,
+          description:
+            net > 0
+              ? `You won ${formatMoney(net, config)}!`
+              : `You lost ${formatMoney(amount, config)}.`,
+        }),
+      ],
+    });
+  },
+};
+
+export default command;
