@@ -78,16 +78,18 @@ async function syncSubscription(sub: Stripe.Subscription): Promise<void> {
     cancelAtPeriodEnd: sub.cancel_at_period_end,
   };
 
-  await prisma.guildSubscription.upsert({
-    where: { guildId },
-    update: fields,
-    create: { guildId, ...fields },
-  });
-
+  // Ensure the guild row exists first — GuildSubscription FKs to it, and a
+  // webhook can arrive before the bot has registered the guild.
   const tier = tierFromSubscription(sub.status, currentPeriodEnd);
   await prisma.guild.upsert({
     where: { id: guildId },
     update: { premiumTier: tier },
     create: { id: guildId, premiumTier: tier },
+  });
+
+  await prisma.guildSubscription.upsert({
+    where: { guildId },
+    update: fields,
+    create: { guildId, ...fields },
   });
 }
