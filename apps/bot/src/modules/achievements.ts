@@ -3,8 +3,11 @@ import { prisma } from '@solari/database';
 import {
   ACHIEVEMENT_TIER_EMOJI,
   ACHIEVEMENT_TIER_LABELS,
+  isTieredAchievement,
   parseModuleConfig,
+  tierAt,
   type Achievement,
+  type AchievementTierDef,
   type AchievementType,
   type AchievementsConfig,
 } from '@solari/shared';
@@ -40,10 +43,6 @@ export function statForType(type: AchievementType, stats: UserStats): number {
   }
 }
 
-function meets(type: AchievementType, stats: UserStats, threshold: number): boolean {
-  return statForType(type, stats) >= threshold;
-}
-
 async function loadStats(guildId: string, userId: string): Promise<UserStats> {
   const [level, eco] = await Promise.all([
     prisma.userLevel.findUnique({
@@ -67,21 +66,21 @@ async function grantRewards(
   guildId: string,
   userId: string,
   member: GuildMember | null,
-  ach: Achievement,
+  tier: AchievementTierDef,
 ): Promise<void> {
-  if (ach.rewardCoins > 0) {
+  if (tier.rewardCoins > 0) {
     await getEconomyUser(guildId, userId, 0);
-    await addWallet(guildId, userId, ach.rewardCoins);
+    await addWallet(guildId, userId, tier.rewardCoins);
   }
-  if (ach.rewardXp > 0) {
+  if (tier.rewardXp > 0) {
     await prisma.userLevel.upsert({
       where: { guildId_userId: { guildId, userId } },
-      update: { xp: { increment: ach.rewardXp } },
-      create: { guildId, userId, xp: ach.rewardXp },
+      update: { xp: { increment: tier.rewardXp } },
+      create: { guildId, userId, xp: tier.rewardXp },
     });
   }
-  if (ach.rewardRoleId && member && member.guild.roles.cache.has(ach.rewardRoleId)) {
-    await member.roles.add(ach.rewardRoleId, 'Achievement reward').catch(() => undefined);
+  if (tier.rewardRoleId && member && member.guild.roles.cache.has(tier.rewardRoleId)) {
+    await member.roles.add(tier.rewardRoleId, 'Achievement reward').catch(() => undefined);
   }
 }
 
@@ -89,6 +88,8 @@ async function announce(
   guildId: string,
   userId: string,
   ach: Achievement,
+  tierIndex: number,
+  tier: AchievementTierDef,
   config: AchievementsConfig,
   deps: AchievementDeps,
 ): Promise<void> {
@@ -98,10 +99,12 @@ async function announce(
     (await deps.client.channels.fetch(config.announceChannelId).catch(() => null));
   if (!channel?.isTextBased() || channel.isDMBased()) return;
 
+  const tiered = isTieredAchievement(ach);
+  const tierName = tierAt(tierIndex);
   const rewards = [
-    ach.rewardRoleId ? `<@&${ach.rewardRoleId}>` : null,
-    ach.rewardCoins ? `${ach.rewardCoins.toLocaleString('en-US')} coins` : null,
-    ach.rewardXp ? `${ach.rewardXp.toLocaleString('en-US')} XP` : null,
+    tier.rewardRoleId ? `<@&${tier.rewardRoleId}>` : null,
+    tier.rewardCoins ? `${tier.rewardCoins.toLocaleString('en-US')} coins` : null,
+    tier.rewardXp ? `${tier.rewardXp.toLocaleString('en-US')} XP` : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -111,9 +114,12 @@ async function announce(
       embeds: [
         brandedEmbed({
           kind: 'success',
-          title: `${ACHIEVEMENT_TIER_EMOJI[ach.tier]} Achievement unlocked!`,
+          title: tiered
+            ? `${ACHIEVEMENT_TIER_EMOJI[tierName]} ${ACHIEVEMENT_TIER_LABELS[tierName]} unlocked!`
+            : '🏆 Achievement unlocked!',
           description:
-            `<@${userId}> unlocked **${ach.name}** _(${ACHIEVEMENT_TIER_LABELS[ach.tier]})_` +
+            `<@${userId}> unlocked **${ach.name}**` +
+            (tiered ? ` — ${ACHIEVEMENT_TIER_LABELS[tierName]}` : '') +
             (ach.description ? `\n${ach.description}` : '') +
             (rewards ? `\n\n**Rewards:** ${rewards}` : ''),
         }),
@@ -123,23 +129,34 @@ async function announce(
     .catch(() => undefined);
 }
 
-/** A member's current stats + the set of achievement ids they've unlocked. */
+/** Composite key for an unlocked tier. */
+const unlockKey = (achievementId: string, tier: number): string => `${achievementId}:${tier}`;
+
+/** A member's current stats + the set of `${achievementId}:${tier}` they've unlocked. */
 export async function getAchievementStatus(
   guildId: string,
   userId: string,
 ): Promise<{ stats: UserStats; unlocked: Set<string> }> {
   const [stats, rows] = await Promise.all([
     loadStats(guildId, userId),
-    prisma.userAchievement.findMany({ where: { guildId, userId }, select: { achievementId: true } }),
+    prisma.userAchievement.findMany({
+      where: { guildId, userId },
+      select: { achievementId: true, tier: true },
+    }),
   ]);
-  return { stats, unlocked: new Set(rows.map((r: { achievementId: string }) => r.achievementId)) };
+  return {
+    stats,
+    unlocked: new Set(
+      rows.map((r: { achievementId: string; tier: number }) => unlockKey(r.achievementId, r.tier)),
+    ),
+  };
 }
 
 /**
- * Check a member's current stats against the guild's achievements and unlock any
- * newly-earned ones (granting rewards + announcing once). Idempotent: the unique
- * (guild,user,achievement) row makes a double-grant impossible under races.
- * Called at cheap checkpoints (level-ups, economy earns), never per-message.
+ * Check a member's stats against every tier of every achievement and unlock any
+ * newly-earned tiers (granting rewards + announcing once each). Idempotent: the
+ * unique (guild,user,achievement,tier) row makes a double-grant impossible under
+ * races. Called at cheap checkpoints (level-ups, economy earns), never per-message.
  */
 export async function evaluateAchievements(
   guildId: string,
@@ -155,32 +172,38 @@ export async function evaluateAchievements(
     const config = parseModuleConfig('ACHIEVEMENTS', row.config ?? {});
     if (config.achievements.length === 0) return;
 
-    const [stats, unlockedRows] = await Promise.all([
-      loadStats(guildId, userId),
-      prisma.userAchievement.findMany({ where: { guildId, userId }, select: { achievementId: true } }),
-    ]);
-    const unlocked = new Set(unlockedRows.map((r: { achievementId: string }) => r.achievementId));
+    const { stats, unlocked } = await getAchievementStatus(guildId, userId);
 
-    const earned = config.achievements.filter(
-      (a) => !unlocked.has(a.id) && meets(a.type, stats, a.threshold),
-    );
-    if (earned.length === 0) return;
+    // Collect the (achievement, tierIndex) pairs newly crossed.
+    const newlyEarned: { ach: Achievement; tierIndex: number; tier: AchievementTierDef }[] = [];
+    for (const ach of config.achievements) {
+      if (ach.enabled === false) continue;
+      const value = statForType(ach.type, stats);
+      ach.tiers.forEach((tier, tierIndex) => {
+        if (value >= tier.threshold && !unlocked.has(unlockKey(ach.id, tierIndex))) {
+          newlyEarned.push({ ach, tierIndex, tier });
+        }
+      });
+    }
+    if (newlyEarned.length === 0) return;
 
     const guild = deps.client.guilds.cache.get(guildId);
     const member = guild
       ? (guild.members.cache.get(userId) ?? (await guild.members.fetch(userId).catch(() => null)))
       : null;
 
-    for (const ach of earned) {
+    for (const { ach, tierIndex, tier } of newlyEarned) {
       try {
-        // The unique constraint is the source of truth — if this throws, a
-        // concurrent evaluation already unlocked it, so we skip the rewards.
-        await prisma.userAchievement.create({ data: { guildId, userId, achievementId: ach.id } });
+        // Unique constraint is the source of truth — a concurrent evaluation that
+        // already unlocked this tier makes create throw, so we skip the rewards.
+        await prisma.userAchievement.create({
+          data: { guildId, userId, achievementId: ach.id, tier: tierIndex },
+        });
       } catch {
         continue;
       }
-      await grantRewards(guildId, userId, member, ach);
-      await announce(guildId, userId, ach, config, deps);
+      await grantRewards(guildId, userId, member, tier);
+      await announce(guildId, userId, ach, tierIndex, tier, config, deps);
     }
   } catch (err) {
     deps.logger.warn({ err, guildId, userId }, 'Achievement evaluation failed');

@@ -164,11 +164,14 @@ model UserAchievement {
   guildId       String
   userId        String
   achievementId String
+  /// Tier index unlocked (0 = single / bronze … 3 = diamond). Each tier of a
+  /// tiered achievement unlocks independently, so it is part of the unique key.
+  tier          Int      @default(0)
   unlockedAt    DateTime @default(now())
 
   guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
-  @@unique([guildId, userId, achievementId])
+  @@unique([guildId, userId, achievementId, tier])
   @@index([guildId, userId])
 }
 

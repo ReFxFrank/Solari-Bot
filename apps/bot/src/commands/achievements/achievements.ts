@@ -1,5 +1,11 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { ACHIEVEMENT_TYPE_LABELS } from '@solari/shared';
+import {
+  ACHIEVEMENT_TIER_EMOJI,
+  ACHIEVEMENT_TIER_LABELS,
+  ACHIEVEMENT_TYPE_LABELS,
+  isTieredAchievement,
+  tierAt,
+} from '@solari/shared';
 import type { Command } from '../../framework/command';
 import { RequireGuild } from '../../lib/permissions';
 import { brandedEmbed } from '../../lib/embeds';
@@ -16,8 +22,9 @@ const command: Command = {
     if (!interaction.inCachedGuild()) return;
     const target = interaction.options.getUser('user') ?? interaction.user;
     const config = await ctx.config.getConfig(interaction.guildId, 'ACHIEVEMENTS');
+    const achievements = config.achievements.filter((a) => a.enabled !== false);
 
-    if (config.achievements.length === 0) {
+    if (achievements.length === 0) {
       await interaction.reply({
         embeds: [brandedEmbed({ kind: 'info', description: 'No achievements have been set up yet.' })],
         flags: MessageFlags.Ephemeral,
@@ -26,15 +33,35 @@ const command: Command = {
     }
 
     const { stats, unlocked } = await getAchievementStatus(interaction.guildId, target.id);
-    const lines = config.achievements.map((a) => {
-      const done = unlocked.has(a.id);
-      const current = Math.min(statForType(a.type, stats), a.threshold);
-      const progress = done
-        ? '✅'
-        : `\`${current.toLocaleString('en-US')}/${a.threshold.toLocaleString('en-US')}\``;
-      return `${done ? '🏆' : '▫️'} **${a.name}** — ${ACHIEVEMENT_TYPE_LABELS[a.type]} ${a.threshold.toLocaleString('en-US')} · ${progress}`;
+    let unlockedTiers = 0;
+    let totalTiers = 0;
+
+    const lines = achievements.map((a) => {
+      const value = statForType(a.type, stats);
+      const tiered = isTieredAchievement(a);
+      totalTiers += a.tiers.length;
+
+      // Badges for each tier (earned → medal, locked → ▫️) and the next target.
+      const badges = a.tiers
+        .map((_, i) => {
+          const done = unlocked.has(`${a.id}:${i}`);
+          if (done) unlockedTiers += 1;
+          return done ? ACHIEVEMENT_TIER_EMOJI[tierAt(i)] : '▫️';
+        })
+        .join('');
+
+      const nextIndex = a.tiers.findIndex((tier, i) => !unlocked.has(`${a.id}:${i}`));
+      let progress: string;
+      if (nextIndex === -1) {
+        progress = 'Complete ✅';
+      } else {
+        const next = a.tiers[nextIndex]!;
+        const label = tiered ? `${ACHIEVEMENT_TIER_LABELS[tierAt(nextIndex)]}: ` : '';
+        progress = `${label}\`${Math.min(value, next.threshold).toLocaleString('en-US')}/${next.threshold.toLocaleString('en-US')}\``;
+      }
+
+      return `${tiered ? badges : unlocked.has(`${a.id}:0`) ? '🏆' : '▫️'} **${a.name}** — ${ACHIEVEMENT_TYPE_LABELS[a.type]} · ${progress}`;
     });
-    const unlockedCount = config.achievements.filter((a) => unlocked.has(a.id)).length;
 
     await interaction.reply({
       embeds: [
@@ -42,7 +69,7 @@ const command: Command = {
           kind: 'default',
           title: `🏆 ${target.username}'s achievements`,
           description: lines.join('\n'),
-        }).setFooter({ text: `${unlockedCount}/${config.achievements.length} unlocked` }),
+        }).setFooter({ text: `${unlockedTiers}/${totalTiers} tiers unlocked` }),
       ],
     });
   },
