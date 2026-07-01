@@ -27,6 +27,12 @@ export async function SiteNav() {
             Features
           </Link>
           <Link
+            href="/commands"
+            className="hidden text-sm text-white/60 transition-colors hover:text-white/90 sm:inline"
+          >
+            Commands
+          </Link>
+          <Link
             href="/pricing"
             className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-300/20"
           >
