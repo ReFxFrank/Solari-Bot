@@ -5,11 +5,25 @@ import type { Logger } from '../logger';
 import type { ConfigCache } from './configCache';
 import { clearSkipVotes, nowPlayingEmbed } from '../lib/music';
 
+/** Per-guild pending auto-leave timers (ephemeral; tied to the live player). */
+const leaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function cancelLeaveTimer(guildId: string): void {
+  const timer = leaveTimers.get(guildId);
+  if (timer) {
+    clearTimeout(timer);
+    leaveTimers.delete(guildId);
+  }
+}
+
 /**
  * Builds the Lavalink manager for the Music module. Only called when
  * MUSIC_ENABLED is set — otherwise the bot never connects to a node and
- * `ctx.music` stays null. YouTube is disabled on the default Lavalink image, so
- * the default search source is SoundCloud (direct URLs for other sources work).
+ * `ctx.music` stays null. YouTube is served by the youtube-source plugin (see
+ * lavalink/application.yml); the fallback search source here is 'ytsearch', but
+ * every /play overrides it with the per-guild MusicConfig.searchSource (direct
+ * URLs resolve regardless). Auto-leave is driven per-guild by the queueEnd timer
+ * below, honouring MusicConfig.autoLeaveSeconds.
  */
 export function createMusicManager(
   client: Client,
@@ -33,7 +47,6 @@ export function createMusicManager(
       // Per-guild source is passed on each /play; this is only the fallback.
       defaultSearchPlatform: 'ytsearch',
       clientBasedPositionUpdateInterval: 5_000,
-      onEmptyQueue: { destroyAfterMs: 300_000 },
     },
   });
 
@@ -55,16 +68,40 @@ export function createMusicManager(
 
   manager
     .on('trackStart', (player, track) => {
+      cancelLeaveTimer(player.guildId); // a new track cancels a pending auto-leave
       clearSkipVotes(player.guildId);
       void announceNowPlaying(client, config, logger, player, track);
     })
     .on('queueEnd', (player) => {
       clearSkipVotes(player.guildId);
-      void sendToPlayerChannel(client, player, '🏁 Queue finished — leaving soon if nothing is added.');
+      void scheduleAutoLeave(config, logger, player);
     })
-    .on('playerDestroy', (player) => clearSkipVotes(player.guildId));
+    .on('playerDestroy', (player) => {
+      cancelLeaveTimer(player.guildId);
+      clearSkipVotes(player.guildId);
+    });
 
   return manager;
+}
+
+/**
+ * Queue emptied — leave after the guild's configured delay unless a new track
+ * starts first (which cancels the timer). autoLeaveSeconds=0 leaves immediately.
+ */
+async function scheduleAutoLeave(config: ConfigCache, logger: Logger, player: Player): Promise<void> {
+  cancelLeaveTimer(player.guildId);
+  let seconds = 300;
+  try {
+    seconds = (await config.getConfig(player.guildId, 'MUSIC')).autoLeaveSeconds;
+  } catch (err) {
+    logger.debug({ err, guildId: player.guildId }, 'Music config read failed for auto-leave');
+  }
+  const timer = setTimeout(() => {
+    leaveTimers.delete(player.guildId);
+    if (player.playing) return; // a track slipped in — leave it be
+    void player.destroy('Auto-leave: queue empty').catch(() => undefined);
+  }, seconds * 1000);
+  leaveTimers.set(player.guildId, timer);
 }
 
 async function announceNowPlaying(

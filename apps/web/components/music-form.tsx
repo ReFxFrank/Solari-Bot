@@ -151,10 +151,14 @@ function Toggle({
   );
 }
 
+// Fall back only on empty/NaN input — a legitimately typed 0 must survive
+// (defaultVolume and autoLeaveSeconds both allow 0 in the schema).
 function clamp(raw: string, min: number, max: number, fallback: number): number {
-  return Math.max(min, Math.min(max, Math.round(Number(raw) || fallback)));
+  const n = raw.trim() === '' ? NaN : Number(raw);
+  return Math.max(min, Math.min(max, Math.round(Number.isNaN(n) ? fallback : n)));
 }
 
 function clampFloat(raw: string, min: number, max: number, fallback: number): number {
-  return Math.max(min, Math.min(max, Number(raw) || fallback));
+  const n = raw.trim() === '' ? NaN : Number(raw);
+  return Math.max(min, Math.min(max, Number.isNaN(n) ? fallback : n));
 }

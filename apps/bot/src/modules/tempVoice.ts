@@ -19,6 +19,8 @@ import type { Logger } from '../logger';
  * is the durable source of truth used to clean up orphans after a restart.
  */
 const tempChannels = new Map<string, string>();
+/** guild:member keys with a create in flight — prevents duplicate spawns. */
+const creatingFor = new Set<string>();
 
 export function isTempChannel(channelId: string): boolean {
   return tempChannels.has(channelId);
@@ -50,9 +52,18 @@ export async function handleTempVoice(
     if (!(await ctx.config.isEnabled(guildId, 'TEMP_VOICE'))) return;
     const config = await ctx.config.getConfig(guildId, 'TEMP_VOICE');
     if (config.hubChannelIds.includes(newState.channelId)) {
-      await createTempChannel(ctx, member, newState.channel, config).catch((err: unknown) =>
-        ctx.logger.warn({ err, guildId }, 'Temp voice create failed'),
-      );
+      // Dedup: a leave→rejoin (or flaky reconnect) within the create window
+      // would otherwise spawn two channels. One create per member at a time.
+      const key = `${guildId}:${member.id}`;
+      if (creatingFor.has(key)) return;
+      creatingFor.add(key);
+      try {
+        await createTempChannel(ctx, member, newState.channel, config);
+      } catch (err) {
+        ctx.logger.warn({ err, guildId }, 'Temp voice create failed');
+      } finally {
+        creatingFor.delete(key);
+      }
     }
   }
 }
@@ -64,7 +75,17 @@ async function createTempChannel(
   config: TempVoiceConfig,
 ): Promise<void> {
   const name = config.nameTemplate.replace(/\{user\}/g, member.displayName).slice(0, 100);
-  const parent = config.categoryId ?? hub.parentId ?? null;
+
+  // Resolve the parent defensively: fall back to the hub's category if the
+  // configured one was deleted or doesn't point at an actual category — otherwise
+  // channels.create rejects and every hub-join silently fails.
+  let parent: string | null = hub.parentId ?? null;
+  if (config.categoryId) {
+    const category =
+      hub.guild.channels.cache.get(config.categoryId) ??
+      (await hub.guild.channels.fetch(config.categoryId).catch(() => null));
+    parent = category?.type === ChannelType.GuildCategory ? category.id : (hub.parentId ?? null);
+  }
 
   const channel = await hub.guild.channels.create({
     name,
@@ -73,18 +94,24 @@ async function createTempChannel(
     userLimit: config.defaultUserLimit,
   });
 
-  // Move the member in. If that fails (they left instantly), bin the empty channel.
-  try {
-    await member.voice.setChannel(channel);
-  } catch (err) {
-    await channel.delete('Temp voice owner never entered').catch(() => undefined);
-    throw err;
-  }
-
+  // Track + persist BEFORE moving the member. If a disconnect races in during the
+  // move, cleanupIfEmpty then sees a tracked, empty channel and removes it (rather
+  // than leaking an untracked one until restart reconcile).
   tempChannels.set(channel.id, member.id);
   await ctx.prisma.tempVoiceChannel.create({
     data: { channelId: channel.id, guildId: hub.guild.id, ownerId: member.id },
   });
+
+  try {
+    await member.voice.setChannel(channel);
+  } catch (err) {
+    tempChannels.delete(channel.id);
+    await ctx.prisma.tempVoiceChannel
+      .delete({ where: { channelId: channel.id } })
+      .catch(() => undefined);
+    await channel.delete('Temp voice owner never entered').catch(() => undefined);
+    throw err;
+  }
 }
 
 async function cleanupIfEmpty(ctx: BotContext, channel: VoiceBasedChannel): Promise<void> {

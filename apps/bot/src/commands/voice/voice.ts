@@ -63,6 +63,10 @@ const command: Command = {
       await channel.permissionOverwrites.edit(interaction.guild.roles.everyone, {
         Connect: locked ? false : null,
       });
+      // Keep the owner able to leave and rejoin their own locked channel.
+      await channel.permissionOverwrites.edit(interaction.user.id, {
+        Connect: locked ? true : null,
+      });
       description = locked
         ? '🔒 Locked — others can’t join.'
         : '🔓 Unlocked — others can join.';
