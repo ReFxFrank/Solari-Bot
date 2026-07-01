@@ -22,6 +22,26 @@ export const casinoConfigSchema = z
 
 export type CasinoConfig = z.infer<typeof casinoConfigSchema>;
 
+/** A role that grants a bonus on top of the base /daily payout. */
+export const incomeRoleSchema = z.object({
+  roleId: z.string(),
+  dailyBonus: z.number().int().min(0).max(1_000_000).default(0),
+});
+export type IncomeRole = z.infer<typeof incomeRoleSchema>;
+
+/**
+ * A buyable shop item. Purchasing debits `price` from the wallet and, when
+ * `roleId` is set, grants that role (role-shop model — no inventory needed).
+ */
+export const shopItemSchema = z.object({
+  id: z.string(),
+  label: z.string().min(1).max(64),
+  description: z.string().max(200).default(''),
+  price: z.number().int().min(0).max(1_000_000_000).default(100),
+  roleId: z.string().nullable().default(null),
+});
+export type ShopItem = z.infer<typeof shopItemSchema>;
+
 /**
  * Economy module config (premium). Currency naming, earn amounts + cooldowns,
  * and gambling limits. Balances live in the EconomyUser table; these are the
@@ -45,6 +65,16 @@ export const economyConfigSchema = z.object({
   maxBet: z.number().int().min(1).max(100_000_000).default(10_000),
   /** Whether /rob is available. */
   robEnabled: z.boolean().default(true),
+  /** Percent chance a /rob attempt succeeds (0–100). */
+  robSuccessRate: z.number().int().min(0).max(100).default(50),
+  /** Cooldown between /rob attempts. */
+  robCooldownSeconds: z.number().int().min(0).max(604_800).default(3_600),
+  /** On a failed rob, the robber pays the victim this percent of their own wallet. */
+  robFinePercent: z.number().int().min(0).max(100).default(10),
+  /** Roles that add a bonus to the /daily payout (summed across a member's roles). */
+  incomeRoles: z.array(incomeRoleSchema).max(25).default([]),
+  /** Buyable role-shop items (see /shop and /buy). */
+  shopItems: z.array(shopItemSchema).max(50).default([]),
   /** Casino games + their limits and payouts. */
   casino: casinoConfigSchema,
 });

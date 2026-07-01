@@ -2,7 +2,14 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
-import { formatMoney, getEconomyUser, tryTransferWallet } from '../../lib/economy';
+import {
+  cooldownRemaining,
+  formatDuration,
+  formatMoney,
+  getEconomyUser,
+  tryStampRob,
+  tryTransferWallet,
+} from '../../lib/economy';
 
 const MIN_VICTIM_WALLET = 100;
 
@@ -32,7 +39,11 @@ const command: Command = {
       return;
     }
 
-    const actor = await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
+    const actor = await getEconomyUser(
+      interaction.guildId,
+      interaction.user.id,
+      config.startingBalance,
+    );
     const victim = await getEconomyUser(interaction.guildId, target.id, config.startingBalance);
 
     if (victim.wallet < MIN_VICTIM_WALLET) {
@@ -43,7 +54,29 @@ const command: Command = {
       return;
     }
 
-    if (Math.random() < 0.5) {
+    // Cooldown gate — stamped only when the attempt actually proceeds.
+    if (config.robCooldownSeconds > 0) {
+      const proceeded = await tryStampRob(
+        interaction.guildId,
+        interaction.user.id,
+        config.robCooldownSeconds,
+      );
+      if (!proceeded) {
+        const remaining = cooldownRemaining(actor.lastRob, config.robCooldownSeconds);
+        await interaction.reply({
+          embeds: [
+            brandedEmbed({
+              kind: 'warning',
+              description: `You're lying low. Try robbing again in **${formatDuration(remaining)}**.`,
+            }),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+    }
+
+    if (Math.random() * 100 < config.robSuccessRate) {
       // Success: steal 10–40% of the victim's wallet, transferred atomically.
       const stolen = Math.max(1, Math.floor(victim.wallet * (0.1 + Math.random() * 0.3)));
       if (!(await tryTransferWallet(interaction.guildId, target.id, interaction.user.id, stolen))) {
@@ -68,9 +101,15 @@ const command: Command = {
       return;
     }
 
-    // Caught: pay the victim a penalty capped by what the actor actually has.
-    const penalty = Math.min(actor.wallet, Math.max(50, Math.floor(victim.wallet * 0.1)));
-    if (penalty > 0 && (await tryTransferWallet(interaction.guildId, interaction.user.id, target.id, penalty))) {
+    // Caught: pay the victim a fine — a percent of the robber's own wallet.
+    const penalty = Math.min(
+      actor.wallet,
+      Math.floor((actor.wallet * config.robFinePercent) / 100),
+    );
+    if (
+      penalty > 0 &&
+      (await tryTransferWallet(interaction.guildId, interaction.user.id, target.id, penalty))
+    ) {
       await interaction.reply({
         embeds: [
           brandedEmbed({

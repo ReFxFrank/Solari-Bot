@@ -2,6 +2,7 @@ import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
 import { RequireBotPermissions, RequireGuild, RequireUserPermissions } from '../../lib/permissions';
 import { createModerationCase, deactivateTempBans } from '../../lib/cases';
+import { postModLog } from '../../lib/moderation';
 import { tempBanJobId } from '../../services/jobs';
 import type { Command } from '../../framework/command';
 
@@ -55,15 +56,15 @@ const command: Command = {
       reason,
     });
 
-    await interaction.editReply({
-      embeds: [
-        brandedEmbed({
-          kind: 'success',
-          title: `Case #${moderationCase.caseNumber} · Unban`,
-          description: `**User:** \`${userId}\`\n**Reason:** ${reason}`,
-        }),
-      ],
+    const embed = brandedEmbed({
+      kind: 'success',
+      title: `Case #${moderationCase.caseNumber} · Unban`,
+      description: `**User:** \`${userId}\`\n**Moderator:** ${interaction.user.tag}\n**Reason:** ${reason}`,
     });
+
+    await interaction.editReply({ embeds: [embed] });
+    const config = await ctx.config.getConfig(interaction.guildId, 'MODERATION');
+    await postModLog(ctx, interaction.guildId, config, embed);
   },
 };
 

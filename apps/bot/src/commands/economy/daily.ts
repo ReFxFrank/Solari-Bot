@@ -17,8 +17,15 @@ const command: Command = {
     // Ensure the row exists so the atomic claim can match it.
     await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
 
+    // Income-role bonuses stack on top of the base daily payout.
+    const bonus = config.incomeRoles.reduce(
+      (sum, role) => (interaction.member.roles.cache.has(role.roleId) ? sum + role.dailyBonus : sum),
+      0,
+    );
+    const payout = config.dailyAmount + bonus;
+
     // Cooldown check + grant in one guarded write — concurrent /daily can't double-claim.
-    if (!(await tryClaimDaily(interaction.guildId, interaction.user.id, config.dailyAmount, DAY_SECONDS))) {
+    if (!(await tryClaimDaily(interaction.guildId, interaction.user.id, payout, DAY_SECONDS))) {
       const eco = await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
       await interaction.reply({
         embeds: [
@@ -36,7 +43,9 @@ const command: Command = {
       embeds: [
         brandedEmbed({
           kind: 'success',
-          description: `🎁 You claimed your daily ${formatMoney(config.dailyAmount, config)}!`,
+          description:
+            `🎁 You claimed your daily ${formatMoney(payout, config)}!` +
+            (bonus > 0 ? `\n_(includes a ${formatMoney(bonus, config)} income-role bonus)_` : ''),
         }),
       ],
     });

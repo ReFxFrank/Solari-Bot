@@ -143,6 +143,24 @@ export async function tryClaimDaily(
   return res.count > 0;
 }
 
+/**
+ * Atomic rob-cooldown gate: stamp `lastRob` only if the cooldown has elapsed.
+ * Returns true if the attempt may proceed (concurrent /rob can't double-stamp).
+ * The row must already exist (call getEconomyUser first).
+ */
+export async function tryStampRob(
+  guildId: string,
+  userId: string,
+  cooldownSeconds: number,
+): Promise<boolean> {
+  const cutoff = new Date(Date.now() - cooldownSeconds * 1000);
+  const res = await prisma.economyUser.updateMany({
+    where: { guildId, userId, OR: [{ lastRob: null }, { lastRob: { lte: cutoff } }] },
+    data: { lastRob: new Date() },
+  });
+  return res.count > 0;
+}
+
 /** Atomic cooldown-gated grant for /work. Returns false if still on cooldown. */
 export async function tryClaimWork(
   guildId: string,

@@ -2,6 +2,7 @@ import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
 import { RequireBotPermissions, RequireGuild, RequireUserPermissions } from '../../lib/permissions';
 import { createModerationCase } from '../../lib/cases';
+import { isImmuneMember, postModLog } from '../../lib/moderation';
 import { formatDuration, parseDuration } from '../../lib/parsing';
 import { tempBanJobId } from '../../services/jobs';
 import type { Command } from '../../framework/command';
@@ -61,6 +62,16 @@ const command: Command = {
       return;
     }
 
+    const config = await ctx.config.getConfig(interaction.guildId, 'MODERATION');
+    const targetMember = await interaction.guild.members.fetch(target.id).catch(() => null);
+    if (targetMember && isImmuneMember(targetMember, config.immuneRoleIds)) {
+      await interaction.reply({
+        embeds: [errorEmbed('That member has a moderation-immune role and can’t be banned.')],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     let durationSeconds: number | null = null;
     if (durationInput) {
       const parsed = parseDuration(durationInput);
@@ -98,8 +109,7 @@ const command: Command = {
 
     // Best-effort DM AFTER a confirmed ban, so a failed ban never sends a false
     // "you were banned" notice.
-    const modConfig = await ctx.config.getConfig(interaction.guildId, 'MODERATION');
-    if (modConfig.dmOnAction) {
+    if (config.dmOnAction) {
       await target
         .send(`You have been banned from **${interaction.guild.name}**.\nReason: ${reason}`)
         .catch(() => undefined);
@@ -137,23 +147,23 @@ const command: Command = {
       }
     }
 
-    await interaction.editReply({
-      embeds: [
-        brandedEmbed({
-          kind: 'success',
-          title: `Case #${moderationCase.caseNumber} · ${isTemp ? 'Temp-ban' : 'Ban'}`,
-          description: [
-            `**User:** ${target.tag} (\`${target.id}\`)`,
-            `**Reason:** ${reason}`,
-            isTemp
-              ? `**Duration:** ${formatDuration(durationSeconds!)} (auto-unban scheduled)`
-              : null,
-          ]
-            .filter(Boolean)
-            .join('\n'),
-        }),
-      ],
+    const embed = brandedEmbed({
+      kind: 'success',
+      title: `Case #${moderationCase.caseNumber} · ${isTemp ? 'Temp-ban' : 'Ban'}`,
+      description: [
+        `**User:** ${target.tag} (\`${target.id}\`)`,
+        `**Moderator:** ${interaction.user.tag}`,
+        `**Reason:** ${reason}`,
+        isTemp
+          ? `**Duration:** ${formatDuration(durationSeconds!)} (auto-unban scheduled)`
+          : null,
+      ]
+        .filter(Boolean)
+        .join('\n'),
     });
+
+    await interaction.editReply({ embeds: [embed] });
+    await postModLog(ctx, interaction.guildId, config, embed);
   },
 };
 
