@@ -13,7 +13,7 @@ import {
   type GuildMember,
   type ModalSubmitInteraction,
 } from 'discord.js';
-import type { VerificationConfig } from '@solari/shared';
+import { verificationGateError, type VerificationConfig } from '@solari/shared';
 import { brandedEmbed, errorEmbed } from '../lib/embeds';
 import { generateCaptchaCode, renderCaptcha } from '../lib/captcha';
 import { buildCustomId } from '../framework/customId';
@@ -193,6 +193,18 @@ export async function startVerification(
   const member = interaction.member;
   if (member.roles.cache.has(config.verifiedRoleId)) {
     await interaction.reply({ content: 'You’re already verified. ✅', flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  // Anti-alt gate: enforce account/membership age before ANY method proceeds.
+  const gateError = verificationGateError(
+    config,
+    member.user.createdTimestamp,
+    member.joinedTimestamp,
+    Date.now(),
+  );
+  if (gateError) {
+    await interaction.reply({ embeds: [errorEmbed(gateError)], flags: MessageFlags.Ephemeral });
     return;
   }
 

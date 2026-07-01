@@ -45,6 +45,61 @@ export const verificationConfigSchema = z.object({
   failAction: z.enum(VERIFICATION_FAIL_ACTIONS).default('none'),
   /** Where verification passes/failures are logged. Null disables logging. */
   logChannelId: z.string().nullable().default(null),
+  /** Discord account must be at least this old to verify. 0 disables. */
+  minAccountAgeHours: z.number().int().min(0).max(8760).default(0),
+  /** Member must have been in the server this long to verify. 0 disables. */
+  minServerAgeMinutes: z.number().int().min(0).max(10_080).default(0),
 });
 
 export type VerificationConfig = z.infer<typeof verificationConfigSchema>;
+
+const HOUR_MS = 3_600_000;
+const MINUTE_MS = 60_000;
+
+/** Compact remaining-wait string, e.g. "2h 05m" / "12m". */
+function formatWait(ms: number): string {
+  const totalMinutes = Math.max(1, Math.ceil(ms / MINUTE_MS));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `${minutes}m`;
+  return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+/**
+ * Anti-alt gate: returns a user-facing error when the member doesn't yet meet
+ * the account-age / membership-age requirements, or null when they may verify.
+ * Pure (all timestamps injected) so it's unit-testable.
+ */
+export function verificationGateError(
+  config: Pick<VerificationConfig, 'minAccountAgeHours' | 'minServerAgeMinutes'>,
+  accountCreatedMs: number,
+  joinedAtMs: number | null,
+  nowMs: number,
+): string | null {
+  if (config.minAccountAgeHours > 0) {
+    const requiredMs = config.minAccountAgeHours * HOUR_MS;
+    const remaining = accountCreatedMs + requiredMs - nowMs;
+    if (remaining > 0) {
+      return (
+        `Your Discord account is too new to verify here — try again in **${formatWait(remaining)}** ` +
+        `(accounts must be at least ${config.minAccountAgeHours}h old).`
+      );
+    }
+  }
+  if (config.minServerAgeMinutes > 0) {
+    // No join timestamp (uncached partial) fails CLOSED — the gate exists to
+    // keep instant alts out, so an unknown join time must not bypass it.
+    if (joinedAtMs === null) {
+      return 'I can’t confirm when you joined yet — try again in a few minutes.';
+    }
+    const requiredMs = config.minServerAgeMinutes * MINUTE_MS;
+    const remaining = joinedAtMs + requiredMs - nowMs;
+    if (remaining > 0) {
+      return (
+        `You joined too recently to verify — try again in **${formatWait(remaining)}** ` +
+        `(members must wait ${config.minServerAgeMinutes}m after joining).`
+      );
+    }
+  }
+  return null;
+}

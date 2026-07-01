@@ -183,6 +183,45 @@ export function VerificationForm({
       )}
 
       <SettingsSection
+        title="Requirements"
+        description="Anti-alt gates checked before a member may verify (either method)."
+        defaultOpen={false}
+      >
+        <div className="grid max-w-xl gap-5 sm:grid-cols-2">
+          <Field label="Min account age (hours)" hint="0 disables. Blocks brand-new accounts.">
+            <input
+              type="number"
+              min={0}
+              max={8760}
+              className={inputClass}
+              value={config.minAccountAgeHours}
+              onChange={(e) =>
+                update(
+                  'minAccountAgeHours',
+                  Math.min(8760, Math.max(0, Math.round(Number(e.target.value) || 0))),
+                )
+              }
+            />
+          </Field>
+          <Field label="Min time in server (minutes)" hint="0 disables. Defeats instant bot joins.">
+            <input
+              type="number"
+              min={0}
+              max={10080}
+              className={inputClass}
+              value={config.minServerAgeMinutes}
+              onChange={(e) =>
+                update(
+                  'minServerAgeMinutes',
+                  Math.min(10080, Math.max(0, Math.round(Number(e.target.value) || 0))),
+                )
+              }
+            />
+          </Field>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
         title="Verification Panel"
         description="The embed + button members click to start verifying. Save, then deploy."
       >
