@@ -27,12 +27,14 @@ import { handlePollEnd } from './jobs/handlers/pollEnd';
 import { handleBirthdayAnnounce } from './jobs/handlers/birthdayAnnounce';
 import { handleStatsCounterRefresh } from './jobs/handlers/statsCounterRefresh';
 import { handleVoiceXp } from './jobs/handlers/voiceXp';
+import { handleSocialPoll } from './jobs/handlers/socialPoll';
 import { reconcileTickets } from './modules/tickets';
 import { reconcileAfk } from './modules/afk';
 import { reconcileBirthdays } from './modules/birthdays';
 import { reconcileStatsCounters } from './modules/statsCounters';
 import { reconcileVoiceXp } from './modules/leveling';
 import { reconcileTempVoice } from './modules/tempVoice';
+import { reconcileSocial } from './modules/social';
 import { syncAllGuilds } from './lib/guildSync';
 import { cacheAllGuildInvites } from './modules/inviteTracking';
 import { createMusicManager } from './services/music';
@@ -90,6 +92,7 @@ async function bootstrap(): Promise<void> {
   jobs.registerHandler(QUEUE_NAMES.birthdayAnnounce, handleBirthdayAnnounce);
   jobs.registerHandler(QUEUE_NAMES.statsCounterRefresh, handleStatsCounterRefresh);
   jobs.registerHandler(QUEUE_NAMES.voiceXp, handleVoiceXp);
+  jobs.registerHandler(QUEUE_NAMES.socialPoll, handleSocialPoll);
 
   const liveCommands = new LiveCommandService(client, logger, jobs, config);
 
@@ -143,6 +146,7 @@ async function bootstrap(): Promise<void> {
       reconcileStatsCounters(ready, jobs),
       reconcileVoiceXp(ready, jobs),
       reconcileTempVoice(ready, prisma, logger),
+      reconcileSocial(ready, jobs, logger),
       cacheAllGuildInvites(ready.guilds.cache.values()),
     ]).then((results) => {
       for (const result of results) {

@@ -94,8 +94,32 @@ model Guild {
   subscription      GuildSubscription?
   tempVoiceChannels TempVoiceChannel[]
   economyUsers      EconomyUser[]
+  socialSubscriptions SocialSubscription[]
 
   @@index([ownerId])
+}
+
+/// A Social Alerts subscription (premium): watch a Twitch/YouTube/Reddit/RSS
+/// source and post new items to a channel. `lastItemId` dedups what's been
+/// posted; a per-subscription BullMQ job polls on an interval.
+model SocialSubscription {
+  id            String   @id @default(cuid())
+  guildId       String
+  /// twitch | youtube | reddit | rss
+  platform      String
+  /// Twitch login / YouTube channel id / subreddit / feed URL.
+  target        String
+  /// Discord channel the alerts post to.
+  channelId     String
+  /// Optional role to ping on a new item.
+  mentionRoleId String?
+  /// Id of the most recent item already posted (dedup).
+  lastItemId    String?
+  createdAt     DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
 }
 
 /// Per-(guild, user) economy balance (premium). `wallet` is spendable/robbable;

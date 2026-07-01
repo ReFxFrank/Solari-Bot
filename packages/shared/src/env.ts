@@ -45,6 +45,10 @@ export const botEnvSchema = baseEnvSchema.extend({
     .transform((value) => value === 'true' || value === '1'),
   /** Base metrics port; each shard binds METRICS_PORT + shardId. */
   METRICS_PORT: z.coerce.number().int().positive().default(9090),
+  /** Twitch app credentials for Social Alerts live notifications (optional —
+   *  YouTube/Reddit/RSS work without any keys). */
+  TWITCH_CLIENT_ID: z.string().optional(),
+  TWITCH_CLIENT_SECRET: z.string().optional(),
   /** Public ReFx status feed override (optional; defaults to api.refx.gg). */
   REFX_STATUS_URL: z.string().url().optional(),
   /** status:read bearer token for the authenticated node-metrics feed. */
