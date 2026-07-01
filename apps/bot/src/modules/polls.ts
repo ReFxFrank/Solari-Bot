@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   type BaseMessageOptions,
   type Client,
+  type ColorResolvable,
   type GuildTextBasedChannel,
 } from 'discord.js';
 import { prisma } from '@solari/database';
@@ -27,8 +28,9 @@ export function buildPollMessage(params: {
   votes: { optionIndex: number }[];
   ended: boolean;
   endsAt?: Date | null;
+  color?: string | null;
 }): BaseMessageOptions {
-  const { pollId, question, options, votes, ended, endsAt } = params;
+  const { pollId, question, options, votes, ended, endsAt, color } = params;
   const tally = tallyPoll(options, votes);
   const showResults = ended || votes.length > 0;
 
@@ -43,6 +45,7 @@ export function buildPollMessage(params: {
     kind: ended ? 'default' : 'info',
     title: `📊 ${question}`,
   }).setDescription(lines.join('\n\n').slice(0, 4000));
+  if (color) embed.setColor(color as ColorResolvable);
   if (ended)
     embed.setFooter({ text: `Poll closed · ${votes.length} vote${votes.length === 1 ? '' : 's'}` });
   else if (endsAt)
@@ -100,6 +103,7 @@ export async function endPoll(pollId: string, deps: PollDeps): Promise<void> {
         options: poll.options as string[],
         votes: poll.votes,
         ended: true,
+        color: poll.color,
       }),
     )
     .catch(() => undefined);

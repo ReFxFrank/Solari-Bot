@@ -42,6 +42,7 @@ export default defineComponent({
           votes,
           ended: false,
           endsAt: poll.endsAt,
+          color: poll.color,
         }),
       )
       .catch(() => undefined);

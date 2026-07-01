@@ -168,6 +168,7 @@ export const MODULE_META: ModuleMeta[] = [
     icon: Vote,
     category: 'core',
     accent: 'teal',
+    configSlug: 'polls',
   },
   {
     module: 'SUGGESTIONS',

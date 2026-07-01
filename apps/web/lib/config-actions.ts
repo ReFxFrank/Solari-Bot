@@ -15,6 +15,7 @@ import type {
   ModerationConfig,
   ModuleWithSchema,
   MusicConfig,
+  PollsConfig,
   RefxAlertsConfig,
   StarboardConfig,
   StatsCountersConfig,
@@ -191,6 +192,10 @@ export async function saveAchievementsConfig(
   input: AchievementsConfig,
 ): Promise<ActionResult> {
   return saveConfig(guildId, 'ACHIEVEMENTS', input, 'achievements');
+}
+
+export async function savePollsConfig(guildId: string, input: PollsConfig): Promise<ActionResult> {
+  return saveConfig(guildId, 'POLLS', input, 'polls');
 }
 
 export async function saveGuildSettings(

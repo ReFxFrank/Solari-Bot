@@ -576,6 +576,7 @@ model Poll {
   options   Json
   endsAt    DateTime?
   ended     Boolean   @default(false)
+  color     String? // hex embed color captured from the guild's Polls config at creation
   createdBy String
   createdAt DateTime  @default(now())
 

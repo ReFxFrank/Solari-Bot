@@ -86,6 +86,8 @@ const command: Command = {
       return;
     }
 
+    const config = await ctx.config.getConfig(interaction.guildId, 'POLLS');
+
     const durationInput = interaction.options.getString('duration');
     let endsAt: Date | null = null;
     if (durationInput) {
@@ -98,6 +100,9 @@ const command: Command = {
         return;
       }
       endsAt = new Date(Date.now() + seconds * 1000);
+    } else if (config.defaultDurationHours > 0) {
+      // Fall back to the server's default auto-close when no duration is given.
+      endsAt = new Date(Date.now() + config.defaultDurationHours * 3_600_000);
     }
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -108,12 +113,21 @@ const command: Command = {
         question,
         options: options as unknown as Prisma.InputJsonValue,
         endsAt,
+        color: config.color,
         createdBy: interaction.user.id,
       },
     });
     const sent = await channel
       .send(
-        buildPollMessage({ pollId: poll.id, question, options, votes: [], ended: false, endsAt }),
+        buildPollMessage({
+          pollId: poll.id,
+          question,
+          options,
+          votes: [],
+          ended: false,
+          endsAt,
+          color: config.color,
+        }),
       )
       .catch(() => null);
     if (!sent) {
