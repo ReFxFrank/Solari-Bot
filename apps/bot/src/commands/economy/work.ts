@@ -1,9 +1,8 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { prisma } from '@solari/database';
 import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed } from '../../lib/embeds';
-import { cooldownRemaining, formatDuration, formatMoney, getEconomyUser } from '../../lib/economy';
+import { cooldownRemaining, formatDuration, formatMoney, getEconomyUser, tryClaimWork } from '../../lib/economy';
 
 const FLAVOURS = [
   'You delivered pizzas',
@@ -22,31 +21,27 @@ const command: Command = {
   async execute(interaction, ctx) {
     if (!interaction.inCachedGuild()) return;
     const config = await ctx.config.getConfig(interaction.guildId, 'ECONOMY');
-    const eco = await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
-
-    const remaining = cooldownRemaining(eco.lastWork, config.workCooldownSeconds);
-    if (remaining > 0) {
-      await interaction.reply({
-        embeds: [
-          brandedEmbed({
-            kind: 'warning',
-            description: `You're worn out. Try again in **${formatDuration(remaining)}**.`,
-          }),
-        ],
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
+    await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
 
     const min = config.workMin;
     const max = Math.max(config.workMin, config.workMax);
     const earned = min + Math.floor(Math.random() * (max - min + 1));
     const flavour = FLAVOURS[Math.floor(Math.random() * FLAVOURS.length)] ?? 'You worked hard';
 
-    await prisma.economyUser.update({
-      where: { guildId_userId: { guildId: interaction.guildId, userId: interaction.user.id } },
-      data: { wallet: { increment: earned }, lastWork: new Date() },
-    });
+    // Cooldown check + payout in one guarded write — concurrent /work can't double-pay.
+    if (!(await tryClaimWork(interaction.guildId, interaction.user.id, earned, config.workCooldownSeconds))) {
+      const eco = await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
+      await interaction.reply({
+        embeds: [
+          brandedEmbed({
+            kind: 'warning',
+            description: `You're worn out. Try again in **${formatDuration(cooldownRemaining(eco.lastWork, config.workCooldownSeconds))}**.`,
+          }),
+        ],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
     await interaction.reply({
       embeds: [

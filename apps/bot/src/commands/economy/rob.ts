@@ -2,7 +2,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
-import { addWallet, formatMoney, getEconomyUser, trySpendWallet } from '../../lib/economy';
+import { formatMoney, getEconomyUser, tryTransferWallet } from '../../lib/economy';
 
 const MIN_VICTIM_WALLET = 100;
 
@@ -44,9 +44,9 @@ const command: Command = {
     }
 
     if (Math.random() < 0.5) {
-      // Success: steal 10–40% of the victim's wallet, debited race-safely.
+      // Success: steal 10–40% of the victim's wallet, transferred atomically.
       const stolen = Math.max(1, Math.floor(victim.wallet * (0.1 + Math.random() * 0.3)));
-      if (!(await trySpendWallet(interaction.guildId, target.id, stolen))) {
+      if (!(await tryTransferWallet(interaction.guildId, target.id, interaction.user.id, stolen))) {
         await interaction.reply({
           embeds: [
             brandedEmbed({
@@ -57,7 +57,6 @@ const command: Command = {
         });
         return;
       }
-      await addWallet(interaction.guildId, interaction.user.id, stolen);
       await interaction.reply({
         embeds: [
           brandedEmbed({
@@ -71,8 +70,7 @@ const command: Command = {
 
     // Caught: pay the victim a penalty capped by what the actor actually has.
     const penalty = Math.min(actor.wallet, Math.max(50, Math.floor(victim.wallet * 0.1)));
-    if (penalty > 0 && (await trySpendWallet(interaction.guildId, interaction.user.id, penalty))) {
-      await addWallet(interaction.guildId, target.id, penalty);
+    if (penalty > 0 && (await tryTransferWallet(interaction.guildId, interaction.user.id, target.id, penalty))) {
       await interaction.reply({
         embeds: [
           brandedEmbed({

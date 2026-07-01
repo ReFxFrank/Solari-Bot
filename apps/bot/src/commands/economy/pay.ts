@@ -2,7 +2,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
-import { addWallet, formatMoney, getEconomyUser, trySpendWallet } from '../../lib/economy';
+import { formatMoney, getEconomyUser, tryTransferWallet } from '../../lib/economy';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -28,18 +28,17 @@ const command: Command = {
     }
 
     const config = await ctx.config.getConfig(interaction.guildId, 'ECONOMY');
-    // Ensure both rows exist, then debit the sender race-safely before crediting.
+    // Ensure both rows exist, then transfer atomically (debit + credit in one tx).
     await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
     await getEconomyUser(interaction.guildId, target.id, config.startingBalance);
 
-    if (!(await trySpendWallet(interaction.guildId, interaction.user.id, amount))) {
+    if (!(await tryTransferWallet(interaction.guildId, interaction.user.id, target.id, amount))) {
       await interaction.reply({
         embeds: [errorEmbed("You don't have that much in your wallet.")],
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-    await addWallet(interaction.guildId, target.id, amount);
 
     await interaction.reply({
       embeds: [

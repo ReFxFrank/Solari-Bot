@@ -2,7 +2,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
-import { addWallet, formatMoney, getEconomyUser, resolveBet, trySpendWallet } from '../../lib/economy';
+import { formatMoney, getEconomyUser, resolveBet, settleBet } from '../../lib/economy';
 
 const REELS = ['🍒', '🍋', '🍇', '🔔', '💎', '7️⃣'];
 
@@ -30,7 +30,16 @@ const command: Command = {
       await interaction.reply({ embeds: [errorEmbed(bet.error)], flags: MessageFlags.Ephemeral });
       return;
     }
-    if (!(await trySpendWallet(interaction.guildId, interaction.user.id, amount))) {
+
+    const reels = spin();
+    const [a, b, c] = reels;
+    // Payout = TOTAL returned: 3-of-a-kind = 3x, any pair = 1.5x, otherwise 0.
+    let payout = 0;
+    if (a === b && b === c) payout = amount * 3;
+    else if (a === b || b === c || a === c) payout = Math.floor(amount * 1.5);
+
+    // Escrow the bet and pay out atomically.
+    if (!(await settleBet(interaction.guildId, interaction.user.id, amount, payout))) {
       await interaction.reply({
         embeds: [errorEmbed("You don't have that much in your wallet.")],
         flags: MessageFlags.Ephemeral,
@@ -38,25 +47,18 @@ const command: Command = {
       return;
     }
 
-    const reels = spin();
-    const [a, b, c] = reels;
-    // Payout is the TOTAL returned (bet already escrowed): 3-of-a-kind = 3x,
-    // any pair = 1.5x, otherwise nothing.
-    let payout = 0;
-    if (a === b && b === c) payout = amount * 3;
-    else if (a === b || b === c || a === c) payout = Math.floor(amount * 1.5);
-    if (payout > 0) await addWallet(interaction.guildId, interaction.user.id, payout);
-
     const net = payout - amount;
     await interaction.reply({
       embeds: [
         brandedEmbed({
-          kind: net > 0 ? 'success' : 'danger',
+          kind: net > 0 ? 'success' : net === 0 ? 'info' : 'danger',
           title: `🎰  ${reels.join('  ')}`,
           description:
             net > 0
               ? `You won ${formatMoney(net, config)}!`
-              : `You lost ${formatMoney(amount, config)}.`,
+              : net === 0
+                ? 'You broke even — bet returned.'
+                : `You lost ${formatMoney(amount, config)}.`,
         }),
       ],
     });

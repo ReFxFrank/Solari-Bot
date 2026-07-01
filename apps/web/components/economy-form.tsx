@@ -16,11 +16,12 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
     setStatus('idle');
   }
 
-  function num(key: keyof EconomyConfig, min: number, max: number, fallback: number) {
+  function num(key: keyof EconomyConfig, min: number, max: number) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value;
-      const n = raw.trim() === '' ? NaN : Number(raw);
-      update(key, Math.max(min, Math.min(max, Math.round(Number.isNaN(n) ? fallback : n))) as never);
+      const n = Number(e.target.value);
+      // Empty / non-numeric input rests at the field minimum instead of snapping
+      // to an unrelated default while the user retypes.
+      update(key, Math.max(min, Math.min(max, Math.round(Number.isNaN(n) ? min : n))) as never);
     };
   }
 
@@ -63,7 +64,7 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
             max={1_000_000}
             className={inputClass}
             value={config.startingBalance}
-            onChange={num('startingBalance', 0, 1_000_000, 0)}
+            onChange={num('startingBalance', 0, 1_000_000)}
           />
         </Field>
         <Field label="Daily amount" hint="Granted by /daily.">
@@ -73,7 +74,7 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
             max={1_000_000}
             className={inputClass}
             value={config.dailyAmount}
-            onChange={num('dailyAmount', 0, 1_000_000, 250)}
+            onChange={num('dailyAmount', 0, 1_000_000)}
           />
         </Field>
         <Field label="Work minimum" hint="Lowest /work payout.">
@@ -83,7 +84,7 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
             max={1_000_000}
             className={inputClass}
             value={config.workMin}
-            onChange={num('workMin', 0, 1_000_000, 50)}
+            onChange={num('workMin', 0, 1_000_000)}
           />
         </Field>
         <Field label="Work maximum" hint="Highest /work payout (kept ≥ minimum).">
@@ -93,7 +94,7 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
             max={1_000_000}
             className={inputClass}
             value={config.workMax}
-            onChange={num('workMax', 0, 1_000_000, 250)}
+            onChange={num('workMax', 0, 1_000_000)}
           />
         </Field>
         <Field label="Work cooldown (seconds)" hint="Time between /work uses (0–604800).">
@@ -103,7 +104,7 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
             max={604_800}
             className={inputClass}
             value={config.workCooldownSeconds}
-            onChange={num('workCooldownSeconds', 0, 604_800, 3600)}
+            onChange={num('workCooldownSeconds', 0, 604_800)}
           />
         </Field>
         <Field label="Max bet" hint="Largest gambling wager allowed.">
@@ -113,7 +114,7 @@ export function EconomyForm({ guildId, initial }: { guildId: string; initial: Ec
             max={100_000_000}
             className={inputClass}
             value={config.maxBet}
-            onChange={num('maxBet', 1, 100_000_000, 10_000)}
+            onChange={num('maxBet', 1, 100_000_000)}
           />
         </Field>
       </div>

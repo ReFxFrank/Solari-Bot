@@ -15,16 +15,13 @@ const command: Command = {
 
     // Pull the top wallets, then rank by total (wallet + bank) — an index on the
     // sum isn't possible, and high earners almost always lead on wallet too.
-    const rows = await prisma.economyUser.findMany({
+    const rows = (await prisma.economyUser.findMany({
       where: { guildId: interaction.guildId },
       orderBy: { wallet: 'desc' },
       take: 25,
-    });
+    })) as { userId: string; wallet: number; bank: number }[];
     const top = rows
-      .map((r: { userId: string; wallet: number; bank: number }) => ({
-        userId: r.userId,
-        total: r.wallet + r.bank,
-      }))
+      .map((r) => ({ userId: r.userId, total: r.wallet + r.bank }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 

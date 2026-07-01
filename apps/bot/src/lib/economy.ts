@@ -52,6 +52,112 @@ export async function trySpendBank(
   return res.count > 0;
 }
 
+/**
+ * Atomically move `amount` between two members' wallets. The guarded debit and
+ * the credit commit together (or roll back together), so money can never be
+ * destroyed or duplicated mid-transfer. Returns false on insufficient funds.
+ * Both rows must exist first (call getEconomyUser).
+ */
+export async function tryTransferWallet(
+  guildId: string,
+  fromUserId: string,
+  toUserId: string,
+  amount: number,
+): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const debit = await tx.economyUser.updateMany({
+      where: { guildId, userId: fromUserId, wallet: { gte: amount } },
+      data: { wallet: { decrement: amount } },
+    });
+    if (debit.count === 0) return false;
+    await tx.economyUser.update({
+      where: { guildId_userId: { guildId, userId: toUserId } },
+      data: { wallet: { increment: amount } },
+    });
+    return true;
+  });
+}
+
+/** Atomic wallet↔bank move within one member. `toBank` deposits, else withdraws. */
+export async function tryMoveMoney(
+  guildId: string,
+  userId: string,
+  amount: number,
+  toBank: boolean,
+): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const debit = await tx.economyUser.updateMany({
+      where: toBank
+        ? { guildId, userId, wallet: { gte: amount } }
+        : { guildId, userId, bank: { gte: amount } },
+      data: toBank ? { wallet: { decrement: amount } } : { bank: { decrement: amount } },
+    });
+    if (debit.count === 0) return false;
+    await tx.economyUser.update({
+      where: { guildId_userId: { guildId, userId } },
+      data: toBank ? { bank: { increment: amount } } : { wallet: { increment: amount } },
+    });
+    return true;
+  });
+}
+
+/**
+ * Atomically escrow a bet and pay out the total return in one transaction, so a
+ * mid-command failure can't take the bet without paying a win. `payout` is the
+ * TOTAL returned (0 = lost). Returns false on insufficient funds.
+ */
+export async function settleBet(
+  guildId: string,
+  userId: string,
+  bet: number,
+  payout: number,
+): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const debit = await tx.economyUser.updateMany({
+      where: { guildId, userId, wallet: { gte: bet } },
+      data: { wallet: { decrement: bet } },
+    });
+    if (debit.count === 0) return false;
+    if (payout > 0) {
+      await tx.economyUser.update({
+        where: { guildId_userId: { guildId, userId } },
+        data: { wallet: { increment: payout } },
+      });
+    }
+    return true;
+  });
+}
+
+/** Atomic cooldown-gated grant for /daily. Returns false if still on cooldown. */
+export async function tryClaimDaily(
+  guildId: string,
+  userId: string,
+  amount: number,
+  cooldownSeconds: number,
+): Promise<boolean> {
+  const cutoff = new Date(Date.now() - cooldownSeconds * 1000);
+  const res = await prisma.economyUser.updateMany({
+    where: { guildId, userId, OR: [{ lastDaily: null }, { lastDaily: { lte: cutoff } }] },
+    data: { wallet: { increment: amount }, lastDaily: new Date() },
+  });
+  return res.count > 0;
+}
+
+/** Atomic cooldown-gated grant for /work. Returns false if still on cooldown. */
+export async function tryClaimWork(
+  guildId: string,
+  userId: string,
+  amount: number,
+  cooldownSeconds: number,
+): Promise<boolean> {
+  const cutoff = new Date(Date.now() - cooldownSeconds * 1000);
+  const res = await prisma.economyUser.updateMany({
+    where: { guildId, userId, OR: [{ lastWork: null }, { lastWork: { lte: cutoff } }] },
+    data: { wallet: { increment: amount }, lastWork: new Date() },
+  });
+  return res.count > 0;
+}
+
 /** Format an amount with the guild's currency symbol. */
 export function formatMoney(amount: number, config: Pick<EconomyConfig, 'currencySymbol'>): string {
   return `**${amount.toLocaleString('en-US')}** ${config.currencySymbol}`;

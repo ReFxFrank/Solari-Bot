@@ -2,7 +2,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
-import { addWallet, formatMoney, getEconomyUser, resolveBet, trySpendWallet } from '../../lib/economy';
+import { formatMoney, getEconomyUser, resolveBet, settleBet } from '../../lib/economy';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -32,18 +32,17 @@ const command: Command = {
       await interaction.reply({ embeds: [errorEmbed(bet.error)], flags: MessageFlags.Ephemeral });
       return;
     }
-    // Escrow the bet up front (race-safe), then pay out on a win.
-    if (!(await trySpendWallet(interaction.guildId, interaction.user.id, amount))) {
+
+    const result = Math.random() < 0.5 ? 'heads' : 'tails';
+    const won = result === side;
+    // Escrow the bet and pay out the win atomically (debit + credit in one tx).
+    if (!(await settleBet(interaction.guildId, interaction.user.id, amount, won ? amount * 2 : 0))) {
       await interaction.reply({
         embeds: [errorEmbed("You don't have that much in your wallet.")],
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-
-    const result = Math.random() < 0.5 ? 'heads' : 'tails';
-    const won = result === side;
-    if (won) await addWallet(interaction.guildId, interaction.user.id, amount * 2);
 
     await interaction.reply({
       embeds: [
