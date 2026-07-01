@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useTransition, type ReactNode } from 'react';
+import { useState, useTransition } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { customCommandInputSchema, type CustomCommandInput, type EmbedSpec } from '@solari/shared';
 import { deleteCustomCommand, upsertCustomCommand } from '../lib/customcommands-actions';
 import { GlassCard } from './ui/glass-card';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
+import {
+  EMPTY_EMBED_DRAFT,
+  EmbedBuilder,
+  draftToSpec,
+  specToDraft,
+  type EmbedDraft,
+} from './ui/embed-builder';
 
 export interface TagSummary {
   name: string;
@@ -14,34 +21,24 @@ export interface TagSummary {
   uses: number;
 }
 
-const emptyForm = {
-  name: '',
-  content: '',
-  title: '',
-  description: '',
-  color: '',
-  url: '',
-  imageUrl: '',
-  thumbnailUrl: '',
-  footer: '',
-};
-type FormState = typeof emptyForm;
+interface FormState {
+  name: string;
+  content: string;
+  embed: EmbedDraft;
+}
+
+const emptyForm: FormState = { name: '', content: '', embed: EMPTY_EMBED_DRAFT };
+
+const TAG_VARIABLES = [
+  { token: '{user}', desc: "The invoker's mention" },
+  { token: '{server}', desc: 'The server name' },
+];
 
 function buildInput(form: FormState): CustomCommandInput {
-  const embedEntries = {
-    title: form.title.trim() || undefined,
-    description: form.description.trim() || undefined,
-    color: form.color.trim() || undefined,
-    url: form.url.trim() || undefined,
-    imageUrl: form.imageUrl.trim() || undefined,
-    thumbnailUrl: form.thumbnailUrl.trim() || undefined,
-    footer: form.footer.trim() || undefined,
-  };
-  const hasEmbed = Object.values(embedEntries).some(Boolean);
   return {
     name: form.name.trim().toLowerCase(),
     content: form.content.trim() || undefined,
-    embed: hasEmbed ? embedEntries : undefined,
+    embed: draftToSpec(form.embed),
   };
 }
 
@@ -49,13 +46,7 @@ function formFromTag(tag: TagSummary): FormState {
   return {
     name: tag.name,
     content: tag.content ?? '',
-    title: tag.embed?.title ?? '',
-    description: tag.embed?.description ?? '',
-    color: tag.embed?.color ?? '',
-    url: tag.embed?.url ?? '',
-    imageUrl: tag.embed?.imageUrl ?? '',
-    thumbnailUrl: tag.embed?.thumbnailUrl ?? '',
-    footer: tag.embed?.footer ?? '',
+    embed: specToDraft(tag.embed),
   };
 }
 
@@ -65,7 +56,7 @@ export function CustomCommandsManager({ guildId, tags }: { guildId: string; tags
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function set<K extends keyof FormState>(key: K, value: string): void {
+  function set<K extends keyof FormState>(key: K, value: FormState[K]): void {
     setForm((prev) => ({ ...prev, [key]: value }));
     setStatus('idle');
     setError(null);
@@ -97,16 +88,6 @@ export function CustomCommandsManager({ guildId, tags }: { guildId: string; tags
     });
   }
 
-  const embedInput = (label: string, key: keyof FormState, mono = false): ReactNode => (
-    <Field label={label}>
-      <input
-        className={mono ? monoInputClass : inputClass}
-        value={form[key]}
-        onChange={(e) => set(key, e.target.value)}
-      />
-    </Field>
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <GlassCard className="flex flex-col gap-4 p-5">
@@ -136,25 +117,12 @@ export function CustomCommandsManager({ guildId, tags }: { guildId: string; tags
           <summary className="cursor-pointer text-sm font-medium text-white/80">
             Embed (optional)
           </summary>
-          <div className="mt-3 flex flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {embedInput('Title', 'title')}
-              {embedInput('Color (hex)', 'color', true)}
-            </div>
-            <Field label="Description">
-              <textarea
-                className={`${inputClass} min-h-16 resize-y`}
-                value={form.description}
-                onChange={(e) => set('description', e.target.value)}
-                maxLength={4000}
-              />
-            </Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {embedInput('Title URL', 'url', true)}
-              {embedInput('Footer', 'footer')}
-              {embedInput('Image URL', 'imageUrl', true)}
-              {embedInput('Thumbnail URL', 'thumbnailUrl', true)}
-            </div>
+          <div className="mt-3">
+            <EmbedBuilder
+              value={form.embed}
+              onChange={(embed) => set('embed', embed)}
+              variables={TAG_VARIABLES}
+            />
           </div>
         </details>
 

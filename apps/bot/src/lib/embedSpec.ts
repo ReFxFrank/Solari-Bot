@@ -12,6 +12,14 @@ export function buildEmbedFromSpec(
 ): EmbedBuilder | null {
   if (!embedSpecHasContent(spec)) return null;
   const embed = new EmbedBuilder();
+
+  if (spec.author?.name) {
+    embed.setAuthor({
+      name: transform(spec.author.name).slice(0, 256),
+      iconURL: spec.author.iconUrl,
+      url: spec.author.url,
+    });
+  }
   if (spec.title) embed.setTitle(transform(spec.title).slice(0, 256));
   if (spec.description) embed.setDescription(transform(spec.description).slice(0, 4096));
   if (spec.url && spec.title) embed.setURL(spec.url);
@@ -20,6 +28,23 @@ export function buildEmbedFromSpec(
   }
   if (spec.imageUrl) embed.setImage(spec.imageUrl);
   if (spec.thumbnailUrl) embed.setThumbnail(spec.thumbnailUrl);
-  if (spec.footer) embed.setFooter({ text: transform(spec.footer).slice(0, 2048) });
+  if (spec.fields && spec.fields.length > 0) {
+    embed.addFields(
+      spec.fields.slice(0, 25).map((field) => ({
+        name: transform(field.name).slice(0, 256) || '​',
+        value: transform(field.value).slice(0, 1024) || '​',
+        inline: field.inline,
+      })),
+    );
+  }
+  // Discord only shows a footer icon when footer text is present.
+  if (spec.footer) {
+    embed.setFooter({
+      text: transform(spec.footer).slice(0, 2048),
+      iconURL: spec.footerIconUrl,
+    });
+  }
+  if (spec.timestamp) embed.setTimestamp(new Date());
+
   return embed;
 }
