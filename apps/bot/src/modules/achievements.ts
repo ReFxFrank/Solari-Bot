@@ -25,6 +25,14 @@ export interface UserStats {
   messages: number;
   coins: number;
   voiceMinutes: number;
+  reactionsAdded: number;
+  threadsCreated: number;
+  threadsJoined: number;
+  invites: number;
+  giveawaysJoined: number;
+  itemsPurchased: number;
+  boosted: number;
+  birthdaySet: number;
 }
 
 /** The member's current value for the stat an achievement tracks. */
@@ -38,13 +46,29 @@ export function statForType(type: AchievementType, stats: UserStats): number {
       return stats.coins;
     case 'VOICE_MINUTES':
       return stats.voiceMinutes;
+    case 'REACTIONS':
+      return stats.reactionsAdded;
+    case 'THREADS_CREATED':
+      return stats.threadsCreated;
+    case 'THREADS_JOINED':
+      return stats.threadsJoined;
+    case 'INVITES':
+      return stats.invites;
+    case 'GIVEAWAYS_JOINED':
+      return stats.giveawaysJoined;
+    case 'ITEMS_PURCHASED':
+      return stats.itemsPurchased;
+    case 'SERVER_BOOSTED':
+      return stats.boosted;
+    case 'BIRTHDAY_SET':
+      return stats.birthdaySet;
     default:
       return 0;
   }
 }
 
 async function loadStats(guildId: string, userId: string): Promise<UserStats> {
-  const [level, eco] = await Promise.all([
+  const [level, eco, ms, invites] = await Promise.all([
     prisma.userLevel.findUnique({
       where: { guildId_userId: { guildId, userId } },
       select: { level: true, messages: true, voiceMinutes: true },
@@ -53,12 +77,26 @@ async function loadStats(guildId: string, userId: string): Promise<UserStats> {
       where: { guildId_userId: { guildId, userId } },
       select: { wallet: true, bank: true },
     }),
+    prisma.memberStat.findUnique({
+      where: { guildId_userId: { guildId, userId } },
+    }),
+    // Invites come from the authoritative InviteUse table (deduped per invited
+    // member) rather than a counter, so leave/rejoin can't inflate the total.
+    prisma.inviteUse.count({ where: { guildId, inviterId: userId } }),
   ]);
   return {
     level: level?.level ?? 0,
     messages: level?.messages ?? 0,
     voiceMinutes: level?.voiceMinutes ?? 0,
     coins: (eco?.wallet ?? 0) + (eco?.bank ?? 0),
+    reactionsAdded: ms?.reactionsAdded ?? 0,
+    threadsCreated: ms?.threadsCreated ?? 0,
+    threadsJoined: ms?.threadsJoined ?? 0,
+    invites,
+    giveawaysJoined: ms?.giveawaysJoined ?? 0,
+    itemsPurchased: ms?.itemsPurchased ?? 0,
+    boosted: ms?.boosted ?? 0,
+    birthdaySet: ms?.birthdaySet ?? 0,
   };
 }
 

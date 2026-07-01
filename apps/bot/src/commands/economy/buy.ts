@@ -3,6 +3,8 @@ import type { Command } from '../../framework/command';
 import { RequireGuild, RequirePremium } from '../../lib/permissions';
 import { brandedEmbed, errorEmbed } from '../../lib/embeds';
 import { addWallet, formatMoney, getEconomyUser, trySpendWallet } from '../../lib/economy';
+import { bumpMemberStat } from '../../lib/memberStats';
+import { evaluateAchievements } from '../../modules/achievements';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -95,6 +97,11 @@ const command: Command = {
         }),
       ],
     });
+
+    if (await ctx.config.isEnabled(interaction.guildId, 'ACHIEVEMENTS')) {
+      await bumpMemberStat(interaction.guildId, interaction.user.id, 'itemsPurchased');
+      await evaluateAchievements(interaction.guildId, interaction.user.id, ctx);
+    }
   },
 };
 

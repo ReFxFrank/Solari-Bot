@@ -87,7 +87,10 @@ const guildLocks = new Map<string, Promise<unknown>>();
  * On a member join: diff the guild's invites to find who invited them, record
  * it, and optionally post to the log channel. Serialized per guild.
  */
-export async function handleInviteJoin(member: GuildMember, logger: Logger): Promise<void> {
+export async function handleInviteJoin(
+  member: GuildMember,
+  logger: Logger,
+): Promise<string | null> {
   const guildId = member.guild.id;
   const tail = (guildLocks.get(guildId) ?? Promise.resolve())
     .catch(() => undefined)
@@ -96,12 +99,16 @@ export async function handleInviteJoin(member: GuildMember, logger: Logger): Pro
   void tail.finally(() => {
     if (guildLocks.get(guildId) === tail) guildLocks.delete(guildId);
   });
-  await tail;
+  return tail;
 }
 
-async function resolveAndRecordJoin(member: GuildMember, logger: Logger): Promise<void> {
+/** Records the join and returns the resolved inviter id (for achievement eval). */
+async function resolveAndRecordJoin(
+  member: GuildMember,
+  logger: Logger,
+): Promise<string | null> {
   const { enabled, config } = await getState(member.guild.id);
-  if (!enabled) return;
+  if (!enabled) return null;
 
   const guild = member.guild;
   // `has` distinguishes "genuinely no invites" from "never cached" (e.g. the
@@ -112,8 +119,8 @@ async function resolveAndRecordJoin(member: GuildMember, logger: Logger): Promis
   const after = await fetchSnapshots(guild);
   if (after) inviteCache.set(guild.id, after); // keep cache fresh regardless
 
-  if (member.user.bot) return;
-  if (!after) return; // can't determine without invite access
+  if (member.user.bot) return null;
+  if (!after) return null; // can't determine without invite access
 
   const resolved = hasBaseline ? diffInviteUse(before, after) : null;
   await prisma.guild.upsert({ where: { id: guild.id }, update: {}, create: { id: guild.id } });
@@ -130,11 +137,11 @@ async function resolveAndRecordJoin(member: GuildMember, logger: Logger): Promis
     },
   });
 
-  if (!config.logChannelId) return;
+  if (!config.logChannelId) return resolved?.inviterId ?? null;
   const channel =
     guild.channels.cache.get(config.logChannelId) ??
     (await guild.channels.fetch(config.logChannelId).catch(() => null));
-  if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
+  if (!channel || !channel.isTextBased() || channel.isDMBased()) return resolved?.inviterId ?? null;
 
   let description: string;
   if (resolved?.inviterId) {
@@ -148,6 +155,7 @@ async function resolveAndRecordJoin(member: GuildMember, logger: Logger): Promis
   await channel
     .send({ embeds: [brandedEmbed({ kind: 'info', description })], allowedMentions: { parse: [] } })
     .catch((err: unknown) => logger.warn({ err, guildId: guild.id }, 'Invite-join log failed'));
+  return resolved?.inviterId ?? null;
 }
 
 /** Cache invites for every guild this shard owns (startup). Best-effort. */

@@ -1,10 +1,12 @@
 import { MessageFlags } from 'discord.js';
 import { prisma } from '@solari/database';
 import { defineComponent } from '../framework/component';
+import { bumpMemberStat } from '../lib/memberStats';
+import { evaluateAchievements } from '../modules/achievements';
 
 export default defineComponent({
   module: 'giveaway',
-  async handle(interaction, parsed, _ctx) {
+  async handle(interaction, parsed, ctx) {
     if (parsed.action !== 'enter' || !interaction.inCachedGuild()) return;
     const giveawayId = parsed.args[0];
     if (!giveawayId) return;
@@ -48,6 +50,10 @@ export default defineComponent({
         content: '🎉 You’re entered. Good luck!',
         flags: MessageFlags.Ephemeral,
       });
+      if (await ctx.config.isEnabled(interaction.guildId, 'ACHIEVEMENTS')) {
+        await bumpMemberStat(interaction.guildId, interaction.user.id, 'giveawaysJoined');
+        await evaluateAchievements(interaction.guildId, interaction.user.id, ctx);
+      }
     } catch {
       // unique violation — already entered
       await interaction.reply({

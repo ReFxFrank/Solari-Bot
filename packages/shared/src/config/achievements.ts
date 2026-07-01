@@ -8,7 +8,20 @@ import { z } from 'zod';
  * MEE6's model. Rewards (role / coins / XP) can be granted per tier.
  */
 
-export const ACHIEVEMENT_TYPES = ['LEVEL', 'MESSAGES', 'COINS', 'VOICE_MINUTES'] as const;
+export const ACHIEVEMENT_TYPES = [
+  'LEVEL',
+  'MESSAGES',
+  'COINS',
+  'VOICE_MINUTES',
+  'REACTIONS',
+  'THREADS_CREATED',
+  'THREADS_JOINED',
+  'INVITES',
+  'GIVEAWAYS_JOINED',
+  'ITEMS_PURCHASED',
+  'SERVER_BOOSTED',
+  'BIRTHDAY_SET',
+] as const;
 export type AchievementType = (typeof ACHIEVEMENT_TYPES)[number];
 
 export const ACHIEVEMENT_TYPE_LABELS: Record<AchievementType, string> = {
@@ -16,6 +29,14 @@ export const ACHIEVEMENT_TYPE_LABELS: Record<AchievementType, string> = {
   MESSAGES: 'Send messages',
   COINS: 'Hold coins (wallet + bank)',
   VOICE_MINUTES: 'Minutes in voice',
+  REACTIONS: 'Add reactions',
+  THREADS_CREATED: 'Create threads',
+  THREADS_JOINED: 'Join threads',
+  INVITES: 'Invite members',
+  GIVEAWAYS_JOINED: 'Enter giveaways',
+  ITEMS_PURCHASED: 'Buy shop items',
+  SERVER_BOOSTED: 'Boost the server',
+  BIRTHDAY_SET: 'Set a birthday',
 };
 
 /** Short unit shown next to a threshold, e.g. "6,000 messages". */
@@ -24,6 +45,14 @@ export const ACHIEVEMENT_TYPE_UNIT: Record<AchievementType, string> = {
   MESSAGES: 'messages',
   COINS: 'coins',
   VOICE_MINUTES: 'min',
+  REACTIONS: 'reactions',
+  THREADS_CREATED: 'threads',
+  THREADS_JOINED: 'threads',
+  INVITES: 'invites',
+  GIVEAWAYS_JOINED: 'giveaways',
+  ITEMS_PURCHASED: 'items',
+  SERVER_BOOSTED: '',
+  BIRTHDAY_SET: '',
 };
 
 /** Tiers in ascending order; a single achievement uses only index 0. */
@@ -145,6 +174,34 @@ export const ACHIEVEMENT_PRESETS: Omit<Achievement, 'id'>[] = [
     tiers: [bareTier(1000), bareTier(10000), bareTier(100000), bareTier(1000000)],
   },
   {
+    name: 'Reaction Master',
+    description: 'Add reactions to messages',
+    type: 'REACTIONS',
+    enabled: true,
+    tiers: [bareTier(50), bareTier(250), bareTier(1000), bareTier(2000)],
+  },
+  {
+    name: 'Thread Creator',
+    description: 'Create threads',
+    type: 'THREADS_CREATED',
+    enabled: true,
+    tiers: [bareTier(5), bareTier(25), bareTier(100), bareTier(250)],
+  },
+  {
+    name: 'Thread Participant',
+    description: 'Participate in threads',
+    type: 'THREADS_JOINED',
+    enabled: true,
+    tiers: [bareTier(10), bareTier(50), bareTier(250), bareTier(500)],
+  },
+  {
+    name: 'Welcoming Committee',
+    description: 'Invite members to the server',
+    type: 'INVITES',
+    enabled: true,
+    tiers: [bareTier(1), bareTier(5), bareTier(25), bareTier(100)],
+  },
+  {
     name: 'First Words',
     description: 'Send your first message',
     type: 'MESSAGES',
@@ -152,9 +209,30 @@ export const ACHIEVEMENT_PRESETS: Omit<Achievement, 'id'>[] = [
     tiers: [bareTier(1)],
   },
   {
-    name: 'Voice Debut',
-    description: 'Join a voice channel for a minute',
-    type: 'VOICE_MINUTES',
+    name: 'To Infinity!',
+    description: 'Boost the server at least once',
+    type: 'SERVER_BOOSTED',
+    enabled: true,
+    tiers: [bareTier(1)],
+  },
+  {
+    name: 'Happy Birthday!',
+    description: 'Set your birthday date',
+    type: 'BIRTHDAY_SET',
+    enabled: true,
+    tiers: [bareTier(1)],
+  },
+  {
+    name: 'Santa is in Town',
+    description: 'Participate in a giveaway',
+    type: 'GIVEAWAYS_JOINED',
+    enabled: true,
+    tiers: [bareTier(1)],
+  },
+  {
+    name: 'Khajiit Has Wares',
+    description: 'Buy an economy item',
+    type: 'ITEMS_PURCHASED',
     enabled: true,
     tiers: [bareTier(1)],
   },

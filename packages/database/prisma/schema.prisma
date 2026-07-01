@@ -152,6 +152,7 @@ model Guild {
   socialSubscriptions SocialSubscription[]
   customBot         CustomBot?
   userAchievements  UserAchievement[]
+  memberStats       MemberStat[]
 
   @@index([ownerId])
 }
@@ -173,6 +174,30 @@ model UserAchievement {
 
   @@unique([guildId, userId, achievementId, tier])
   @@index([guildId, userId])
+}
+
+/// Per-member activity counters that back achievement types not derivable from
+/// other tables (reactions, threads, invites, giveaways, purchases, boost,
+/// birthday). Incremented from the relevant events/commands; read by the
+/// Achievements evaluator. Flags (boosted/birthdaySet) are stored as 0/1.
+model MemberStat {
+  id              String   @id @default(cuid())
+  guildId         String
+  userId          String
+  reactionsAdded  Int      @default(0)
+  threadsCreated  Int      @default(0)
+  threadsJoined   Int      @default(0)
+  invites         Int      @default(0)
+  giveawaysJoined Int      @default(0)
+  itemsPurchased  Int      @default(0)
+  boosted         Int      @default(0)
+  birthdaySet     Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId])
 }
 
 /// A Social Alerts subscription (premium): watch a Twitch/YouTube/Reddit/RSS

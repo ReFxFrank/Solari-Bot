@@ -4,6 +4,8 @@ import { isValidMonthDay, parseModuleConfig } from '@solari/shared';
 import { brandedEmbed, errorEmbed, successEmbed } from '../../lib/embeds';
 import { RequireGuild } from '../../lib/permissions';
 import { scheduleNextBirthdayRun } from '../../modules/birthdays';
+import { setMemberFlag } from '../../lib/memberStats';
+import { evaluateAchievements } from '../../modules/achievements';
 import type { Command } from '../../framework/command';
 
 const MONTHS = [
@@ -89,6 +91,10 @@ const command: Command = {
         embeds: [successEmbed(`Birthday set to **${MONTHS[month - 1]} ${day}**.`)],
         flags: MessageFlags.Ephemeral,
       });
+      if (await ctx.config.isEnabled(interaction.guildId, 'ACHIEVEMENTS')) {
+        await setMemberFlag(interaction.guildId, interaction.user.id, 'birthdaySet');
+        await evaluateAchievements(interaction.guildId, interaction.user.id, ctx);
+      }
       return;
     }
 

@@ -5,6 +5,7 @@ import { handleMemberJoin } from '../modules/welcome';
 import { handleInviteJoin } from '../modules/inviteTracking';
 import { handleRaidJoin } from '../modules/raid';
 import { handleVerificationJoin } from '../modules/verification';
+import { evaluateAchievements } from '../modules/achievements';
 import { brandedEmbed } from '../lib/embeds';
 import { sendLog } from '../lib/logging';
 
@@ -29,9 +30,14 @@ export default defineEvent({
     // Resolve the inviter first (diff invites promptly to minimize races), but
     // isolate its failures — a transient DB error here must never suppress the
     // welcome message, autoroles, or the join log below.
-    await handleInviteJoin(member, ctx.logger).catch((err: unknown) =>
-      ctx.logger.error({ err, guildId: member.guild.id }, 'Invite-join handling failed'),
-    );
+    const inviterId = await handleInviteJoin(member, ctx.logger).catch((err: unknown) => {
+      ctx.logger.error({ err, guildId: member.guild.id }, 'Invite-join handling failed');
+      return null;
+    });
+    // Credit the inviter's "invite members" achievements once attribution lands.
+    if (inviterId && (await ctx.config.isEnabled(member.guild.id, 'ACHIEVEMENTS'))) {
+      await evaluateAchievements(member.guild.id, inviterId, ctx).catch(() => undefined);
+    }
     await handleMemberJoin(member, ctx);
 
     const embed = brandedEmbed({ kind: 'success', title: 'Member joined' })
