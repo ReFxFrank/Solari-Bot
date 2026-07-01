@@ -31,12 +31,40 @@ import {
 
 export type ModuleCategory = 'core' | 'premium' | 'utility';
 
+/**
+ * Decorative icon-tile gradients, keyed by name. These category-code the module
+ * grid (like MEE6's colorful plugin tiles) and are intentionally separate from
+ * the brand violet — the brand color stays reserved for interactive/premium UI.
+ * `[from, to]` are applied as an inline `linear-gradient` so Tailwind's JIT never
+ * needs to see the runtime hex values.
+ */
+export const MODULE_ACCENTS = {
+  violet: ['#8b5cf6', '#6d28d9'],
+  fuchsia: ['#d946ef', '#a21caf'],
+  pink: ['#ec4899', '#be185d'],
+  indigo: ['#6366f1', '#4338ca'],
+  sky: ['#0ea5e9', '#0369a1'],
+  cyan: ['#06b6d4', '#0e7490'],
+  teal: ['#14b8a6', '#0f766e'],
+  emerald: ['#10b981', '#047857'],
+  amber: ['#f59e0b', '#b45309'],
+  orange: ['#f97316', '#c2410c'],
+  rose: ['#f43f5e', '#be123c'],
+  red: ['#ef4444', '#b91c1c'],
+  slate: ['#64748b', '#334155'],
+  gold: ['#f5c451', '#cf9e2f'],
+} as const;
+
+export type ModuleAccent = keyof typeof MODULE_ACCENTS;
+
 export interface ModuleMeta {
   module: Module;
   name: string;
   description: string;
   icon: LucideIcon;
   category: ModuleCategory;
+  /** Icon-tile gradient key (see MODULE_ACCENTS). */
+  accent: ModuleAccent;
   /** Slug of a dedicated config page under /servers/[id]/<slug>, if any. */
   configSlug?: string;
 }
@@ -48,6 +76,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Cases, warns, bans, mutes, escalation.',
     icon: ShieldAlert,
     category: 'core',
+    accent: 'red',
     configSlug: 'moderation',
   },
   {
@@ -56,6 +85,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Spam, links, invites, bad-word filters.',
     icon: ShieldBan,
     category: 'core',
+    accent: 'rose',
     configSlug: 'automod',
   },
   {
@@ -64,6 +94,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Message, member, server & voice logs.',
     icon: ScrollText,
     category: 'core',
+    accent: 'indigo',
     configSlug: 'logging',
   },
   {
@@ -72,6 +103,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Greetings, goodbyes, and welcome cards.',
     icon: DoorOpen,
     category: 'core',
+    accent: 'emerald',
     configSlug: 'welcome',
   },
   {
@@ -80,6 +112,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Roles on join, sticky & timed roles.',
     icon: UserPlus,
     category: 'core',
+    accent: 'sky',
     configSlug: 'autoroles',
   },
   {
@@ -88,6 +121,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Text & voice XP, rank cards, rewards.',
     icon: TrendingUp,
     category: 'core',
+    accent: 'amber',
     configSlug: 'leveling',
   },
   {
@@ -96,6 +130,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Button & select-menu role panels.',
     icon: Tags,
     category: 'core',
+    accent: 'fuchsia',
     configSlug: 'roles',
   },
   {
@@ -104,6 +139,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Tags, auto-responders, embed builder.',
     icon: MessageSquareCode,
     category: 'core',
+    accent: 'violet',
     configSlug: 'commands',
   },
   {
@@ -112,6 +148,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Highlight the best messages.',
     icon: Star,
     category: 'core',
+    accent: 'orange',
     configSlug: 'starboard',
   },
   {
@@ -120,6 +157,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Timed draws with requirements & reroll.',
     icon: Gift,
     category: 'core',
+    accent: 'pink',
     configSlug: 'giveaways',
   },
   {
@@ -128,6 +166,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Single/multi, timed, anonymous polls.',
     icon: Vote,
     category: 'core',
+    accent: 'teal',
   },
   {
     module: 'SUGGESTIONS',
@@ -135,6 +174,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Submit, vote, and triage suggestions.',
     icon: Lightbulb,
     category: 'core',
+    accent: 'amber',
     configSlug: 'suggestions',
   },
   {
@@ -143,6 +183,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Personal & server reminders.',
     icon: Clock,
     category: 'core',
+    accent: 'sky',
   },
   {
     module: 'SCHEDULED_MESSAGES',
@@ -150,6 +191,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Cron / recurring announcements.',
     icon: CalendarClock,
     category: 'core',
+    accent: 'indigo',
     configSlug: 'scheduled',
   },
   {
@@ -158,6 +200,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Support panels, transcripts, auto-close.',
     icon: Ticket,
     category: 'core',
+    accent: 'violet',
     configSlug: 'tickets',
   },
   {
@@ -166,6 +209,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Auto-updating member/online channels.',
     icon: BarChart3,
     category: 'core',
+    accent: 'cyan',
     configSlug: 'stats',
   },
   {
@@ -174,6 +218,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Who invited whom + leaderboard.',
     icon: Link2,
     category: 'core',
+    accent: 'emerald',
     configSlug: 'invites',
   },
   {
@@ -182,6 +227,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Announcements and a birthday role.',
     icon: Cake,
     category: 'core',
+    accent: 'pink',
     configSlug: 'birthdays',
   },
   {
@@ -190,6 +236,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Away status with auto-replies.',
     icon: Moon,
     category: 'core',
+    accent: 'slate',
   },
   {
     module: 'ECONOMY',
@@ -197,6 +244,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Currency, games, shop & inventory.',
     icon: Coins,
     category: 'premium',
+    accent: 'amber',
   },
   {
     module: 'MUSIC',
@@ -204,6 +252,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Queue, filters, DJ roles, vote-skip.',
     icon: Music,
     category: 'premium',
+    accent: 'fuchsia',
   },
   {
     module: 'SOCIAL',
@@ -211,6 +260,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Twitch, YouTube, Reddit & RSS feeds.',
     icon: Bell,
     category: 'premium',
+    accent: 'sky',
   },
   {
     module: 'TEMP_VOICE',
@@ -218,6 +268,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Join-to-create voice channels.',
     icon: Mic,
     category: 'premium',
+    accent: 'teal',
   },
   {
     module: 'REFX_ALERTS',
@@ -225,6 +276,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'Live ReFx Hosting incident & node alerts.',
     icon: ServerCog,
     category: 'premium',
+    accent: 'indigo',
     configSlug: 'refx-alerts',
   },
   {
@@ -233,6 +285,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: 'userinfo, serverinfo, announcements.',
     icon: Wrench,
     category: 'utility',
+    accent: 'slate',
   },
   {
     module: 'FUN',
@@ -240,6 +293,7 @@ export const MODULE_META: ModuleMeta[] = [
     description: '8ball, trivia, memes, and more.',
     icon: Sparkles,
     category: 'utility',
+    accent: 'violet',
   },
 ];
 
