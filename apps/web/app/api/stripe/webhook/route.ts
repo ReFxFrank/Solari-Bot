@@ -69,6 +69,10 @@ async function syncSubscription(sub: Stripe.Subscription): Promise<void> {
     : null;
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
 
+  // Who purchased (checkout stamps it in metadata). Only ever set — never
+  // cleared — so a metadata-less event can't wipe billing ownership.
+  const purchasedBy = sub.metadata?.userId || undefined;
+
   const fields = {
     stripeCustomerId: customerId,
     stripeSubscriptionId: sub.id,
@@ -76,6 +80,7 @@ async function syncSubscription(sub: Stripe.Subscription): Promise<void> {
     status: sub.status,
     currentPeriodEnd,
     cancelAtPeriodEnd: sub.cancel_at_period_end,
+    ...(purchasedBy ? { purchasedBy } : {}),
   };
 
   // Ensure the guild row exists first — GuildSubscription FKs to it, and a

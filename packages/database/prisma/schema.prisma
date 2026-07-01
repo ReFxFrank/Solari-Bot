@@ -270,6 +270,9 @@ model GuildSubscription {
   stripeCustomerId     String?
   stripeSubscriptionId String?   @unique
   stripePriceId        String?
+  /// Discord user id of the member who purchased. Billing details/portal are
+  /// visible ONLY to them (plus the bot owner) — not to every guild admin.
+  purchasedBy          String?
   /// Mirrors the Stripe subscription status: active, trialing, past_due,
   /// canceled, incomplete, etc. `inactive` = never subscribed.
   status               String    @default("inactive")

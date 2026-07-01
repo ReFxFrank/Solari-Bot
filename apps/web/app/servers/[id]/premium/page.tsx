@@ -3,6 +3,7 @@ import { prisma } from '@solari/database';
 import { PREMIUM_PERKS, tierFromSubscription } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { startCheckout, openBillingPortal } from '../../../../lib/billing';
+import { canManageBilling } from '../../../../lib/billing-access';
 import { isBillingConfigured } from '../../../../lib/stripe';
 import { GlassCard } from '../../../../components/ui/glass-card';
 
@@ -17,12 +18,15 @@ export default async function PremiumPage({
 }) {
   const { id } = await params;
   const { upgraded } = await searchParams;
-  await guardGuildAccess(id);
+  const { session } = await guardGuildAccess(id);
 
   const sub = await prisma.guildSubscription.findUnique({ where: { guildId: id } });
   const tier = tierFromSubscription(sub?.status, sub?.currentPeriodEnd ?? null);
   const isPremium = tier === 'PREMIUM';
   const configured = isBillingConfigured();
+  // Billing details are private to the purchaser (and the bot owner) — other
+  // guild admins only see that Premium is active.
+  const showBilling = canManageBilling(session, sub?.purchasedBy);
 
   const renews = sub?.currentPeriodEnd
     ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(sub.currentPeriodEnd)
@@ -58,19 +62,27 @@ export default async function PremiumPage({
                 <span className="text-xs text-white/50">Cancels at period end</span>
               )}
             </div>
-            {renews && (
-              <p className="text-sm text-white/60">
-                {sub?.cancelAtPeriodEnd ? 'Access until' : 'Renews'} <strong>{renews}</strong>.
+            {showBilling ? (
+              <>
+                {renews && (
+                  <p className="text-sm text-white/60">
+                    {sub?.cancelAtPeriodEnd ? 'Access until' : 'Renews'} <strong>{renews}</strong>.
+                  </p>
+                )}
+                <form action={openBillingPortal.bind(null, id)}>
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/[0.06]"
+                  >
+                    Manage billing
+                  </button>
+                </form>
+              </>
+            ) : (
+              <p className="text-sm text-white/50">
+                Billing for this server is managed privately by the member who purchased Premium.
               </p>
             )}
-            <form action={openBillingPortal.bind(null, id)}>
-              <button
-                type="submit"
-                className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/[0.06]"
-              >
-                Manage billing
-              </button>
-            </form>
           </div>
         ) : (
           <div className="flex flex-col gap-4">

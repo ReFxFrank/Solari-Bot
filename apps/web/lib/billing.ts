@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@solari/database';
 import { assertCanManage, requireSession } from './auth-guards';
+import { canManageBilling } from './billing-access';
 import { getStripe } from './stripe';
 
 function baseUrl(): string {
@@ -28,19 +29,20 @@ export async function startCheckout(guildId: string): Promise<void> {
   if (!customerId) {
     const customer = await stripe.customers.create({ metadata: { guildId } });
     customerId = customer.id;
-    await prisma.guildSubscription.upsert({
-      where: { guildId },
-      update: { stripeCustomerId: customerId },
-      create: { guildId, stripeCustomerId: customerId },
-    });
   }
+  // Record who is purchasing — billing visibility is scoped to them.
+  await prisma.guildSubscription.upsert({
+    where: { guildId },
+    update: { stripeCustomerId: customerId, purchasedBy: session.user.id },
+    create: { guildId, stripeCustomerId: customerId, purchasedBy: session.user.id },
+  });
 
   const checkout = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { metadata: { guildId } },
-    metadata: { guildId },
+    subscription_data: { metadata: { guildId, userId: session.user.id } },
+    metadata: { guildId, userId: session.user.id },
     allow_promotion_codes: true,
     success_url: `${baseUrl()}/servers/${guildId}/premium?upgraded=1`,
     cancel_url: `${baseUrl()}/servers/${guildId}/premium`,
@@ -49,7 +51,7 @@ export async function startCheckout(guildId: string): Promise<void> {
   redirect(checkout.url);
 }
 
-/** Open the Stripe billing portal so the guild's manager can update or cancel. */
+/** Open the Stripe billing portal — restricted to the purchaser (or bot owner). */
 export async function openBillingPortal(guildId: string): Promise<void> {
   const session = await requireSession();
   await assertCanManage(session, guildId);
@@ -59,6 +61,9 @@ export async function openBillingPortal(guildId: string): Promise<void> {
 
   const sub = await prisma.guildSubscription.findUnique({ where: { guildId } });
   if (!sub?.stripeCustomerId) throw new Error('No billing account for this server yet.');
+  if (!canManageBilling(session, sub.purchasedBy)) {
+    throw new Error('Only the member who purchased Premium can manage billing.');
+  }
 
   const portal = await stripe.billingPortal.sessions.create({
     customer: sub.stripeCustomerId,
