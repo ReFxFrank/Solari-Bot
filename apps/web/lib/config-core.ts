@@ -1,7 +1,7 @@
 import { type Prisma, prisma } from '@solari/database';
 import { parseModuleConfig, type Module, type ModuleWithSchema } from '@solari/shared';
 import { writeAuditLog } from './audit';
-import { publishConfigUpdate } from './redis';
+import { publishConfigUpdate, publishLiveCommand } from './redis';
 
 export interface ActionResult {
   ok: boolean;
@@ -51,6 +51,26 @@ export async function applyModuleEnabled(
     after: { enabled },
   });
   await publishConfigUpdate(guildId, module);
+}
+
+/**
+ * First-enable convenience: switching Tickets on with nothing configured asks
+ * the bot to bootstrap itself (category, channels, support roles, panel). A
+ * configured module is left exactly as-is. No-op for other modules / disables.
+ * Shared by the single toggle, the bulk toggle, and the setup wizard.
+ */
+export async function triggerTicketsAutoSetupIfNeeded(
+  guildId: string,
+  module: Module,
+  enabled: boolean,
+): Promise<void> {
+  if (module !== 'TICKETS' || !enabled) return;
+  const row = await prisma.guildModuleConfig.findUnique({
+    where: { guildId_module: { guildId, module: 'TICKETS' } },
+    select: { config: true },
+  });
+  const categoryId = (row?.config as { categoryId?: string | null } | null)?.categoryId ?? null;
+  if (!categoryId) await publishLiveCommand(guildId, 'SETUP_TICKETS');
 }
 
 /**

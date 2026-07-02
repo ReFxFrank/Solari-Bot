@@ -4,6 +4,7 @@ import { guardGuildAccess } from '../../../lib/auth-guards';
 import { MODULE_META } from '../../../lib/modules';
 import { DashboardHero } from '../../../components/dashboard-hero';
 import { ModuleGrid } from '../../../components/module-grid';
+import { QuickSetup } from '../../../components/quick-setup';
 import { GlassCard } from '../../../components/ui/glass-card';
 
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,10 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
         <Stat label="Mod cases" value={caseCount.toLocaleString()} />
         <Stat label="Plan" value={isPremium ? 'Premium' : 'Free'} accent={isPremium} />
       </section>
+
+      {guild?.setupCompletedAt == null && (
+        <QuickSetup guildId={id} guildName={guild?.name ?? 'your server'} />
+      )}
 
       <ModuleGrid
         guildId={id}

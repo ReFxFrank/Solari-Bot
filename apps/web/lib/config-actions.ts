@@ -32,6 +32,7 @@ import {
   applyGuildSettings,
   applyModuleConfig,
   applyModuleEnabled,
+  triggerTicketsAutoSetupIfNeeded,
   type ActionResult,
   type GuildSettingsInput,
 } from './config-core';
@@ -55,7 +56,7 @@ export async function setModuleEnabled(
   // directly-invokable POST). Only gate ENABLING — disabling is always allowed.
   if (enabled) await assertModuleAllowed(guildId, module);
   await applyModuleEnabled(guildId, module, enabled, session.user.id);
-  await maybeAutoSetupTickets(guildId, module, enabled);
+  await triggerTicketsAutoSetupIfNeeded(guildId, module, enabled);
   revalidatePath(`/servers/${guildId}`);
 }
 
@@ -76,25 +77,6 @@ async function assertModuleAllowed(guildId: string, module: Module): Promise<voi
   if (isModuleLocked(module, guild?.premiumTier ?? 'FREE')) {
     throw new Error('That module requires Premium.');
   }
-}
-
-/**
- * First-enable convenience: switching Tickets on with nothing configured asks
- * the bot to bootstrap itself (category, channels, support roles, panel). A
- * configured module is left exactly as-is.
- */
-async function maybeAutoSetupTickets(
-  guildId: string,
-  module: Module,
-  enabled: boolean,
-): Promise<void> {
-  if (module !== 'TICKETS' || !enabled) return;
-  const row = await prisma.guildModuleConfig.findUnique({
-    where: { guildId_module: { guildId, module: 'TICKETS' } },
-    select: { config: true },
-  });
-  const categoryId = (row?.config as { categoryId?: string | null } | null)?.categoryId ?? null;
-  if (!categoryId) await publishLiveCommand(guildId, 'SETUP_TICKETS');
 }
 
 /**
@@ -132,7 +114,7 @@ export async function setAllModulesEnabled(guildId: string, enabled: boolean): P
   // and the worst case (~30 modules) is well under a second.
   for (const meta of targets) {
     await applyModuleEnabled(guildId, meta.module, enabled, session.user.id);
-    await maybeAutoSetupTickets(guildId, meta.module, enabled);
+    await triggerTicketsAutoSetupIfNeeded(guildId, meta.module, enabled);
   }
   revalidatePath(`/servers/${guildId}`);
 }
