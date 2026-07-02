@@ -50,6 +50,16 @@ export async function POST(request: Request): Promise<NextResponse> {
         await syncSubscription(event.data.object);
         break;
       }
+      case 'charge.refunded': {
+        // A fully-refunded one-time (Lifetime) purchase loses access.
+        await handleRefund(event.data.object);
+        break;
+      }
+      case 'charge.dispute.created': {
+        // A chargeback claws the money back — revoke access on any plan.
+        await handleDispute(stripe, event.data.object);
+        break;
+      }
       default:
         break;
     }
@@ -94,6 +104,51 @@ async function grantLifetime(session: Stripe.Checkout.Session): Promise<void> {
       purchasedBy,
     },
   });
+}
+
+const chargeCustomerId = (charge: Stripe.Charge): string | null =>
+  typeof charge.customer === 'string' ? charge.customer : (charge.customer?.id ?? null);
+
+/** Map a Stripe customer id back to its guild (+ current billing status). */
+async function guildByCustomer(
+  customerId: string | null,
+): Promise<{ guildId: string; status: string } | null> {
+  if (!customerId) return null;
+  return prisma.guildSubscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    select: { guildId: true, status: true },
+  });
+}
+
+/** Drop a guild back to Free and record why. */
+async function revokePremium(guildId: string, status: string): Promise<void> {
+  await prisma.guild.update({ where: { id: guildId }, data: { premiumTier: 'FREE' } });
+  await prisma.guildSubscription.update({ where: { guildId }, data: { status } });
+}
+
+/**
+ * A refund only revokes a one-time (Lifetime) purchase — recognised by the
+ * guild's stored status. Subscription-invoice refunds are left to the
+ * subscription's own lifecycle events, so they never trip this.
+ */
+async function handleRefund(charge: Stripe.Charge): Promise<void> {
+  if (!charge.refunded) return;
+  const sub = await guildByCustomer(chargeCustomerId(charge));
+  if (!sub || sub.status !== LIFETIME_STATUS) return;
+  await revokePremium(sub.guildId, 'refunded');
+}
+
+/**
+ * A dispute (chargeback) reverses the payment, so pull access immediately on any
+ * plan. For a subscription the sub may still read `active` in Stripe until it's
+ * canceled — the operator should cancel it there; this stops the free ride now.
+ */
+async function handleDispute(stripe: Stripe, dispute: Stripe.Dispute): Promise<void> {
+  const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) return;
+  const sub = await guildByCustomer(chargeCustomerId(await stripe.charges.retrieve(chargeId)));
+  if (!sub) return;
+  await revokePremium(sub.guildId, 'disputed');
 }
 
 async function syncSubscription(sub: Stripe.Subscription): Promise<void> {
