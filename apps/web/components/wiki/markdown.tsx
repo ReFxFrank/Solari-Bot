@@ -2,6 +2,7 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ComponentProps, ReactNode } from 'react';
+import { mainSiteUrl } from '../../lib/wiki';
 
 /**
  * Wiki markdown renderer. No typography plugin — every element is styled
@@ -17,12 +18,21 @@ function slugify(children: ReactNode): string {
 }
 
 function Anchor({ href = '', children }: ComponentProps<'a'>) {
-  const isInternal = href.startsWith('/') || href.startsWith('#');
-  if (isInternal) {
+  // Docs-relative and in-page links stay relative (they work on both hosts).
+  if (href.startsWith('/docs') || href.startsWith('#')) {
     return (
       <Link href={href} className="text-[var(--color-brand-bright)] hover:underline">
         {children}
       </Link>
+    );
+  }
+  // Other site paths (/, /commands, /privacy, …) must jump to the main host —
+  // on wiki.* the middleware would rewrite them into nonexistent /docs pages.
+  if (href.startsWith('/')) {
+    return (
+      <a href={mainSiteUrl(href)} className="text-[var(--color-brand-bright)] hover:underline">
+        {children}
+      </a>
     );
   }
   return (

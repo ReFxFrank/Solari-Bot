@@ -90,6 +90,18 @@ export const WIKI_SECTIONS: WikiSection[] = [
 
 const ALL_PAGES: WikiPage[] = WIKI_SECTIONS.flatMap((section) => section.pages);
 
+/**
+ * Absolute main-site URL for cross-site links rendered on the wiki. On the
+ * wiki subdomain the middleware rewrites EVERY relative path into /docs/…, so
+ * a link to /commands or /privacy must jump hosts explicitly. Kept relative in
+ * dev, where there is no wiki host.
+ */
+export function mainSiteUrl(path: string): string {
+  if (process.env.NODE_ENV !== 'production') return path;
+  const domain = process.env.SOLARI_DOMAIN ?? 'solari.gg';
+  return `https://${domain}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 export function wikiPage(slug: string): WikiPage | null {
   return ALL_PAGES.find((page) => page.slug === slug) ?? null;
 }

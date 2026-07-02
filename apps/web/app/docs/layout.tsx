@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { BookOpen, ExternalLink } from 'lucide-react';
 import { BRAND } from '@solari/shared';
-import { WIKI_SECTIONS } from '../../lib/wiki';
+import { mainSiteUrl, WIKI_SECTIONS } from '../../lib/wiki';
 import { WikiSidebar } from '../../components/wiki/sidebar';
 import { BrandMark } from '../../components/marketing/brand-mark';
 
@@ -28,18 +28,18 @@ export default function WikiLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              href="/commands"
+            <a
+              href={mainSiteUrl('/commands')}
               className="hidden text-sm text-white/60 transition-colors hover:text-white/90 sm:inline"
             >
               Commands
-            </Link>
-            <Link
-              href="/"
+            </a>
+            <a
+              href={mainSiteUrl('/')}
               className="hidden items-center gap-1 text-sm text-white/60 transition-colors hover:text-white/90 sm:inline-flex"
             >
               solari.gg <ExternalLink className="h-3 w-3" />
-            </Link>
+            </a>
             <a
               href={`https://discord.com/oauth2/authorize?client_id=${clientId}&scope=bot%20applications.commands&permissions=8`}
               target="_blank"
@@ -61,17 +61,17 @@ export default function WikiLayout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-white/5 px-6 py-8 text-center text-xs text-white/30">
         {BRAND.name} Wiki ·{' '}
-        <Link href="/" className="text-white/50 hover:text-white/80">
+        <a href={mainSiteUrl('/')} className="text-white/50 hover:text-white/80">
           solari.gg
-        </Link>{' '}
+        </a>{' '}
         ·{' '}
-        <Link href="/terms" className="text-white/50 hover:text-white/80">
+        <a href={mainSiteUrl('/terms')} className="text-white/50 hover:text-white/80">
           Terms
-        </Link>{' '}
+        </a>{' '}
         ·{' '}
-        <Link href="/privacy" className="text-white/50 hover:text-white/80">
+        <a href={mainSiteUrl('/privacy')} className="text-white/50 hover:text-white/80">
           Privacy
-        </Link>
+        </a>
       </footer>
     </div>
   );
