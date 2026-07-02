@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Crown } from 'lucide-react';
+import { useMemo, useState, useTransition } from 'react';
+import { Crown, ToggleLeft, ToggleRight } from 'lucide-react';
 import { MODULE_META, groupedModuleMeta, type ModuleCategory } from '../lib/modules';
+import { setAllModulesEnabled } from '../lib/config-actions';
 import { cn } from '../lib/utils';
 import { ModuleCard } from './module-card';
 
@@ -33,6 +34,21 @@ export function ModuleGrid({
   disabledModules?: string[];
 }) {
   const [filter, setFilter] = useState<Filter>('all');
+  const [bulkPending, startBulk] = useTransition();
+
+  function bulkToggle(nextEnabled: boolean): void {
+    if (
+      !nextEnabled &&
+      !window.confirm('Turn off ALL modules for this server? Their settings are kept.')
+    ) {
+      return;
+    }
+    startBulk(async () => {
+      // Idempotent server-side: already-matching modules are skipped, premium
+      // stays locked on free servers, globally-disabled modules are untouched.
+      await setAllModulesEnabled(guildId, nextEnabled).catch(() => undefined);
+    });
+  }
 
   // Cards render grouped MEE6-style: for each group, its cards under a heading.
   // The active filter narrows each group's cards; empty groups drop out. Modules
@@ -75,6 +91,24 @@ export function ModuleGrid({
             </button>
           );
         })}
+        <div className="ml-auto flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => bulkToggle(true)}
+            disabled={bulkPending}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:bg-white/[0.05] hover:text-white/90 disabled:opacity-50"
+          >
+            <ToggleRight className="h-3.5 w-3.5" /> Enable all
+          </button>
+          <button
+            type="button"
+            onClick={() => bulkToggle(false)}
+            disabled={bulkPending}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:bg-white/[0.05] hover:text-white/90 disabled:opacity-50"
+          >
+            <ToggleLeft className="h-3.5 w-3.5" /> Disable all
+          </button>
+        </div>
       </div>
 
       {groups.map(({ group, modules }) => (

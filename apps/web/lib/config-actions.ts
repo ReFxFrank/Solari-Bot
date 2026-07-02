@@ -25,7 +25,9 @@ import type {
   VerificationConfig,
   WelcomeConfig,
 } from '@solari/shared';
+import { prisma } from '@solari/database';
 import { assertCanManage, requireSession } from './auth-guards';
+import { MODULE_META } from './modules';
 import {
   applyGuildSettings,
   applyModuleConfig,
@@ -50,6 +52,45 @@ export async function setModuleEnabled(
   const session = await requireSession();
   await assertCanManage(session, guildId);
   await applyModuleEnabled(guildId, module, enabled, session.user.id);
+  revalidatePath(`/servers/${guildId}`);
+}
+
+/**
+ * Bulk enable/disable every module in the grid. Idempotent by construction:
+ * modules already in the requested state are skipped entirely (no writes, no
+ * audit spam, no invalidations). Bulk-enable never switches on premium modules
+ * for a non-premium guild, and owner-globally-disabled modules are never
+ * touched in either direction.
+ */
+export async function setAllModulesEnabled(guildId: string, enabled: boolean): Promise<void> {
+  const session = await requireSession();
+  await assertCanManage(session, guildId);
+
+  const [flags, guild, existing] = await Promise.all([
+    prisma.globalModuleFlag.findMany({ where: { enabled: false }, select: { module: true } }),
+    prisma.guild.findUnique({ where: { id: guildId }, select: { premiumTier: true } }),
+    prisma.guildModuleConfig.findMany({
+      where: { guildId },
+      select: { module: true, enabled: true },
+    }),
+  ]);
+  const globallyOff = new Set(flags.map((flag) => flag.module));
+  const isPremium = guild?.premiumTier === 'PREMIUM';
+  const current = new Map(existing.map((row) => [row.module as Module, row.enabled]));
+
+  const targets = MODULE_META.filter(
+    (meta) =>
+      !globallyOff.has(meta.module) &&
+      // Free guilds can bulk-disable premium modules but never bulk-enable them.
+      (isPremium || meta.category !== 'premium' || !enabled) &&
+      (current.get(meta.module) ?? false) !== enabled,
+  );
+
+  // Sequential on purpose: each apply audits + publishes its own invalidation,
+  // and the worst case (~30 modules) is well under a second.
+  for (const meta of targets) {
+    await applyModuleEnabled(guildId, meta.module, enabled, session.user.id);
+  }
   revalidatePath(`/servers/${guildId}`);
 }
 

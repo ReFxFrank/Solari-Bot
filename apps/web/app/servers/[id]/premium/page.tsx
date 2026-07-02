@@ -20,13 +20,20 @@ export default async function PremiumPage({
   const { upgraded } = await searchParams;
   const { session } = await guardGuildAccess(id);
 
-  const sub = await prisma.guildSubscription.findUnique({ where: { guildId: id } });
-  const tier = tierFromSubscription(sub?.status, sub?.currentPeriodEnd ?? null);
-  const isPremium = tier === 'PREMIUM';
+  const [sub, guild] = await Promise.all([
+    prisma.guildSubscription.findUnique({ where: { guildId: id } }),
+    prisma.guild.findUnique({ where: { id }, select: { premiumTier: true } }),
+  ]);
+  // Paid premium comes from a live Stripe subscription; granted premium is the
+  // bot owner setting Guild.premiumTier from the admin panel (no sub row).
+  // Granted servers get the active state with no billing surface at all.
+  const paidPremium = tierFromSubscription(sub?.status, sub?.currentPeriodEnd ?? null) === 'PREMIUM';
+  const isPremium = paidPremium || guild?.premiumTier === 'PREMIUM';
+  const granted = isPremium && !paidPremium;
   const configured = isBillingConfigured();
   // Billing details are private to the purchaser (and the bot owner) — other
   // guild admins only see that Premium is active.
-  const showBilling = canManageBilling(session, sub?.purchasedBy);
+  const showBilling = paidPremium && canManageBilling(session, sub?.purchasedBy);
 
   const renews = sub?.currentPeriodEnd
     ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(sub.currentPeriodEnd)
@@ -62,7 +69,12 @@ export default async function PremiumPage({
                 <span className="text-xs text-white/50">Cancels at period end</span>
               )}
             </div>
-            {showBilling ? (
+            {granted ? (
+              <p className="text-sm text-white/50">
+                Premium is enabled for this server — every premium module is unlocked. Nothing to
+                manage.
+              </p>
+            ) : showBilling ? (
               <>
                 {renews && (
                   <p className="text-sm text-white/60">

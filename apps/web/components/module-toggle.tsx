@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import type { Module } from '@solari/shared';
 import { setModuleEnabled } from '../lib/config-actions';
 import { Switch } from './ui/switch';
@@ -18,6 +18,12 @@ export function ModuleToggle({
 }) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [pending, startTransition] = useTransition();
+
+  // Server-driven changes must win over the optimistic local state — e.g. the
+  // bulk enable/disable-all buttons revalidating the page.
+  useEffect(() => {
+    setEnabled(initialEnabled);
+  }, [initialEnabled]);
 
   function toggle(next: boolean): void {
     setEnabled(next); // optimistic
