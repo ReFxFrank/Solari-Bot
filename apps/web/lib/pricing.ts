@@ -18,6 +18,9 @@ export interface PricingTier {
   original?: string;
   /** e.g. "Save 50%". */
   save?: string;
+  /** The actual amount charged, shown when it differs from the per-month price
+   *  (e.g. "$95.88 billed yearly"). Keep in sync with the Stripe price amount. */
+  billed?: string;
   /** e.g. "Most Popular" / "Best value". */
   badge?: string;
   highlighted?: boolean;
@@ -51,9 +54,10 @@ export const PRICING_TIERS: readonly PricingTier[] = [
     period: '/mo',
     original: '$9.99',
     save: 'Save 20%',
+    billed: '$95.88 billed yearly',
     badge: 'Most Popular',
     highlighted: true,
-    blurb: 'Billed yearly — save 20% vs monthly.',
+    blurb: 'Save 20% vs paying monthly.',
     priceEnvKey: 'STRIPE_YEARLY_PRICE_ID',
   },
   {

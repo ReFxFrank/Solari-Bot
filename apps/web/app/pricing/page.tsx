@@ -105,6 +105,7 @@ export default function PricingPage() {
                   </span>
                 )}
               </div>
+              {tier.billed && <p className="mt-1.5 text-sm font-medium text-white/70">{tier.billed}</p>}
               <p className="mt-2 text-sm text-white/50">{tier.blurb}</p>
 
               {tier.enabled ? (

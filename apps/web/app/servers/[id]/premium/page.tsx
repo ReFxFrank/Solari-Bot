@@ -152,6 +152,9 @@ export default async function PremiumPage({
                         <span className="text-xl font-bold text-white">{tier.price}</span>
                         <span className="text-xs text-white/50">{tier.period}</span>
                       </div>
+                      {tier.billed && (
+                        <p className="text-xs font-medium text-white/70">{tier.billed}</p>
+                      )}
                       <p className="text-xs text-white/45">{tier.blurb}</p>
                       <button
                         type="submit"
