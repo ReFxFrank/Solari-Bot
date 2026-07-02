@@ -75,7 +75,9 @@ services:
 
   # Nightly logical backups of Postgres to the `postgres-backups` volume, with
   # rolling retention. Restore with `scripts/restore-db.sh` (see its header).
-  # Copy backups off-host with: docker compose cp backup:/backups ./backups
+  # Set BACKUP_S3_* in .env to also push every dump to an S3-compatible store
+  # (R2/B2/S3/MinIO); otherwise copy off-host manually with:
+  #   docker compose cp backup:/backups ./backups
   backup:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -85,23 +87,19 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-helios}
       POSTGRES_DB: ${POSTGRES_DB:-helios}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        echo "backup: nightly pg_dump, $${BACKUP_RETENTION_DAYS}-day retention"
-        while true; do
-          ts=$$(date +%Y%m%d-%H%M%S)
-          if pg_dump -h postgres -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" | gzip > "/backups/helios-$$ts.sql.gz"; then
-            echo "backup: wrote helios-$$ts.sql.gz ($$(du -h /backups/helios-$$ts.sql.gz | cut -f1))"
-          else
-            echo "backup: pg_dump FAILED" >&2
-            rm -f "/backups/helios-$$ts.sql.gz"
-          fi
-          find /backups -name 'helios-*.sql.gz' -mtime +"$$BACKUP_RETENTION_DAYS" -delete
-          sleep 86400
-        done
+      # Offsite push (scripts/backup-loop.sh) — inactive while the bucket is
+      # empty. rclone reads the RCLONE_S3_* names directly.
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-solari}
+      BACKUP_S3_RETENTION_DAYS: ${BACKUP_S3_RETENTION_DAYS:-30}
+      RCLONE_S3_PROVIDER: ${BACKUP_S3_PROVIDER:-Other}
+      RCLONE_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      RCLONE_S3_REGION: ${BACKUP_S3_REGION:-}
+      RCLONE_S3_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      RCLONE_S3_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+    entrypoint: ['/bin/sh', '/backup-loop.sh']
     volumes:
+      - ./scripts/backup-loop.sh:/backup-loop.sh:ro
       - postgres-backups:/backups
     depends_on:
       postgres:
