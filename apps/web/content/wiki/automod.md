@@ -30,6 +30,8 @@ Two independent join gates:
 
 A panic button for an active raid — deny @everyone **Send Messages** across the server. Lifting a lockdown restores each channel to exactly the state it was in before (Solari remembers each channel's prior @everyone override). Server admins keep talking (Administrator bypasses channel overrides). Requires the bot to have **Manage Roles**.
 
+Add **exempt roles** (Auto-Moderation → Server lockdown) to keep your staff talking during a lockdown — they're granted an explicit Send Messages allow that overrides the @everyone deny, and are restored to their prior state when you unlock.
+
 | Command | What it does |
 | --- | --- |
 | `/lock [channel] [reason]` | Lock one channel (defaults to the current one) |

@@ -193,6 +193,9 @@ model ChannelLock {
   reason      String?
   /// The @everyone SendMessages overwrite before locking: 'allow' | 'deny' | 'neutral'.
   prevState   String
+  /// Exempt roles granted Send Messages during the lock, with each role's prior
+  /// SendMessages state so unlock restores it: [{ roleId, prevState }].
+  exemptStates Json    @default("[]")
   /// True when created by a server-wide lockdown (vs a single /lock).
   bulk        Boolean  @default(false)
   createdAt   DateTime @default(now())

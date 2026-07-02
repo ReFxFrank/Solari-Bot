@@ -38,11 +38,12 @@ const command: Command = {
 
     if (sub === 'start') {
       const reason = interaction.options.getString('reason');
+      const { raid } = await ctx.config.getConfig(interaction.guildId, 'AUTOMOD');
       const { locked, skipped } = await lockdownServer(
         interaction.guild,
         interaction.user.id,
         reason,
-        { announce: true },
+        { announce: true, exemptRoleIds: raid.lockdownExemptRoleIds },
       );
       await interaction.editReply({
         embeds: [

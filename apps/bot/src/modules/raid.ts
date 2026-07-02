@@ -159,6 +159,7 @@ export async function handleRaidJoin(member: GuildMember, ctx: BotContext): Prom
       raidLockedFor.set(member.guild.id, until);
       await lockdownServer(member.guild, ctx.client.user?.id ?? 'system', 'Automatic raid lockdown', {
         announce: false,
+        exemptRoleIds: raid.lockdownExemptRoleIds,
       }).catch((err: unknown) =>
         ctx.logger.warn({ err, guildId: member.guild.id }, 'Auto raid-lockdown failed'),
       );

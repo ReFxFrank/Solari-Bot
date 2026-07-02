@@ -44,7 +44,8 @@ const command: Command = {
       return;
     }
 
-    const result = await lockChannel(target, interaction.user.id, reason);
+    const { raid } = await ctx.config.getConfig(interaction.guildId, 'AUTOMOD');
+    const result = await lockChannel(target, interaction.user.id, reason, raid.lockdownExemptRoleIds);
     if (result === 'locked') {
       const embed = brandedEmbed({
         kind: 'danger',

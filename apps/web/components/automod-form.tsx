@@ -453,6 +453,20 @@ export function AutomodForm({
             <span className="text-white/70">Manage Roles</span>.
           </p>
         </div>
+        <div className="max-w-xl">
+          <Field
+            label="Roles exempt from lockdown"
+            hint="Kept able to talk during any lockdown (they get an explicit Send Messages allow). Saved with the form below."
+          >
+            <RoleSelect
+              roles={roles}
+              multiple
+              placeholder="Add roles…"
+              selected={raid.lockdownExemptRoleIds}
+              onChange={(ids) => patchRaid({ lockdownExemptRoleIds: ids })}
+            />
+          </Field>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"

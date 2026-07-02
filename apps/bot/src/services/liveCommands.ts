@@ -246,11 +246,12 @@ export class LiveCommandService {
   private async startLockdown(guildId: string, payload: LockdownStartPayload): Promise<void> {
     const guild = this.client.guilds.cache.get(guildId);
     if (!guild) return;
+    const { raid } = await this.config.getConfig(guildId, 'AUTOMOD');
     const { locked, skipped } = await lockdownServer(
       guild,
       payload.moderatorId,
       payload.reason ?? null,
-      { announce: true },
+      { announce: true, exemptRoleIds: raid.lockdownExemptRoleIds },
     );
     await this.postModLog(
       guildId,

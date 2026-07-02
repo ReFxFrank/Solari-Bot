@@ -54,6 +54,10 @@ export const raidConfigSchema = z.object({
    *  Unlike invite-pause this does NOT auto-lift — staff run `/lockdown end`
    *  once the wave is over, so the server can't reopen mid-raid. */
   lockdownOnRaid: z.boolean().default(false),
+  /** Roles kept able to talk during any lockdown — granted an explicit Send
+   *  Messages allow (which overrides the @everyone deny) and restored on unlock.
+   *  Applies to /lock, /lockdown, and auto raid-lockdown. */
+  lockdownExemptRoleIds: z.array(z.string()).max(25).default([]),
 });
 export type RaidConfig = z.infer<typeof raidConfigSchema>;
 
