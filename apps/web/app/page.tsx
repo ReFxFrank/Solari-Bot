@@ -9,6 +9,7 @@ import { UrgencyBanner } from '../components/marketing/urgency-banner';
 import { SiteNav } from '../components/marketing/site-nav';
 import { SiteFooter } from '../components/marketing/site-footer';
 import { Reveal } from '../components/marketing/reveal';
+import { DashboardPreview } from '../components/marketing/dashboard-preview';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,6 +109,30 @@ export default async function HomePage() {
             <span>·</span>
             <span>Slash commands + dashboard</span>
           </div>
+          <div className="enter mt-14" style={{ animationDelay: '450ms' }}>
+            <DashboardPreview />
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="px-6 pt-4">
+        <div className="mx-auto grid max-w-4xl gap-3 sm:grid-cols-3">
+          {[
+            { step: '1', title: 'Add to Discord', text: 'One click, standard OAuth — no downloads, nothing to host.' },
+            { step: '2', title: 'Pick your modules', text: 'Turn on what your server needs from the dashboard; ignore the rest.' },
+            { step: '3', title: 'It’s already live', text: 'Every setting you save reaches the bot in about a second.' },
+          ].map((item, i) => (
+            <Reveal key={item.step} delay={i * 80}>
+              <div className="h-full rounded-xl border border-white/10 bg-white/[0.02] p-5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-brand)]/20 text-sm font-bold text-[var(--color-brand-bright)]">
+                  {item.step}
+                </span>
+                <h3 className="mt-3 font-medium text-white/90">{item.title}</h3>
+                <p className="mt-1 text-sm text-white/50">{item.text}</p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </section>
 
