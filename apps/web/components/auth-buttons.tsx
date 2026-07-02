@@ -24,6 +24,9 @@ export function LoginButton({ className }: { className?: string }) {
 export function SignOutButton() {
   return (
     <form
+      // Never flex-shrinks: in tight headers the server switcher truncates
+      // instead — a squeezed form makes the button overflow onto neighbors.
+      className="shrink-0"
       action={async () => {
         'use server';
         await signOut({ redirectTo: '/' });
@@ -31,7 +34,7 @@ export function SignOutButton() {
     >
       <button
         type="submit"
-        className="rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-[var(--color-danger)]/20"
+        className="whitespace-nowrap rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-[var(--color-danger)]/20"
       >
         Sign out
       </button>
