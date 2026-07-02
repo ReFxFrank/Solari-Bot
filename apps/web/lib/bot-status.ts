@@ -60,7 +60,12 @@ export interface UptimeDay {
  * Trailing per-day bot uptime from the heartbeat's minute-bitmap ledger
  * (oldest first, ending today). A day with no key predates the ledger (or the
  * bot was down the entire day) and reads as null — rendered "no data" rather
- * than a false 0%. Today is measured against minutes elapsed so far.
+ * than a false 0%.
+ *
+ * Each day is measured from its FIRST recorded heartbeat (BITPOS), not from
+ * midnight: a ledger that starts mid-day (fresh deploy, new feature) opens at
+ * ~100% instead of being punished for hours it wasn't recording, while real
+ * gaps after the first beat still count as downtime.
  */
 export async function fetchUptimeHistory(days = 90): Promise<UptimeDay[] | null> {
   const read = async (): Promise<UptimeDay[]> => {
@@ -76,17 +81,23 @@ export async function fetchUptimeHistory(days = 90): Promise<UptimeDay[] | null>
       const key = statusMinutesKey(date);
       pipeline.exists(key);
       pipeline.bitcount(key);
+      pipeline.bitpos(key, 1);
     }
     const replies = (await pipeline.exec()) ?? [];
 
     const todayKey = statusMinutesKey(now);
-    const minutesElapsedToday = Math.max(1, now.getUTCHours() * 60 + now.getUTCMinutes() + 1);
+    const currentMinute = now.getUTCHours() * 60 + now.getUTCMinutes();
 
     return dates.map((date, index) => {
-      const exists = Number(replies[index * 2]?.[1] ?? 0) === 1;
-      const upMinutes = Number(replies[index * 2 + 1]?.[1] ?? 0);
-      if (!exists) return { date: date.toISOString().slice(0, 10), pct: null };
-      const expected = statusMinutesKey(date) === todayKey ? minutesElapsedToday : 1440;
+      const exists = Number(replies[index * 3]?.[1] ?? 0) === 1;
+      const upMinutes = Number(replies[index * 3 + 1]?.[1] ?? 0);
+      const firstMinute = Number(replies[index * 3 + 2]?.[1] ?? -1);
+      if (!exists || firstMinute < 0) {
+        return { date: date.toISOString().slice(0, 10), pct: null };
+      }
+      // Window runs from the day's first heartbeat to end-of-day (or now).
+      const windowEnd = statusMinutesKey(date) === todayKey ? currentMinute : 1439;
+      const expected = Math.max(1, windowEnd - firstMinute + 1);
       return {
         date: date.toISOString().slice(0, 10),
         pct: Math.min(100, Math.round((upMinutes / expected) * 1000) / 10),
