@@ -16,7 +16,10 @@
 # Providing an explicit `tls` cert below tells Caddy NOT to attempt ACME for this
 # site, so nothing here ever reaches out to Let's Encrypt.
 
-{$SOLARI_DOMAIN} {
+# wiki.<domain> is the same Next.js app — its middleware sees the wiki host and
+# serves the /docs pages at the subdomain root. The Cloudflare Origin Certificate
+# covers it too (they include *.<domain> by default).
+{$SOLARI_DOMAIN}, wiki.{$SOLARI_DOMAIN} {
 	encode zstd gzip
 
 	# Serve the Cloudflare origin certificate on the internal HTTPS leg.
