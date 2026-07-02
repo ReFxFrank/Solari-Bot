@@ -1,6 +1,14 @@
+import { createRequire } from 'node:module';
 import { createCanvas, type SKRSContext2D } from '@napi-rs/canvas';
-import { GIFEncoder, applyPalette, quantize } from 'gifenc';
+import type gifencTypes from 'gifenc';
 import { rouletteColor } from './casino';
+
+// gifenc's CJS build defeats both ESM import forms: its named exports are
+// getter-defined (invisible to Node 20's module lexer, so named imports crash)
+// and it sets __esModule without a default (so default-import interop yields
+// undefined). require() sidesteps interop entirely and works everywhere.
+const require = createRequire(import.meta.url);
+const { GIFEncoder, applyPalette, quantize } = require('gifenc') as typeof gifencTypes;
 
 /**
  * Animated roulette spin — a real European wheel rendered with canvas and

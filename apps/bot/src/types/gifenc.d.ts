@@ -1,9 +1,13 @@
-/** Minimal typings for gifenc@1 (no bundled types). Only what we use. */
+/**
+ * Minimal typings for gifenc@1 (no bundled types). Declared `export =` because
+ * the package is CJS whose named exports older Node lexers (v20) can't detect —
+ * consumers must default-import the namespace and destructure.
+ */
 declare module 'gifenc' {
-  export interface GifEncoderOptions {
+  interface GifEncoderOptions {
     auto?: boolean;
   }
-  export interface WriteFrameOptions {
+  interface WriteFrameOptions {
     palette?: number[][];
     delay?: number;
     /** Netscape loop count; 0 = forever. Omit entirely to play once. */
@@ -12,7 +16,7 @@ declare module 'gifenc' {
     dispose?: number;
     first?: boolean;
   }
-  export interface GifEncoder {
+  interface GifEncoder {
     writeFrame(
       index: Uint8Array,
       width: number,
@@ -22,10 +26,10 @@ declare module 'gifenc' {
     finish(): void;
     bytes(): Uint8Array;
   }
-  export function GIFEncoder(options?: GifEncoderOptions): GifEncoder;
-  export function quantize(rgba: Uint8Array | Uint8ClampedArray, maxColors: number): number[][];
-  export function applyPalette(
-    rgba: Uint8Array | Uint8ClampedArray,
-    palette: number[][],
-  ): Uint8Array;
+  const gifenc: {
+    GIFEncoder(options?: GifEncoderOptions): GifEncoder;
+    quantize(rgba: Uint8Array | Uint8ClampedArray, maxColors: number): number[][];
+    applyPalette(rgba: Uint8Array | Uint8ClampedArray, palette: number[][]): Uint8Array;
+  };
+  export = gifenc;
 }
