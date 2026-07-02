@@ -13,7 +13,8 @@ import {
 } from 'discord.js';
 import { prisma } from '@solari/database';
 import { QUEUE_NAMES } from '@solari/jobs';
-import { parseModuleConfig, type TicketsConfig } from '@solari/shared';
+import { parseModuleConfig, REDIS_CHANNELS, type TicketsConfig } from '@solari/shared';
+import { redis } from '../services/redis';
 import { brandedEmbed } from '../lib/embeds';
 import { buildCustomId } from '../framework/customId';
 import { ticketJobId, type JobService } from '../services/jobs';
@@ -64,6 +65,154 @@ export function buildTicketPanelMessage(config: TicketsConfig): BaseMessageOptio
 function resolveTextChannel(guild: Guild, channelId: string): GuildTextBasedChannel | null {
   const channel = guild.channels.cache.get(channelId);
   return channel && channel.isTextBased() && !channel.isDMBased() ? channel : null;
+}
+
+/**
+ * Zero-config bootstrap, run when the module is switched on with no category
+ * configured (SETUP_TICKETS live command from the dashboard toggle). Builds a
+ * working setup from what the guild already has:
+ *
+ *   - support roles: roles named like support/staff/mod/helper/admin, falling
+ *     back to the top moderation-capable roles
+ *   - a hidden "Tickets" category (reused if one already exists)
+ *   - #ticket-transcripts under it (staff-only via the category)
+ *   - a public read-only #open-a-ticket with the panel already deployed
+ *
+ * Idempotent: bails if a category is already configured and still exists, and
+ * reuses same-named channels instead of duplicating them. Skips quietly (with
+ * a log) when the bot lacks Manage Channels.
+ */
+export async function autoSetupTickets(guildId: string, deps: TicketDeps): Promise<void> {
+  const guild = deps.client.guilds.cache.get(guildId);
+  if (!guild) return;
+
+  const config = await getTicketsConfig(guildId);
+  if (config.categoryId && guild.channels.cache.has(config.categoryId)) return;
+
+  const me = guild.members.me;
+  if (!me?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+    deps.logger.warn({ guildId }, 'Tickets auto-setup skipped: bot lacks Manage Channels');
+    return;
+  }
+
+  // Support roles — prefer obviously-named ones, highest first.
+  const assignable = guild.roles.cache.filter(
+    (role) => !role.managed && role.id !== guild.roles.everyone.id,
+  );
+  let supportRoles = [...assignable.filter((role) => /support|staff|mod|helper|admin/i.test(role.name)).values()];
+  if (supportRoles.length === 0) {
+    supportRoles = [
+      ...assignable
+        .filter(
+          (role) =>
+            role.permissions.has(PermissionFlagsBits.ManageMessages) ||
+            role.permissions.has(PermissionFlagsBits.ModerateMembers),
+        )
+        .values(),
+    ];
+  }
+  const supportRoleIds = supportRoles
+    .sort((a, b) => b.position - a.position)
+    .slice(0, 5)
+    .map((role) => role.id);
+
+  const staffOverwrites: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+    ...supportRoleIds.map((roleId) => ({
+      id: roleId,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
+    })),
+    ...(deps.client.user
+      ? [
+          {
+            id: deps.client.user.id,
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.SendMessages,
+              PermissionFlagsBits.ManageChannels,
+            ],
+          },
+        ]
+      : []),
+  ];
+
+  // Category (reuse a "…tickets…" category if the server already has one).
+  const category =
+    guild.channels.cache.find(
+      (channel) => channel.type === ChannelType.GuildCategory && /ticket/i.test(channel.name),
+    ) ??
+    (await guild.channels.create({
+      name: 'Tickets',
+      type: ChannelType.GuildCategory,
+      permissionOverwrites: staffOverwrites,
+    }));
+
+  // Transcript archive — hidden with the category's staff-only permissions.
+  const transcripts =
+    guild.channels.cache.find(
+      (channel) =>
+        channel.type === ChannelType.GuildText && channel.name === 'ticket-transcripts',
+    ) ??
+    (await guild.channels.create({
+      name: 'ticket-transcripts',
+      type: ChannelType.GuildText,
+      parent: category.id,
+      permissionOverwrites: staffOverwrites,
+    }));
+
+  // Public panel channel: everyone can read, only the panel button interacts.
+  const panelChannel =
+    guild.channels.cache.find(
+      (channel) => channel.type === ChannelType.GuildText && channel.name === 'open-a-ticket',
+    ) ??
+    (await guild.channels.create({
+      name: 'open-a-ticket',
+      type: ChannelType.GuildText,
+      parent: category.id,
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone.id,
+          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+          deny: [PermissionFlagsBits.SendMessages],
+        },
+        ...(deps.client.user
+          ? [
+              {
+                id: deps.client.user.id,
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+              },
+            ]
+          : []),
+      ],
+    }));
+
+  const nextConfig: TicketsConfig = {
+    ...config,
+    categoryId: category.id,
+    supportRoleIds,
+    transcriptChannelId: transcripts.id,
+    panelChannelId: panelChannel.id,
+  };
+
+  const panelTarget = resolveTextChannel(guild, panelChannel.id);
+  if (panelTarget) await panelTarget.send(buildTicketPanelMessage(nextConfig));
+
+  await prisma.guildModuleConfig.upsert({
+    where: { guildId_module: { guildId, module: 'TICKETS' } },
+    update: { config: nextConfig },
+    create: { guildId, module: 'TICKETS', enabled: true, config: nextConfig },
+  });
+  // Invalidate the bot-side config cache the same way a dashboard save does.
+  await redis.publish(REDIS_CHANNELS.configUpdate, JSON.stringify({ guildId, module: 'TICKETS' }));
+
+  deps.logger.info(
+    { guildId, category: category.id, panel: panelChannel.id, supportRoles: supportRoleIds.length },
+    'Tickets auto-configured',
+  );
 }
 
 /**

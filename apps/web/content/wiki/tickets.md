@@ -2,6 +2,8 @@
 
 Private support channels with transcripts and inactivity auto-close.
 
+> **Zero-setup:** turn the module on with nothing configured and Solari sets itself up — it creates a hidden **Tickets** category, a staff-only **#ticket-transcripts**, a public **#open-a-ticket** with the panel already posted, and picks support roles from your existing staff roles. Everything it chose can be changed afterwards on the dashboard.
+
 ## How it works
 
 1. Configure where tickets live and who handles them.

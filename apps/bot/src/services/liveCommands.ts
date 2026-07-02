@@ -18,7 +18,7 @@ import { subscriber } from './redis';
 import { buildPanelMessage } from '../modules/roles';
 import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 import { armScheduledMessage } from '../modules/scheduledMessages';
-import { buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
+import { autoSetupTickets, buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
 import { buildVerificationPanel } from '../modules/verification';
 import { postRefxAlert } from '../modules/refxAlerts';
 import { refreshStatsCounters } from '../modules/statsCounters';
@@ -95,6 +95,14 @@ export class LiveCommandService {
           message.guildId,
           (message.payload as DeployTicketPanelPayload).channelId,
         );
+        return;
+      case 'SETUP_TICKETS':
+        // Zero-config bootstrap when the module is enabled unconfigured.
+        await autoSetupTickets(message.guildId, {
+          client: this.client,
+          jobs: this.jobs,
+          logger: this.logger,
+        });
         return;
       case 'REFRESH_COMMAND_TOGGLES':
         this.config.invalidateCommandToggles(message.guildId);
