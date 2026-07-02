@@ -40,36 +40,56 @@ export async function startCheckout(
 
   const stripe = getStripe();
   const { priceId, oneTime } = planConfig(plan);
-  if (!stripe || !priceId) throw new Error('That plan is not available.');
-
-  const existing = await prisma.guildSubscription.findUnique({ where: { guildId } });
-  let customerId = existing?.stripeCustomerId ?? undefined;
-  if (!customerId) {
-    const customer = await stripe.customers.create({ metadata: { guildId } });
-    customerId = customer.id;
+  if (!stripe || !priceId) {
+    console.error(
+      `[billing] checkout unavailable: guild=${guildId} plan=${plan} hasStripe=${Boolean(
+        stripe,
+      )} hasPriceId=${Boolean(priceId)} (is the plan's STRIPE_*_PRICE_ID set?)`,
+    );
+    redirect(`/servers/${guildId}/premium?billing_error=1`);
   }
-  // Record who is purchasing — billing visibility is scoped to them.
-  await prisma.guildSubscription.upsert({
-    where: { guildId },
-    update: { stripeCustomerId: customerId, purchasedBy: session.user.id },
-    create: { guildId, stripeCustomerId: customerId, purchasedBy: session.user.id },
-  });
 
-  const metadata = { guildId, userId: session.user.id, plan };
-  const checkout = await stripe.checkout.sessions.create({
-    mode: oneTime ? 'payment' : 'subscription',
-    customer: customerId,
-    line_items: [{ price: priceId, quantity: 1 }],
-    metadata,
-    allow_promotion_codes: true,
-    ...(oneTime
-      ? { payment_intent_data: { metadata } }
-      : { subscription_data: { metadata } }),
-    success_url: `${baseUrl()}/servers/${guildId}/premium?upgraded=1`,
-    cancel_url: `${baseUrl()}/servers/${guildId}/premium`,
-  });
-  if (!checkout.url) throw new Error('Could not start checkout.');
-  redirect(checkout.url);
+  // Everything that can raise a Stripe error lives in here so a misconfigured
+  // price surfaces as a friendly banner (with the real reason in the server
+  // logs) instead of the generic route error boundary. redirect() returns
+  // `never`, so `url` is always assigned by the time we redirect to it.
+  let url: string;
+  try {
+    const existing = await prisma.guildSubscription.findUnique({ where: { guildId } });
+    let customerId = existing?.stripeCustomerId ?? undefined;
+    if (!customerId) {
+      const customer = await stripe.customers.create({ metadata: { guildId } });
+      customerId = customer.id;
+    }
+    // Record who is purchasing — billing visibility is scoped to them.
+    await prisma.guildSubscription.upsert({
+      where: { guildId },
+      update: { stripeCustomerId: customerId, purchasedBy: session.user.id },
+      create: { guildId, stripeCustomerId: customerId, purchasedBy: session.user.id },
+    });
+
+    const metadata = { guildId, userId: session.user.id, plan };
+    const checkout = await stripe.checkout.sessions.create({
+      mode: oneTime ? 'payment' : 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata,
+      allow_promotion_codes: true,
+      ...(oneTime
+        ? { payment_intent_data: { metadata } }
+        : { subscription_data: { metadata } }),
+      success_url: `${baseUrl()}/servers/${guildId}/premium?upgraded=1`,
+      cancel_url: `${baseUrl()}/servers/${guildId}/premium`,
+    });
+    if (!checkout.url) throw new Error('Stripe returned no checkout URL');
+    url = checkout.url;
+  } catch (err) {
+    // e.g. a one-time price used in subscription mode, a wrong/test-mode price
+    // id, or a live/test key mismatch. The message here is the real diagnosis.
+    console.error(`[billing] Stripe checkout failed: guild=${guildId} plan=${plan}`, err);
+    redirect(`/servers/${guildId}/premium?billing_error=1`);
+  }
+  redirect(url);
 }
 
 /** Open the Stripe billing portal — restricted to the purchaser (or bot owner). */
@@ -86,9 +106,18 @@ export async function openBillingPortal(guildId: string): Promise<void> {
     throw new Error('Only the member who purchased Premium can manage billing.');
   }
 
-  const portal = await stripe.billingPortal.sessions.create({
-    customer: sub.stripeCustomerId,
-    return_url: `${baseUrl()}/servers/${guildId}/premium`,
-  });
-  redirect(portal.url);
+  let url: string;
+  try {
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: sub.stripeCustomerId,
+      return_url: `${baseUrl()}/servers/${guildId}/premium`,
+    });
+    url = portal.url;
+  } catch (err) {
+    // Most often: the Customer Portal isn't activated yet in the Stripe
+    // dashboard (Settings → Billing → Customer portal).
+    console.error(`[billing] Could not open billing portal: guild=${guildId}`, err);
+    redirect(`/servers/${guildId}/premium?billing_error=portal`);
+  }
+  redirect(url);
 }

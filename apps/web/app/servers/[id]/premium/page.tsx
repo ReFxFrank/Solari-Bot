@@ -15,10 +15,10 @@ export default async function PremiumPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ upgraded?: string }>;
+  searchParams: Promise<{ upgraded?: string; billing_error?: string }>;
 }) {
   const { id } = await params;
-  const { upgraded } = await searchParams;
+  const { upgraded, billing_error: billingError } = await searchParams;
   const { session } = await guardGuildAccess(id);
 
   const [sub, guild] = await Promise.all([
@@ -58,6 +58,16 @@ export default async function PremiumPage({
         <GlassCard className="border-[var(--color-success)]/30 p-4">
           <p className="text-sm text-[var(--color-success)]">
             Thanks for upgrading! Premium activates the moment Stripe confirms the payment.
+          </p>
+        </GlassCard>
+      )}
+
+      {billingError && (
+        <GlassCard className="border-[var(--color-danger)]/30 p-4">
+          <p className="text-sm text-[var(--color-danger)]">
+            {billingError === 'portal'
+              ? 'We couldn’t open the billing portal. If you’re the operator, activate it in Stripe → Settings → Billing → Customer portal, then try again.'
+              : 'We couldn’t start checkout for that plan. If you’re the operator, check that its Stripe price is set up correctly — Monthly and Yearly must be recurring prices and Lifetime a one-time price, with price IDs that match your live keys. The exact reason is in the web server logs.'}
           </p>
         </GlassCard>
       )}
