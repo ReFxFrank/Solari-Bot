@@ -98,9 +98,17 @@ export default async function AdminPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-white/90">Admin</h1>
-        <p className="text-sm text-white/50">Owner-only controls for premium and the blacklist.</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-white/90">Admin</h1>
+          <p className="text-sm text-white/50">Owner-only controls for premium and the blacklist.</p>
+        </div>
+        <a
+          href="/admin/incidents"
+          className="rounded-lg border border-white/10 px-3.5 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06] hover:text-white"
+        >
+          📣 Incidents
+        </a>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

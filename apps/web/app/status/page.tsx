@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
 import { Activity, Bot, CreditCard, Database, Gauge, Server } from 'lucide-react';
 import { BRAND } from '@solari/shared';
+import { prisma } from '@solari/database';
+import {
+  SEVERITY_META,
+  STATUS_LABEL,
+  formatIncidentTime,
+  type IncidentDTO,
+} from '../../lib/incidents';
 import { GlassCard } from '../../components/ui/glass-card';
 import { SiteNav } from '../../components/marketing/site-nav';
 import { SiteFooter } from '../../components/marketing/site-footer';
@@ -46,12 +53,44 @@ const HEALTH_META: Record<Health, { label: string; dot: string; text: string }> 
 const DEGRADED_PING_MS = 400;
 
 export default async function StatusPage() {
-  const [shards, db, redis, history] = await Promise.all([
+  const [shards, db, redis, history, incidentRows] = await Promise.all([
     fetchShardStatuses(),
     checkDatabase(),
     checkRedis(),
     fetchUptimeHistory(90),
+    // Everything unresolved, plus the trailing 30 days of resolved history.
+    prisma.incident
+      .findMany({
+        where: {
+          OR: [
+            { status: { not: 'RESOLVED' } },
+            { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { updates: { orderBy: { createdAt: 'desc' } } },
+      })
+      .catch(() => []),
   ]);
+
+  const incidents: IncidentDTO[] = incidentRows.map((incident) => ({
+    id: incident.id,
+    title: incident.title,
+    severity: incident.severity,
+    status: incident.status,
+    component: incident.component,
+    createdAt: incident.createdAt.toISOString(),
+    resolvedAt: incident.resolvedAt?.toISOString() ?? null,
+    updates: incident.updates.map((update) => ({
+      id: update.id,
+      status: update.status,
+      message: update.message,
+      createdAt: update.createdAt.toISOString(),
+    })),
+  }));
+  const activeIncidents = incidents.filter((incident) => incident.status !== 'RESOLVED');
+  const pastIncidents = incidents.filter((incident) => incident.status === 'RESOLVED');
 
   const reporting = shards ?? [];
   const totalGuilds = reporting.reduce((sum, shard) => sum + shard.guilds, 0);
@@ -127,11 +166,20 @@ export default async function StatusPage() {
       : []),
   ];
 
-  const overall: Health = components.some((c) => c.health === 'outage')
+  // Owner-declared incidents also drive the overall banner: an active OUTAGE
+  // incident is an outage even if the probes look fine (and vice versa).
+  const incidentHealth: Health | null = activeIncidents.some((i) => i.severity === 'OUTAGE')
     ? 'outage'
-    : components.some((c) => c.health === 'degraded')
+    : activeIncidents.some((i) => i.severity === 'DEGRADED')
       ? 'degraded'
-      : 'operational';
+      : null;
+
+  const overall: Health =
+    components.some((c) => c.health === 'outage') || incidentHealth === 'outage'
+      ? 'outage'
+      : components.some((c) => c.health === 'degraded') || incidentHealth === 'degraded'
+        ? 'degraded'
+        : 'operational';
   const overallMeta = HEALTH_META[overall];
 
   const overallCopy: Record<Health, string> = {
@@ -171,6 +219,20 @@ export default async function StatusPage() {
           <Stat label="Gateway ping" value={avgPing !== null ? `${avgPing}ms` : '—'} />
           <Stat label="Uptime" value={longestUptime ? formatUptime(longestUptime) : '—'} />
         </div>
+
+        {/* Active incidents (owner-declared) */}
+        {activeIncidents.length > 0 && (
+          <>
+            <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-white/40">
+              Active incidents
+            </h2>
+            <div className="flex flex-col gap-3">
+              {activeIncidents.map((incident) => (
+                <IncidentCard key={incident.id} incident={incident} />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Uptime history (bot heartbeat ledger) */}
         <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-white/40">
@@ -244,6 +306,22 @@ export default async function StatusPage() {
           </div>
         )}
 
+        {/* Incident history (resolved, last 30 days) */}
+        <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-white/40">
+          Incident history — last 30 days
+        </h2>
+        {pastIncidents.length === 0 ? (
+          <GlassCard className="p-6 text-sm text-white/45">
+            No incidents in the last 30 days.
+          </GlassCard>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {pastIncidents.map((incident) => (
+              <IncidentCard key={incident.id} incident={incident} resolved />
+            ))}
+          </div>
+        )}
+
         <p className="mt-8 text-center font-mono text-xs text-white/25">
           Checks run live from this page render — database and cache latencies are real round trips.
         </p>
@@ -251,6 +329,46 @@ export default async function StatusPage() {
 
       <SiteFooter />
     </div>
+  );
+}
+
+function IncidentCard({ incident, resolved = false }: { incident: IncidentDTO; resolved?: boolean }) {
+  const meta = SEVERITY_META[incident.severity];
+  // History cards show the resolution + opening note; active ones the full trail.
+  const updates = resolved ? incident.updates.slice(0, 2) : incident.updates;
+  return (
+    <GlassCard className={cn('border p-5', meta.border, resolved && 'opacity-85')}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', meta.badge)}>
+          {meta.label}
+        </span>
+        {incident.component && (
+          <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-xs text-white/60">
+            {incident.component}
+          </span>
+        )}
+        <span className="ml-auto text-xs text-white/40">
+          {formatIncidentTime(incident.createdAt)}
+        </span>
+      </div>
+      <h3 className="mt-2 font-semibold text-white/90">{incident.title}</h3>
+      <div className="mt-3 flex flex-col gap-2.5 border-l border-white/10 pl-4">
+        {updates.map((update) => (
+          <div key={update.id} className="text-sm">
+            <span
+              className={cn(
+                'font-semibold',
+                update.status === 'RESOLVED' ? 'text-[var(--color-success)]' : 'text-white/75',
+              )}
+            >
+              {STATUS_LABEL[update.status]}
+            </span>
+            <span className="text-white/35"> · {formatIncidentTime(update.createdAt)}</span>
+            <p className="mt-0.5 whitespace-pre-wrap text-white/60">{update.message}</p>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
   );
 }
 

@@ -817,3 +817,50 @@ model InviteUse {
   @@index([guildId, inviterId])
   @@index([guildId])
 }
+
+/// Severity category of a status-page incident (owner-issued).
+enum IncidentSeverity {
+  OUTAGE
+  DEGRADED
+  MAINTENANCE
+  NOTICE
+}
+
+/// Lifecycle stage of an incident, statuspage-style.
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+/// A status-page incident, created from the owner admin panel and rendered on
+/// /status (active banner while unresolved, then in the incident history).
+model Incident {
+  id         String           @id @default(cuid())
+  title      String
+  severity   IncidentSeverity
+  status     IncidentStatus   @default(INVESTIGATING)
+  /// Affected component label shown on the page (e.g. "Discord bot").
+  component  String?
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+
+  updates IncidentUpdate[]
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+/// A timestamped update on an incident (each also moves its lifecycle status).
+model IncidentUpdate {
+  id         String         @id @default(cuid())
+  incidentId String
+  status     IncidentStatus
+  message    String
+  createdAt  DateTime       @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
