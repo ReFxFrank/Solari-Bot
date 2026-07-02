@@ -2,13 +2,17 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
 
+// Shown in link previews (Discord/Twitter embeds) and search results.
+const DESCRIPTION =
+  'The all-in-one Discord bot. Moderation, leveling, economy, giveaways and more — set up in minutes from a clean web dashboard.';
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://solari.gg'),
   title: {
     default: 'Solari — Discord Control Panel',
     template: '%s · Solari',
   },
-  description: 'Self-hosted, premium-grade Discord bot dashboard.',
+  description: DESCRIPTION,
   applicationName: 'Solari',
   // Single source of truth for the favicon: drop the galaxy logo at
   // apps/web/public/solari-logo.png and it serves every icon slot below.
@@ -21,14 +25,14 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Solari',
     title: 'Solari — Discord Control Panel',
-    description: 'Self-hosted, premium-grade Discord bot dashboard.',
+    description: DESCRIPTION,
     url: 'https://solari.gg',
     images: [{ url: '/solari-logo.png', width: 512, height: 512, alt: 'Solari' }],
   },
   twitter: {
     card: 'summary',
     title: 'Solari — Discord Control Panel',
-    description: 'Self-hosted, premium-grade Discord bot dashboard.',
+    description: DESCRIPTION,
     images: ['/solari-logo.png'],
   },
 };
