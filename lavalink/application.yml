@@ -32,8 +32,9 @@ lavalink:
     resamplingQuality: LOW
 
 # youtube-source plugin config. `clients` is the fallback order of the innerTube
-# clients it impersonates. TVHTML5EMBEDDED is the client OAuth applies to — it's
-# what makes playback work from datacenter IPs once oauth is enabled.
+# clients it impersonates. TV is the client OAuth applies to (verified against
+# the 1.18.1 jar) — it's what makes playback work from datacenter IPs once
+# oauth is enabled.
 plugins:
   youtube:
     enabled: true
@@ -43,7 +44,7 @@ plugins:
     clients:
       - MUSIC
       - ANDROID_VR
-      - TVHTML5EMBEDDED
+      - TV
       - WEB
       - WEBEMBEDDED
     # YouTube blocks unauthenticated streaming from datacenter IPs ("This video
