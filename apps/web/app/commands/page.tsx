@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 };
 
 export default async function CommandsPage() {
-  const commands = await getApplicationCommands();
+  // Failure and "none registered" render the same public fallback message.
+  const commands = (await getApplicationCommands()) ?? [];
 
   return (
     <div className="min-h-screen">

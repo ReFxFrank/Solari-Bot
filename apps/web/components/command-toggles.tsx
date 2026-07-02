@@ -53,14 +53,6 @@ export function CommandToggles({
     });
   }
 
-  if (commands.length === 0) {
-    return (
-      <div className="glass rounded-2xl p-10 text-center text-sm text-white/40">
-        Couldn&apos;t load the command list — check that the bot token is configured, then reload.
-      </div>
-    );
-  }
-
   const enabledCount = commands.length - disabled.size;
 
   return (

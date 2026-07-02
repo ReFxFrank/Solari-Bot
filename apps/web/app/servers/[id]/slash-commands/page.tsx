@@ -24,7 +24,19 @@ export default async function SlashCommandsPage({ params }: { params: Promise<{ 
           moderators included — within ~1s of the change.
         </p>
       </div>
-      <CommandToggles guildId={id} commands={commands} initialDisabled={disabled} />
+      {commands === null ? (
+        <div className="glass rounded-2xl p-10 text-center text-sm text-white/40">
+          Couldn&apos;t reach Discord to load the command list — check that the bot token is
+          configured, then reload.
+        </div>
+      ) : commands.length === 0 ? (
+        <div className="glass rounded-2xl p-10 text-center text-sm text-white/40">
+          No commands are registered yet — run the deploy step (
+          <code className="text-white/60">pnpm deploy:commands</code>) and reload.
+        </div>
+      ) : (
+        <CommandToggles guildId={id} commands={commands} initialDisabled={disabled} />
+      )}
     </div>
   );
 }

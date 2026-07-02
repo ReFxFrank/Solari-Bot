@@ -43,8 +43,8 @@ export default async function AdminPage() {
     }),
     prisma.blacklist.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     prisma.globalModuleFlag.findMany({ select: { module: true, enabled: true } }),
-    // Global audit trail across every guild — owner-only surface. Clients only
-    // ever see their own server's entries on /servers/[id]/audit.
+    // Global audit trail across every guild — owner-only surface. Dashboard
+    // changes are still recorded per guild; clients have no audit page.
     prisma.dashboardAuditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,

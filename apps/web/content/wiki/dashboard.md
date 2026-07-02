@@ -5,7 +5,7 @@ The dashboard at [solari.gg](/) is where everything is configured. This page is 
 ## Layout
 
 - **Server switcher** (top left) — jump between every server you manage. Solari keeps configuration fully separate per server.
-- **Server section** — Overview, Settings, Slash Commands, Audit log, and Premium.
+- **Server section** — Overview, Insights, Settings, Slash Commands, and Premium.
 - **Module groups** — the sidebar lists every module with a config page, grouped like the overview grid.
 
 ## Overview
@@ -27,10 +27,6 @@ Server-wide options:
 ## Slash Commands
 
 Toggle **individual commands** on or off for your server. A disabled command refuses everyone — moderators included — within about a second. See [Command Toggles](/docs/slash-commands).
-
-## Audit log
-
-Every dashboard change — who changed what, and when. Config saves record before/after values.
 
 ## Saving
 

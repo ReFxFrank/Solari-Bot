@@ -46,5 +46,8 @@ export async function fetchManageableGuilds(accessToken: string): Promise<Manage
 export function guildIconUrl(id: string, icon: string | null, size = 64): string | null {
   if (!icon) return null;
   const ext = icon.startsWith('a_') ? 'gif' : 'png';
-  return `https://cdn.discordapp.com/icons/${id}/${icon}.${ext}?size=${size}`;
+  // Discord's CDN only serves power-of-two sizes 16–4096 — anything else is a
+  // 400 and renders as a broken image. Round the request up.
+  const cdnSize = Math.min(4096, Math.max(16, 2 ** Math.ceil(Math.log2(size))));
+  return `https://cdn.discordapp.com/icons/${id}/${icon}.${ext}?size=${cdnSize}`;
 }

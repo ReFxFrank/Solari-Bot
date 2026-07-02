@@ -50,27 +50,44 @@ function flattenSubcommands(options: RawOption[] | undefined): SlashCommandInfo[
   return out;
 }
 
-/** All registered global chat-input commands, alphabetically. */
-export async function getApplicationCommands(): Promise<SlashCommandInfo[]> {
+async function fetchCommandList(url: string, token: string): Promise<SlashCommandInfo[] | null> {
+  const response = await fetch(url, {
+    headers: { Authorization: `Bot ${token}` },
+    next: { revalidate: CACHE_SECONDS },
+  });
+  if (!response.ok) return null;
+  const data = (await response.json()) as RawApplicationCommand[];
+  return data
+    .filter((command) => (command.type ?? 1) === 1)
+    .map((command) => ({
+      name: command.name,
+      description: command.description,
+      subcommands: flattenSubcommands(command.options),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * All registered chat-input commands, alphabetically. Mirrors the
+ * deploy-commands script's scope: global commands first, and when that list is
+ * empty and DEV_GUILD_ID is set (guild-scoped registration), that guild's
+ * commands. Returns null when the fetch itself failed (bad/missing token) so
+ * callers can tell "broken" apart from "none registered".
+ */
+export async function getApplicationCommands(): Promise<SlashCommandInfo[] | null> {
   const token = process.env.DISCORD_TOKEN;
   const clientId = process.env.DISCORD_CLIENT_ID;
-  if (!token || !clientId) return [];
+  if (!token || !clientId) return null;
   try {
-    const response = await fetch(`${DISCORD_API}/applications/${clientId}/commands`, {
-      headers: { Authorization: `Bot ${token}` },
-      next: { revalidate: CACHE_SECONDS },
-    });
-    if (!response.ok) return [];
-    const data = (await response.json()) as RawApplicationCommand[];
-    return data
-      .filter((command) => (command.type ?? 1) === 1)
-      .map((command) => ({
-        name: command.name,
-        description: command.description,
-        subcommands: flattenSubcommands(command.options),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const global = await fetchCommandList(`${DISCORD_API}/applications/${clientId}/commands`, token);
+    if (global === null) return null;
+    const devGuildId = process.env.DEV_GUILD_ID;
+    if (global.length > 0 || !devGuildId) return global;
+    return await fetchCommandList(
+      `${DISCORD_API}/applications/${clientId}/guilds/${devGuildId}/commands`,
+      token,
+    );
   } catch {
-    return [];
+    return null;
   }
 }
