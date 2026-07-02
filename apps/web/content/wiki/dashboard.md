@@ -28,6 +28,10 @@ Server-wide options:
 
 Toggle **individual commands** on or off for your server. A disabled command refuses everyone — moderators included — within about a second. See [Command Toggles](/docs/slash-commands).
 
+## Backup &amp; transfer
+
+Settings → **Backup &amp; transfer** exports your whole module configuration as a JSON file. Keep it as a backup, or import it into another server running Solari — every module is validated on import, and premium modules only switch on where Premium is active.
+
 ## Saving
 
 Config pages have a **Save changes** button; the live bot picks the change up in about a second. Fields that reference roles or channels always use synced pickers, never raw IDs.

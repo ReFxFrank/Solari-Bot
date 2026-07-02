@@ -4,6 +4,7 @@ import { moderationConfigSchema } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { getGuildRoles } from '../../../../lib/discord-guild';
 import { SettingsForm } from '../../../../components/settings-form';
+import { ConfigTransfer } from '../../../../components/config-transfer';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ id: s
         initialModeration={moderation}
         roles={roles}
       />
+      <ConfigTransfer guildId={id} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { ArrowRight, Crown, Lock } from 'lucide-react';
 import { MODULE_ACCENTS, type ModuleMeta } from '../lib/modules';
 import { cn } from '../lib/utils';
 import { ModuleToggle } from './module-toggle';
+import { SpotlightCard } from './marketing/spotlight-card';
 
 export function ModuleCard({
   guildId,
@@ -22,7 +23,9 @@ export function ModuleCard({
   const glow = from;
 
   return (
-    <div
+    // SpotlightCard adds the marketing pages' pointer-tracking glow so the
+    // dashboard grid shares the same motion language.
+    <SpotlightCard
       className={cn(
         'group glass relative flex flex-col gap-3.5 overflow-hidden rounded-2xl p-5 transition-all duration-200',
         'hover:-translate-y-0.5 hover:border-white/20',
@@ -100,7 +103,7 @@ export function ModuleCard({
           <span />
         )}
       </div>
-    </div>
+    </SpotlightCard>
   );
 }
 
