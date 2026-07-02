@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { renderRouletteSpin, ROULETTE_SPIN_MS, WHEEL_ORDER } from './rouletteWheel';
+import {
+  renderRouletteResult,
+  renderRouletteSpin,
+  ROULETTE_SPIN_MS,
+  WHEEL_ORDER,
+} from './rouletteWheel';
 
 describe('WHEEL_ORDER', () => {
   it('contains every pocket 0–36 exactly once (European wheel)', () => {
@@ -22,5 +27,12 @@ describe('renderRouletteSpin', () => {
     expect(renderRouletteSpin(17)).toBe(first);
     expect(() => renderRouletteSpin(37)).toThrow();
     expect(ROULETTE_SPIN_MS).toBeGreaterThan(2_000);
+  });
+
+  it('renders and caches the static result still (PNG)', () => {
+    const still = renderRouletteResult(0);
+    // PNG magic bytes.
+    expect(still.subarray(1, 4).toString('ascii')).toBe('PNG');
+    expect(renderRouletteResult(0)).toBe(still);
   });
 });

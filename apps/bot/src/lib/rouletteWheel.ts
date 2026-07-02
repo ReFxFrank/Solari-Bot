@@ -225,3 +225,15 @@ export function renderRouletteFramePng(winningPocket: number, p: number): Buffer
   drawFrame(ctx, wheelAngle, ballAngle, ballR);
   return canvas.toBuffer('image/png');
 }
+
+const stillCache = new Map<number, Buffer>();
+
+/** Static PNG of the finished spin (ball resting on the winning pocket) — the
+ *  result message swaps the GIF for this so the wheel stops replaying. */
+export function renderRouletteResult(winningPocket: number): Buffer {
+  const cached = stillCache.get(winningPocket);
+  if (cached) return cached;
+  const buffer = renderRouletteFramePng(winningPocket, 1);
+  stillCache.set(winningPocket, buffer);
+  return buffer;
+}

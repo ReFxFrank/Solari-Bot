@@ -19,7 +19,7 @@ import {
   spinRoulette,
   type RouletteBet,
 } from '../../lib/casino';
-import { renderRouletteSpin, ROULETTE_SPIN_MS } from '../../lib/rouletteWheel';
+import { renderRouletteResult, renderRouletteSpin, ROULETTE_SPIN_MS } from '../../lib/rouletteWheel';
 
 const BET_TIMEOUT_MS = 30_000;
 
@@ -141,6 +141,11 @@ const command: Command = {
 
       const won = payout > 0;
       const net = payout - amount;
+      // Swap the GIF for a static still of the finished spin, so the result
+      // message shows the ball parked on the number instead of replaying.
+      const still = new AttachmentBuilder(renderRouletteResult(pocket), {
+        name: 'roulette-result.png',
+      });
       await interaction.editReply({
         embeds: [
           brandedEmbed({
@@ -158,9 +163,12 @@ const command: Command = {
                 inline: true,
               },
             )
-            .setImage('attachment://roulette.gif')
+            .setImage('attachment://roulette-result.png')
             .setFooter({ text: `Bet ${amount.toLocaleString('en-US')}` }),
         ],
+        files: [still],
+        // Drop the spin GIF from the message; the still replaces it.
+        attachments: [],
         components: [],
       });
     }
