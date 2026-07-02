@@ -51,12 +51,6 @@ export const botEnvSchema = baseEnvSchema.extend({
    *  YouTube/Reddit/RSS work without any keys). */
   TWITCH_CLIENT_ID: z.string().optional(),
   TWITCH_CLIENT_SECRET: z.string().optional(),
-  /** Public ReFx status feed override (optional; defaults to api.refx.gg). */
-  REFX_STATUS_URL: z.string().url().optional(),
-  /** status:read bearer token for the authenticated node-metrics feed. */
-  REFX_STATUS_TOKEN: z.string().optional(),
-  /** Authenticated node-metrics endpoint override (optional). */
-  REFX_NODES_URL: z.string().url().optional(),
 });
 
 export const webEnvSchema = baseEnvSchema.extend({
