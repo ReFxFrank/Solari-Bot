@@ -42,6 +42,8 @@ enum Module {
   MUSIC
   SOCIAL
   TEMP_VOICE
+  /// Legacy — the ReFx Alerts module was removed; Postgres cannot drop enum
+  /// values, so this stays as a dead value. Never reference it in app code.
   REFX_ALERTS
   UTILITY
   FUN

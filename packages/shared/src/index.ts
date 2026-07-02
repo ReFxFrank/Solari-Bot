@@ -9,5 +9,4 @@ export * from './roles';
 export * from './schedule';
 export * from './embed';
 export * from './polls';
-export * from './refx';
 export * from './config';

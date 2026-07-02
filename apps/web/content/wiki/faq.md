@@ -7,7 +7,7 @@ Check these in order:
 1. **Is the module enabled?** Commands belong to modules — `/warn` needs Moderation enabled on the Overview grid.
 2. **Is the command toggled off?** Check the **Slash Commands** page — disabled commands refuse everyone.
 3. **Does the member have permission?** Moderation commands respect Discord permissions plus your configured mod/admin roles.
-4. **Is it a Premium module?** Economy, Music, Social Alerts, Temp Voice, and ReFx Alerts need [Premium](/docs/premium).
+4. **Is it a Premium module?** Economy, Music, Social Alerts, and Temp Voice need [Premium](/docs/premium).
 
 ## How do I disable a single command?
 

@@ -7,7 +7,6 @@ import { autoroleConfigSchema } from './autorole';
 import { loggingConfigSchema } from './logging';
 import { starboardConfigSchema } from './starboard';
 import { ticketsConfigSchema } from './tickets';
-import { refxAlertsConfigSchema } from './refxAlerts';
 import { customCommandsConfigSchema } from './customCommands';
 import { suggestionsConfigSchema } from './suggestions';
 import { birthdaysConfigSchema } from './birthdays';
@@ -32,7 +31,6 @@ export * from './autorole';
 export * from './logging';
 export * from './starboard';
 export * from './tickets';
-export * from './refxAlerts';
 export * from './customCommands';
 export * from './suggestions';
 export * from './birthdays';
@@ -57,7 +55,6 @@ export const MODULE_CONFIG_SCHEMAS = {
   LOGGING: loggingConfigSchema,
   STARBOARD: starboardConfigSchema,
   TICKETS: ticketsConfigSchema,
-  REFX_ALERTS: refxAlertsConfigSchema,
   CUSTOM_COMMANDS: customCommandsConfigSchema,
   SUGGESTIONS: suggestionsConfigSchema,
   BIRTHDAYS: birthdaysConfigSchema,

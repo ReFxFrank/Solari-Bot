@@ -16,7 +16,6 @@ import type {
   ModuleWithSchema,
   MusicConfig,
   PollsConfig,
-  RefxAlertsConfig,
   StarboardConfig,
   StatsCountersConfig,
   SuggestionsConfig,
@@ -184,12 +183,6 @@ export async function saveTicketsConfig(
   return saveConfig(guildId, 'TICKETS', input, 'tickets');
 }
 
-export async function saveRefxAlertsConfig(
-  guildId: string,
-  input: RefxAlertsConfig,
-): Promise<ActionResult> {
-  return saveConfig(guildId, 'REFX_ALERTS', input, 'refx-alerts');
-}
 
 export async function saveCustomCommandsConfig(
   guildId: string,

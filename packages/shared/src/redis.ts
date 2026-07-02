@@ -33,7 +33,6 @@ export type LiveCommandType =
   | 'SETUP_TICKETS'
   | 'DEPLOY_VERIFY_PANEL'
   | 'REFRESH_COMMAND_TOGGLES'
-  | 'REFX_ALERT'
   | 'RESTART_CUSTOM_BOT';
 
 export interface LiveCommandMessage<TPayload = unknown> {
@@ -65,19 +64,6 @@ export interface DeployTicketPanelPayload {
 
 export interface DeployVerifyPanelPayload {
   channelId: string;
-}
-
-/**
- * A ReFx status/incident alert to post. The web webhook receiver has already
- * matched the event to this guild's subscription and resolved the target
- * channel; the bot re-checks live config and posts. `data` is the validated
- * webhook event data (kept loose so it can carry passthrough fields).
- */
-export interface RefxAlertPayload {
-  event: 'incident.created' | 'incident.updated' | 'incident.resolved' | 'component.status_changed';
-  timestamp: string;
-  channelId: string;
-  data: unknown;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */

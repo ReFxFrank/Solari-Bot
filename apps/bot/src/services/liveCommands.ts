@@ -9,7 +9,6 @@ import {
   type DeployTicketPanelPayload,
   type DeployVerifyPanelPayload,
   type LiveCommandMessage,
-  type RefxAlertPayload,
   type RolePanelOption,
   type ScheduledMessagePayload,
 } from '@solari/shared';
@@ -20,7 +19,6 @@ import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 import { armScheduledMessage } from '../modules/scheduledMessages';
 import { autoSetupTickets, buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
 import { buildVerificationPanel } from '../modules/verification';
-import { postRefxAlert } from '../modules/refxAlerts';
 import { refreshStatsCounters } from '../modules/statsCounters';
 import { scheduledMessageJobId, type JobService } from './jobs';
 import type { ConfigCache } from './configCache';
@@ -111,15 +109,6 @@ export class LiveCommandService {
         await this.deployVerifyPanel(
           message.guildId,
           (message.payload as DeployVerifyPanelPayload).channelId,
-        );
-        return;
-      case 'REFX_ALERT':
-        await postRefxAlert(
-          this.client,
-          this.config,
-          this.logger,
-          message.guildId,
-          message.payload as RefxAlertPayload,
         );
         return;
       case 'REFRESH_STATS':

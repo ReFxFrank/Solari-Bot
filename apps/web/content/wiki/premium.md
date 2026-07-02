@@ -8,7 +8,6 @@ Premium is a **per-server** subscription that unlocks the heavy modules and high
 - **Music** — queue-based playback
 - **Social Alerts** — Twitch, YouTube, Reddit, Bluesky & RSS
 - **Temp Voice** — join-to-create channels
-- **ReFx Alerts** — live hosting incident alerts
 - **Bot Personalizer** — run Solari as your own bot
 - Higher limits on custom commands and other modules
 

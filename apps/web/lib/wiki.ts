@@ -70,7 +70,6 @@ export const WIKI_SECTIONS: WikiSection[] = [
     title: 'Social Alerts',
     pages: [
       { slug: 'social-alerts', title: 'Social Alerts', description: 'Twitch, YouTube, Reddit, Bluesky & RSS.' },
-      { slug: 'refx-alerts', title: 'ReFx Alerts', description: 'Live ReFx Hosting incident alerts.' },
     ],
   },
   {

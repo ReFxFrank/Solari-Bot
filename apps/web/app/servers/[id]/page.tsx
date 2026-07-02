@@ -1,5 +1,5 @@
 import { prisma } from '@solari/database';
-import { isModuleLocked } from '@solari/shared';
+import { isModuleLocked, MODULES, type Module } from '@solari/shared';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { MODULE_META } from '../../../lib/modules';
 import { DashboardHero } from '../../../components/dashboard-hero';
@@ -41,8 +41,14 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
     configs.map((c) => [c.module, c.enabled]),
   );
   // Count only modules the guild can actually use — a premium module left enabled
-  // after a downgrade renders as "Locked" in the grid, so it shouldn't inflate this.
-  const enabledCount = configs.filter((c) => c.enabled && !isModuleLocked(c.module, tier)).length;
+  // after a downgrade renders as "Locked" in the grid, so it shouldn't inflate
+  // this. Rows for removed legacy modules (dead Prisma enum values) don't count.
+  const enabledCount = configs.filter(
+    (c) =>
+      c.enabled &&
+      (MODULES as readonly string[]).includes(c.module) &&
+      !isModuleLocked(c.module as Module, tier),
+  ).length;
 
   return (
     <div className="flex flex-col gap-8">

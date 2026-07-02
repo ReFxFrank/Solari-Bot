@@ -29,7 +29,6 @@ export const MODULES = [
   'MUSIC',
   'SOCIAL',
   'TEMP_VOICE',
-  'REFX_ALERTS',
   'UTILITY',
   'FUN',
 ] as const;
@@ -45,7 +44,6 @@ export const PREMIUM_MODULES: readonly Module[] = [
   'MUSIC',
   'SOCIAL',
   'TEMP_VOICE',
-  'REFX_ALERTS',
 ] as const;
 
 export const MODERATION_ACTION_TYPES = [
