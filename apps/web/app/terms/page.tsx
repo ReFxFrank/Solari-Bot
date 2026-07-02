@@ -15,7 +15,7 @@ export default function TermsPage() {
       intro={
         <p>
           These Terms of Service (&ldquo;Terms&rdquo;) govern your use of {BRAND.name} (&ldquo;the
-          Service&rdquo;), operated by [Operator Name], including the Discord bot and the
+          Service&rdquo;), operated by Solari (solari.gg), including the Discord bot and the
           {` ${BRAND.name}`} dashboard. By adding the bot to a server or using the dashboard, you
           agree to these Terms. If you do not agree, do not use the Service.
         </p>
@@ -137,9 +137,10 @@ export default function TermsPage() {
 
       <LegalSection heading="12. Governing law and contact">
         <p>
-          These Terms are governed by the laws of [Governing Jurisdiction], without regard to its
-          conflict-of-laws rules. Questions about these Terms can be sent to the operator of this
-          {` ${BRAND.name}`} instance at [contact email]. See also our{' '}
+          These Terms are governed by the laws of the jurisdiction in which the operator resides,
+          without regard to conflict-of-laws rules. Questions about these Terms can be sent to the
+          operator of this
+          {` ${BRAND.name}`} instance at legal@solari.gg. See also our{' '}
           <a href="/privacy" className="text-[var(--color-brand-bright)] hover:underline">
             Privacy Policy
           </a>

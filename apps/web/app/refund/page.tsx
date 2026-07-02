@@ -48,7 +48,7 @@ export default function RefundPage() {
         <p>
           A Lifetime purchase is a one-time payment for ongoing Premium on a single server. As a
           goodwill guarantee, you may request a full refund of a Lifetime purchase within{' '}
-          <strong>[14] days</strong> of the purchase date if the premium features are not working
+          <strong>14 days</strong> of the purchase date if the premium features are not working
           as described. After that window, Lifetime purchases are non-refundable except where
           required by law.
         </p>
@@ -65,7 +65,7 @@ export default function RefundPage() {
       <LegalSection heading="5. How to request a refund">
         <p>
           Email the operator of this {BRAND.name} instance at{' '}
-          <strong>[contact email]</strong> with the Discord server ID, the email or account used at
+          <strong>legal@solari.gg</strong> with the Discord server ID, the email or account used at
           checkout, and a brief description of the issue. We aim to respond within a few business
           days. Approved refunds are returned to the original payment method; the time to appear on
           your statement is set by your bank or card issuer.
@@ -84,7 +84,7 @@ export default function RefundPage() {
       <LegalSection heading="7. Changes to this policy">
         <p>
           We may update this policy from time to time; the &ldquo;Last updated&rdquo; date above
-          reflects the latest version. Questions can be sent to <strong>[contact email]</strong>.
+          reflects the latest version. Questions can be sent to <strong>legal@solari.gg</strong>.
         </p>
       </LegalSection>
     </LegalShell>

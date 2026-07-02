@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       intro={
         <p>
           This Privacy Policy explains what data {BRAND.name} (&ldquo;the Service&rdquo;,
-          &ldquo;we&rdquo;, &ldquo;us&rdquo;), operated by [Operator Name], collects when you add
+          &ldquo;we&rdquo;, &ldquo;us&rdquo;), operated by Solari (solari.gg), collects when you add
           the bot to a Discord server or use the {BRAND.name} dashboard, how we use it, and the
           choices you have. By using the Service you agree to this policy.
         </p>
@@ -178,7 +178,7 @@ export default function PrivacyPage() {
       <LegalSection heading="9. Contact">
         <p>
           Questions or requests about this policy or your data can be sent to the operator of this
-          {` ${BRAND.name}`} instance at [contact email].
+          {` ${BRAND.name}`} instance at legal@solari.gg.
         </p>
       </LegalSection>
     </LegalShell>
