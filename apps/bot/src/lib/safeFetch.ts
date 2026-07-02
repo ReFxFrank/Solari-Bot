@@ -43,10 +43,17 @@ export interface SafeFetchOptions {
   timeoutMs?: number;
 }
 
-/** Fetch a user-supplied URL into a Buffer with SSRF protection. Throws on any violation. */
-export async function safeFetchBuffer(rawUrl: string, opts: SafeFetchOptions = {}): Promise<Buffer> {
-  const { maxBytes = 8 * 1024 * 1024, timeoutMs = 5000 } = opts;
-
+/**
+ * SSRF-guarded fetch shared by the buffer/text helpers: validate scheme,
+ * resolve the host and reject if ANY resolved address is private/reserved, and
+ * fetch with redirects disabled (a redirect to an internal host can't slip
+ * through). Extra headers are allowed (RSS wants a UA). Throws on any violation.
+ */
+async function safeFetch(
+  rawUrl: string,
+  timeoutMs: number,
+  headers: Record<string, string> = {},
+): Promise<Response> {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -69,12 +76,34 @@ export async function safeFetchBuffer(rawUrl: string, opts: SafeFetchOptions = {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { signal: controller.signal, redirect: 'error' });
+    const response = await fetch(url, { signal: controller.signal, redirect: 'error', headers });
     if (!response.ok) throw new Error(`Fetch failed (${response.status})`);
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.byteLength > maxBytes) throw new Error('Image exceeds size limit');
-    return buffer;
+    return response;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Fetch a user-supplied URL into a Buffer with SSRF protection. Throws on any violation. */
+export async function safeFetchBuffer(rawUrl: string, opts: SafeFetchOptions = {}): Promise<Buffer> {
+  const { maxBytes = 8 * 1024 * 1024, timeoutMs = 5000 } = opts;
+  const response = await safeFetch(rawUrl, timeoutMs);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.byteLength > maxBytes) throw new Error('Response exceeds size limit');
+  return buffer;
+}
+
+/**
+ * Fetch a user-supplied URL as text with the same SSRF protection (DNS
+ * resolution check + no redirects). Used for RSS feeds. Caps the body size.
+ */
+export async function safeFetchText(
+  rawUrl: string,
+  opts: SafeFetchOptions & { headers?: Record<string, string> } = {},
+): Promise<string> {
+  const { maxBytes = 4 * 1024 * 1024, timeoutMs = 8000, headers } = opts;
+  const response = await safeFetch(rawUrl, timeoutMs, headers);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.byteLength > maxBytes) throw new Error('Response exceeds size limit');
+  return buffer.toString('utf8');
 }

@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { prisma } from '@solari/database';
 import { decryptSecret } from '../lib/crypto';
+import { safeFetchBuffer } from '../lib/safeFetch';
 import { dispatchInteraction } from '../framework/dispatch';
 import type { Command } from '../framework/command';
 import type { ComponentHandler } from '../framework/component';
@@ -162,10 +163,28 @@ export class CustomBotManager {
         .setUsername(row.botName)
         .catch((err: unknown) => this.logger.warn({ err, guildId }, 'Custom bot username set failed'));
     }
-    if (row.avatarUrl) await ready.user.setAvatar(row.avatarUrl).catch(() => undefined);
+    // Fetch avatar/banner through the SSRF-guarded fetcher and hand discord.js
+    // a Buffer — passing the raw URL would let it fetch arbitrary hosts/paths
+    // (its DataResolver has no private-IP/redirect guard). The dashboard already
+    // restricts these to https URLs; this is defense-in-depth on the fetch.
+    if (row.avatarUrl) {
+      const buf = await safeFetchBuffer(row.avatarUrl).catch((err: unknown) => {
+        this.logger.warn({ err, guildId }, 'Custom bot avatar fetch blocked/failed');
+        return null;
+      });
+      if (buf) await ready.user.setAvatar(buf).catch(() => undefined);
+    }
     if (row.bannerUrl) {
-      const settable = ready.user as unknown as { setBanner?: (url: string) => Promise<unknown> };
-      await settable.setBanner?.(row.bannerUrl).catch(() => undefined);
+      const buf = await safeFetchBuffer(row.bannerUrl).catch((err: unknown) => {
+        this.logger.warn({ err, guildId }, 'Custom bot banner fetch blocked/failed');
+        return null;
+      });
+      if (buf) {
+        const settable = ready.user as unknown as {
+          setBanner?: (data: Buffer) => Promise<unknown>;
+        };
+        await settable.setBanner?.(buf).catch(() => undefined);
+      }
     }
 
     // Mirror the command set (minus the owner /admin surface) guild-scoped for

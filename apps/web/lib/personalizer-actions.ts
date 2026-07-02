@@ -29,6 +29,27 @@ export interface CustomBotInput {
 const VALID_STATUS = new Set(['online', 'idle', 'dnd', 'invisible']);
 const VALID_ACTIVITY = new Set(['PLAYING', 'LISTENING', 'WATCHING', 'COMPETING', 'STREAMING']);
 
+/**
+ * Accept only an https:// URL (or empty → null). Blocks the SSRF/local-file
+ * vector where an arbitrary string (a private IP, a filesystem path) would be
+ * handed to the bot's setAvatar/setBanner, which fetches it. Returns
+ * `{ error }` for a non-empty invalid value.
+ */
+function cleanImageUrl(raw: string | null): { value: string | null } | { error: string } {
+  const trimmed = raw?.trim();
+  if (!trimmed) return { value: null };
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return { error: 'Avatar/banner must be a valid https:// image URL.' };
+  }
+  if (url.protocol !== 'https:') {
+    return { error: 'Avatar/banner URLs must start with https://.' };
+  }
+  return { value: url.toString() };
+}
+
 async function requirePremiumManager(guildId: string): Promise<PersonalizerResult | null> {
   const session = await requireSession();
   await assertCanManage(session, guildId);
@@ -72,11 +93,16 @@ export async function saveCustomBot(
     return { ok: false, error: 'Add a bot token before enabling.' };
   }
 
+  const avatar = cleanImageUrl(input.avatarUrl);
+  if ('error' in avatar) return { ok: false, error: avatar.error };
+  const banner = cleanImageUrl(input.bannerUrl);
+  if ('error' in banner) return { ok: false, error: banner.error };
+
   const identity = {
     applicationId: input.applicationId?.trim() || null,
     botName: input.botName?.trim() || null,
-    avatarUrl: input.avatarUrl?.trim() || null,
-    bannerUrl: input.bannerUrl?.trim() || null,
+    avatarUrl: avatar.value,
+    bannerUrl: banner.value,
     status: input.status,
     activityType: input.activityType,
     activityText: input.activityText?.trim() || null,

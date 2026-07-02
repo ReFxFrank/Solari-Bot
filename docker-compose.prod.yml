@@ -30,6 +30,35 @@ services:
     ports: !override
       - '127.0.0.1:${WEB_PORT:-3000}:3000'
 
+  # Data stores must NEVER be publicly reachable. A published Docker port binds
+  # 0.0.0.0 and inserts iptables rules in the DOCKER chain that bypass a host
+  # ufw/firewall, so the base file's `5432:5432` / `6379:6379` would expose them
+  # to the internet on a public VPS. Bind to loopback only (the app containers
+  # still reach them over the compose network by service name, unaffected).
+  postgres:
+    ports: !override
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+
+  redis:
+    ports: !override
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
+    # Require a password in production. Set REDIS_PASSWORD in .env; the app
+    # services read it via REDIS_URL (see .env.example).
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--requirepass',
+        '${REDIS_PASSWORD:?set REDIS_PASSWORD in .env for production}',
+      ]
+    # The base healthcheck is `redis-cli ping`, which returns NOAUTH once a
+    # password is set — override it to authenticate, or Redis never goes
+    # healthy and dependents (condition: service_healthy) never start.
+    healthcheck:
+      test:
+        ['CMD', 'redis-cli', '--no-auth-warning', '-a', '${REDIS_PASSWORD}', 'ping']
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

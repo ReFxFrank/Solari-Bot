@@ -4,6 +4,8 @@
  * Twitch needs an app token from TWITCH_CLIENT_ID/SECRET. Each fetcher returns
  * items newest-first; the poller dedups against the stored lastItemId.
  */
+import { safeFetchText } from './safeFetch';
+
 export const SOCIAL_PLATFORMS = ['twitch', 'youtube', 'reddit', 'bluesky', 'rss'] as const;
 export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
 
@@ -148,9 +150,17 @@ function parseFeed(xml: string): SocialItem[] {
 }
 
 async function fetchRss(feedUrl: string): Promise<SocialItem[]> {
-  if (!isSafePublicUrl(feedUrl)) return []; // defence-in-depth (also validated on /social add)
-  const xml = await fetchText(feedUrl);
-  return xml === null ? [] : parseFeed(xml);
+  // RSS feed URLs are user-supplied, so fetch through the SSRF-guarded fetcher:
+  // it resolves DNS and rejects private/reserved addresses (defeating a hostname
+  // that resolves to an internal IP) and disables redirects (defeating a 302 to
+  // an internal host) — neither of which the string-only isSafePublicUrl catches.
+  if (!isSafePublicUrl(feedUrl)) return []; // cheap first-pass reject
+  try {
+    const xml = await safeFetchText(feedUrl, { headers: { 'User-Agent': USER_AGENT } });
+    return parseFeed(xml);
+  } catch {
+    return [];
+  }
 }
 
 async function fetchYouTube(channelId: string): Promise<SocialItem[]> {

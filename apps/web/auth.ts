@@ -98,6 +98,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       ) {
         next.guilds = await safeManageableGuilds(next.accessToken, next.guilds ?? []);
         next.guildsFetchedAt = Date.now();
+      } else if (next.error) {
+        // Token refresh failed → we can no longer trust the cached
+        // manageable-guild list (a user who lost Manage Server would otherwise
+        // keep dashboard access). Fail closed: drop the list so every
+        // assertCanManage rejects until they re-authenticate.
+        next.guilds = [];
       }
       return next;
     },

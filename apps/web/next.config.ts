@@ -1,6 +1,27 @@
 import type { NextConfig } from 'next';
 import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 
+// Content-Security-Policy tuned to what the app actually loads: same-origin
+// assets, Discord CDN avatars, and inline styles (the dashboard uses many
+// style={{}} props + Tailwind). 'unsafe-inline' on script is a pragmatic
+// concession — Next injects inline hydration scripts and we have no nonce
+// pipeline yet; tightening to nonce-based CSP is tracked as a follow-up. The
+// hardened directives (frame-ancestors/object-src/base-uri/form-action) carry
+// the real clickjacking/injection protection and cost nothing in function.
+const CSP = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "form-action 'self'",
+  "img-src 'self' data: https://cdn.discordapp.com https://*.discordapp.com",
+  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline'",
+  "connect-src 'self'",
+  "font-src 'self'",
+  'upgrade-insecure-requests',
+].join('; ');
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -19,6 +40,11 @@ const nextConfig: NextConfig = {
         { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { key: 'Content-Security-Policy', value: CSP },
+        // Redundant with frame-ancestors but covers older browsers.
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()' },
+        { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
       ],
     },
   ],

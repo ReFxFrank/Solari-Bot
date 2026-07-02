@@ -24,6 +24,7 @@ import type {
   VerificationConfig,
   WelcomeConfig,
 } from '@solari/shared';
+import { isModuleLocked } from '@solari/shared';
 import { prisma } from '@solari/database';
 import { assertCanManage, requireSession } from './auth-guards';
 import { MODULE_META } from './modules';
@@ -50,9 +51,31 @@ export async function setModuleEnabled(
 ): Promise<void> {
   const session = await requireSession();
   await assertCanManage(session, guildId);
+  // Entitlement checks, server-side (the UI hides these but the action is a
+  // directly-invokable POST). Only gate ENABLING — disabling is always allowed.
+  if (enabled) await assertModuleAllowed(guildId, module);
   await applyModuleEnabled(guildId, module, enabled, session.user.id);
   await maybeAutoSetupTickets(guildId, module, enabled);
   revalidatePath(`/servers/${guildId}`);
+}
+
+/**
+ * Reject enabling a module the caller isn't entitled to: a premium module on a
+ * non-premium guild, or a module the bot owner has globally disabled. The bot's
+ * runtime already refuses to RUN such modules; this closes the gap where the
+ * enabled flag could still be flipped by calling the server action directly.
+ */
+async function assertModuleAllowed(guildId: string, module: Module): Promise<void> {
+  const [guild, globalFlag] = await Promise.all([
+    prisma.guild.findUnique({ where: { id: guildId }, select: { premiumTier: true } }),
+    prisma.globalModuleFlag.findUnique({ where: { module }, select: { enabled: true } }),
+  ]);
+  if (globalFlag && !globalFlag.enabled) {
+    throw new Error('This module is currently disabled by the bot operator.');
+  }
+  if (isModuleLocked(module, guild?.premiumTier ?? 'FREE')) {
+    throw new Error('That module requires Premium.');
+  }
 }
 
 /**

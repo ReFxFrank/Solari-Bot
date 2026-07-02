@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Solari — a self-hosted, premium-grade Discord bot and dashboard.",
+  "description": "Solari \u2014 a self-hosted, premium-grade Discord bot and dashboard.",
   "engines": {
     "node": ">=20",
     "pnpm": ">=9"
@@ -47,6 +47,9 @@
       "prisma",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "overrides": {
+      "undici": "^6.27.0"
+    }
   }
 }
