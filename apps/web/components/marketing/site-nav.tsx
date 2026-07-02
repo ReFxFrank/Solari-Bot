@@ -5,6 +5,7 @@ import { auth } from '../../auth';
 import { botInviteUrl } from '../../lib/invite';
 import { LoginButton } from '../auth-buttons';
 import { BrandMark } from './brand-mark';
+import { MobileMenu } from './mobile-menu';
 
 /** Public marketing top nav — logo, links, the always-visible gold Premium CTA. */
 export async function SiteNav() {
@@ -64,6 +65,7 @@ export async function SiteNav() {
               <LoginButton className="rounded-full border border-white/15 px-4 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/[0.06]" />
             </>
           )}
+          <MobileMenu />
         </div>
       </nav>
     </header>

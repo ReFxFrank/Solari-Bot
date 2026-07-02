@@ -7,6 +7,7 @@ import { prisma } from '@solari/database';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { groupedModuleMeta, moduleBySlug } from '../../../lib/modules';
 import { NavLink } from '../../../components/nav-link';
+import { MobileSidebar } from '../../../components/mobile-sidebar';
 import { ServerSwitcher } from '../../../components/server-switcher';
 import { SignOutButton } from '../../../components/auth-buttons';
 
@@ -91,8 +92,9 @@ export default async function GuildLayout({
       </div>
 
       <div className="grid gap-6 md:grid-cols-[210px_1fr]">
-        {/* Sidebar */}
-        <nav className="flex flex-col gap-4 md:sticky md:top-6 md:self-start">
+        {/* Sidebar — collapses behind a Menu button on phones (MobileSidebar). */}
+        <nav className="flex flex-col gap-2 md:sticky md:top-6 md:gap-4 md:self-start">
+          <MobileSidebar>
           <div className="flex flex-col gap-0.5">
             <SectionLabel>Server</SectionLabel>
             {serverNav.map((item) => (
@@ -145,6 +147,7 @@ export default async function GuildLayout({
             </div>
             );
           })}
+          </MobileSidebar>
         </nav>
 
         <div className="min-w-0">{children}</div>

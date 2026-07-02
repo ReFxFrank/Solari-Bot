@@ -69,11 +69,14 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
             <p className="p-4 text-sm text-white/40">No moderation cases yet.</p>
           ) : (
             recentCases.map((c) => (
-              <div key={c.caseNumber} className="flex items-center justify-between px-4 py-3 text-sm">
+              <div
+                key={c.caseNumber}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm"
+              >
                 <span className="font-mono text-white/40">#{c.caseNumber}</span>
                 <span className="font-medium text-white/80">{c.type}</span>
-                <span className="font-mono text-white/50">{c.targetId}</span>
-                <span className="text-xs text-white/30">
+                <span className="min-w-0 truncate font-mono text-white/50">{c.targetId}</span>
+                <span className="ml-auto text-xs text-white/30">
                   {c.createdAt.toISOString().slice(0, 10)}
                 </span>
               </div>
