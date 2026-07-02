@@ -32,6 +32,8 @@ export type LiveCommandType =
   | 'DEPLOY_TICKET_PANEL'
   | 'SETUP_TICKETS'
   | 'DEPLOY_VERIFY_PANEL'
+  | 'DEPLOY_APPLICATION_PANEL'
+  | 'APPLICATION_SIDE_EFFECTS'
   | 'REFRESH_COMMAND_TOGGLES'
   | 'RESTART_CUSTOM_BOT';
 
@@ -64,6 +66,14 @@ export interface DeployTicketPanelPayload {
 
 export interface DeployVerifyPanelPayload {
   channelId: string;
+}
+
+export interface DeployApplicationPanelPayload {
+  channelId: string;
+}
+
+export interface ApplicationSideEffectsPayload {
+  submissionId: string;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */

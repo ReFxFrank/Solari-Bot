@@ -47,6 +47,13 @@ enum Module {
   REFX_ALERTS
   UTILITY
   FUN
+  APPLICATIONS
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  DENIED
 }
 
 enum PremiumTier {
@@ -169,8 +176,57 @@ model Guild {
   userAchievements  UserAchievement[]
   memberStats       MemberStat[]
   insightsDays      GuildInsightsDay[]
+  applicationForms  ApplicationForm[]
 
   @@index([ownerId])
+}
+
+/// A configurable application/form (staff apps, ban appeals, custom
+/// questionnaires) for the APPLICATIONS module. Questions are stored as a
+/// validated JSON array — capped at 5 by the Discord modal limit.
+model ApplicationForm {
+  id              String   @id @default(cuid())
+  guildId         String
+  name            String
+  description     String?
+  /// [{ id, label, style, required, minLength, maxLength, placeholder }]
+  questions       Json     @default("[]")
+  /// Channel submissions are posted to for staff review (null = no review post).
+  reviewChannelId String?
+  /// Role granted to the applicant when their submission is approved (optional).
+  approveRoleId   String?
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  guild       Guild                   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  submissions ApplicationSubmission[]
+
+  @@index([guildId])
+}
+
+/// A member's submitted response to an ApplicationForm, plus its review state.
+model ApplicationSubmission {
+  id         String            @id @default(cuid())
+  formId     String
+  guildId    String
+  userId     String
+  /// [{ questionId, label, value }] — a snapshot of the answers at submit time.
+  answers    Json
+  status     ApplicationStatus @default(PENDING)
+  reviewerId String?
+  reviewNote String?
+  /// The review message posted for staff (edited in place when decided).
+  channelId  String?
+  messageId  String?
+  createdAt  DateTime          @default(now())
+  decidedAt  DateTime?
+
+  form ApplicationForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@index([guildId, status])
+  @@index([formId, userId, status])
 }
 
 /// A member's unlocked achievement (Achievements module). The `achievementId`

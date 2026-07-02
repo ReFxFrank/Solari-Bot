@@ -50,6 +50,7 @@ export const WIKI_SECTIONS: WikiSection[] = [
       { slug: 'custom-commands', title: 'Custom Commands', description: 'Tags, auto-responders, and embeds.' },
       { slug: 'invite-tracking', title: 'Invite Tracking', description: 'Who invited whom.' },
       { slug: 'tickets', title: 'Tickets', description: 'Private support channels with transcripts.' },
+      { slug: 'applications', title: 'Applications', description: 'Staff apps, ban appeals & custom forms.' },
       { slug: 'slash-commands', title: 'Command Toggles', description: 'Enable or disable individual commands.' },
       { slug: 'bot-personalizer', title: 'Bot Personalizer', description: 'Run Solari under your own bot identity.' },
     ],

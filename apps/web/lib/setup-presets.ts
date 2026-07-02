@@ -34,9 +34,9 @@ export const SETUP_PRESETS: SetupPreset[] = [
   {
     key: 'support',
     name: 'Support',
-    tagline: 'Verification, tickets (auto-configured), logging & autoroles for a help server.',
+    tagline: 'Verification, tickets, applications, logging & autoroles for a help server.',
     icon: 'LifeBuoy',
-    modules: ['MODERATION', 'VERIFICATION', 'TICKETS', 'LOGGING', 'AUTOROLE'],
+    modules: ['MODERATION', 'VERIFICATION', 'TICKETS', 'APPLICATIONS', 'LOGGING', 'AUTOROLE'],
   },
   {
     key: 'everything',

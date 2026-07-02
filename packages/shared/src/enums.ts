@@ -31,6 +31,7 @@ export const MODULES = [
   'TEMP_VOICE',
   'UTILITY',
   'FUN',
+  'APPLICATIONS',
 ] as const;
 
 export type Module = (typeof MODULES)[number];

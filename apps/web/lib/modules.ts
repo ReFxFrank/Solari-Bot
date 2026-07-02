@@ -27,6 +27,7 @@ import {
   Wrench,
   Sparkles,
   Trophy,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -233,6 +234,15 @@ export const MODULE_META: ModuleMeta[] = [
     configSlug: 'invites',
   },
   {
+    module: 'APPLICATIONS',
+    name: 'Applications',
+    description: 'Staff apps, ban appeals & custom forms with a review queue.',
+    icon: ClipboardList,
+    category: 'core',
+    accent: 'sky',
+    configSlug: 'applications',
+  },
+  {
     module: 'BIRTHDAYS',
     name: 'Birthdays',
     description: 'Announcements and a birthday role.',
@@ -345,6 +355,7 @@ const GROUP_BY_MODULE: Partial<Record<Module, ModuleGroup>> = {
   CUSTOM_COMMANDS: 'Server Management',
   INVITE_TRACKING: 'Server Management',
   TICKETS: 'Server Management',
+  APPLICATIONS: 'Server Management',
   POLLS: 'Utilities',
   REMINDERS: 'Utilities',
   SCHEDULED_MESSAGES: 'Utilities',

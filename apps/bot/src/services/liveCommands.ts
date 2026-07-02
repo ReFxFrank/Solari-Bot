@@ -8,6 +8,8 @@ import {
   type GiveawayActionPayload,
   type DeployTicketPanelPayload,
   type DeployVerifyPanelPayload,
+  type DeployApplicationPanelPayload,
+  type ApplicationSideEffectsPayload,
   type LiveCommandMessage,
   type RolePanelOption,
   type ScheduledMessagePayload,
@@ -19,6 +21,11 @@ import { endGiveaway, rerollGiveaway } from '../modules/giveaway';
 import { armScheduledMessage } from '../modules/scheduledMessages';
 import { autoSetupTickets, buildTicketPanelMessage, getTicketsConfig } from '../modules/tickets';
 import { buildVerificationPanel } from '../modules/verification';
+import {
+  buildApplyPanelMessage,
+  getEnabledForms,
+  runDecisionSideEffects,
+} from '../modules/applications';
 import { refreshStatsCounters } from '../modules/statsCounters';
 import { scheduledMessageJobId, type JobService } from './jobs';
 import type { ConfigCache } from './configCache';
@@ -111,6 +118,19 @@ export class LiveCommandService {
           (message.payload as DeployVerifyPanelPayload).channelId,
         );
         return;
+      case 'DEPLOY_APPLICATION_PANEL':
+        await this.deployApplicationPanel(
+          message.guildId,
+          (message.payload as DeployApplicationPanelPayload).channelId,
+        );
+        return;
+      case 'APPLICATION_SIDE_EFFECTS':
+        // Dashboard already wrote the decision; carry out role/DM/message edits.
+        await runDecisionSideEffects((message.payload as ApplicationSideEffectsPayload).submissionId, {
+          client: this.client,
+          logger: this.logger,
+        });
+        return;
       case 'REFRESH_STATS':
         await refreshStatsCounters(message.guildId, {
           client: this.client,
@@ -185,6 +205,21 @@ export class LiveCommandService {
       .send(buildVerificationPanel(config))
       .catch((err: unknown) =>
         this.logger.warn({ err, guildId, channelId }, 'Deploy verification panel failed'),
+      );
+  }
+
+  private async deployApplicationPanel(guildId: string, channelId: string): Promise<void> {
+    const guild = this.client.guilds.cache.get(guildId);
+    const channel =
+      guild?.channels.cache.get(channelId) ??
+      (await guild?.channels.fetch(channelId).catch(() => null));
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
+    const forms = await getEnabledForms(guildId);
+    if (forms.length === 0) return;
+    await channel
+      .send(buildApplyPanelMessage(forms))
+      .catch((err: unknown) =>
+        this.logger.warn({ err, guildId, channelId }, 'Deploy application panel failed'),
       );
   }
 
