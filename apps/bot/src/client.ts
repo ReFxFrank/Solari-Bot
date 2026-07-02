@@ -11,6 +11,7 @@ import { prisma } from '@solari/database';
 import { env } from './env';
 import { logger } from './logger';
 import { captureError, initSentry } from './services/sentry';
+import { startHeartbeat } from './services/heartbeat';
 import { ConfigCache } from './services/configCache';
 import { JobService } from './services/jobs';
 import { closeRedis, redis } from './services/redis';
@@ -135,6 +136,7 @@ async function bootstrap(): Promise<void> {
   await liveCommands.start();
 
   let stopMetrics: (() => Promise<void>) | null = null;
+  let stopHeartbeat: (() => void) | null = null;
 
   client.once(Events.ClientReady, (ready) => {
     logger.info(
@@ -175,6 +177,7 @@ async function bootstrap(): Promise<void> {
       }
     });
     stopMetrics = startMetricsServer(ready.shard?.ids[0] ?? 0);
+    stopHeartbeat = startHeartbeat(ready, ready.shard?.ids[0] ?? 0);
   });
 
   let shuttingDown = false;
@@ -183,6 +186,7 @@ async function bootstrap(): Promise<void> {
     shuttingDown = true;
     logger.info({ signal }, 'Shutting down shard');
     try {
+      if (stopHeartbeat) stopHeartbeat();
       await customBots.closeAll();
       await jobs.close();
       if (stopMetrics) await stopMetrics();

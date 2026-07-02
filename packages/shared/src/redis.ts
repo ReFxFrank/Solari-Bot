@@ -85,6 +85,26 @@ export function configCacheKey(guildId: string, module: Module): string {
 }
 
 /**
+ * Bot -> dashboard: each shard refreshes a TTL'd status key every ~30s (bot
+ * heartbeat service); /status reads them all. A missing/expired key means the
+ * shard is down or can't reach Redis.
+ */
+export const SHARD_STATUS_PREFIX = 'helios:status:shard:';
+
+export function shardStatusKey(shardId: number): string {
+  return `${SHARD_STATUS_PREFIX}${shardId}`;
+}
+
+export interface ShardStatus {
+  shardId: number;
+  /** Gateway websocket ping in ms (-1 until the first heartbeat ack). */
+  ping: number;
+  guilds: number;
+  uptimeMs: number;
+  updatedAt: string;
+}
+
+/**
  * Compute the shard that owns a guild, per Discord's sharding formula. The bot
  * defaults to broadcast-and-filter for live commands, but this is available for
  * targeted routing once the live shard count is known.
