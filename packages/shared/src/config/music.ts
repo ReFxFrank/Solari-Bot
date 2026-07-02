@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
-/** Lavalink search prefixes offered to operators. */
-export const musicSearchSources = ['ytsearch', 'ytmsearch', 'scsearch'] as const;
+/** Lavalink search prefixes offered to operators. `spsearch` needs the LavaSrc
+ *  Spotify credentials (SPOTIFY_* in .env) and plays audio via SoundCloud match. */
+export const musicSearchSources = ['scsearch', 'ytsearch', 'ytmsearch', 'spsearch'] as const;
 export type MusicSearchSource = (typeof musicSearchSources)[number];
 
 /**
@@ -25,7 +26,8 @@ export const musicConfigSchema = z.object({
   /** Seconds to stay connected after the queue empties before auto-leaving. */
   autoLeaveSeconds: z.number().int().min(0).max(3600).default(300),
   /** Default search backend when a bare query (not a URL) is given to /play. */
-  searchSource: z.enum(musicSearchSources).default('ytsearch'),
+  // SoundCloud default: reliable from datacenter IPs, no auth arms race.
+  searchSource: z.enum(musicSearchSources).default('scsearch'),
 });
 
 export type MusicConfig = z.infer<typeof musicConfigSchema>;

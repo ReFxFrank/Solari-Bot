@@ -12,6 +12,11 @@ lavalink:
   plugins:
     - dependency: 'dev.lavalink.youtube:youtube-plugin:1.18.1'
       snapshot: false
+    # LavaSrc: Spotify (and friends) resolve to track metadata, with the audio
+    # played from the provider list below (Spotify itself is DRM'd — every bot
+    # matches to another source; ours matches on SoundCloud first).
+    - dependency: 'com.github.topi314.lavasrc:lavasrc-plugin:4.8.3'
+      snapshot: false
   server:
     password: '${LAVALINK_SERVER_PASSWORD:youshallnotpass}'
     sources:
@@ -66,6 +71,20 @@ plugins:
     pot:
       token: '${YOUTUBE_POT_TOKEN:}'
       visitorData: '${YOUTUBE_POT_VISITOR_DATA:}'
+
+  # LavaSrc — Spotify links + spsearch. Enable by creating a (free) app at
+  # developer.spotify.com and setting SPOTIFY_ENABLED/CLIENT_ID/CLIENT_SECRET in
+  # .env. Playback audio is matched from the providers below in order.
+  lavasrc:
+    providers:
+      - 'scsearch:%QUERY%'
+      - 'ytsearch:%QUERY%'
+    sources:
+      spotify: ${SPOTIFY_ENABLED:false}
+    spotify:
+      clientId: '${SPOTIFY_CLIENT_ID:}'
+      clientSecret: '${SPOTIFY_CLIENT_SECRET:}'
+      countryCode: 'US'
 
 metrics:
   prometheus:

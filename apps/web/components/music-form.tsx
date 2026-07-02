@@ -10,9 +10,10 @@ import { RoleSelect } from './ui/entity-select';
 import { Field, SaveBar, inputClass, type SaveStatus } from './ui/form';
 
 const SOURCE_LABEL: Record<(typeof musicSearchSources)[number], string> = {
+  scsearch: 'SoundCloud (recommended)',
   ytsearch: 'YouTube',
   ytmsearch: 'YouTube Music',
-  scsearch: 'SoundCloud',
+  spsearch: 'Spotify (needs Spotify keys in .env)',
 };
 
 export function MusicForm({
