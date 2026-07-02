@@ -23,11 +23,20 @@ export default async function GuildLayout({
   const { id } = await params;
   const { guilds } = await guardGuildAccess(id);
 
-  const [guild, flagRows] = await Promise.all([
+  const [guild, flagRows, installedRows] = await Promise.all([
     prisma.guild.findUnique({ where: { id } }),
     prisma.globalModuleFlag.findMany({ where: { enabled: false }, select: { module: true } }),
+    // Which of the user's manageable guilds actually have the bot — the
+    // switcher must only offer those (a bot-less guild would just 404 here).
+    prisma.guild.findMany({
+      where: { id: { in: guilds.map((g) => g.id) } },
+      select: { id: true },
+    }),
   ]);
   if (!guild) notFound();
+
+  const installed = new Set(installedRows.map((row) => row.id));
+  const switchableGuilds = guilds.filter((g) => installed.has(g.id));
 
   // The DB `Guild.icon`/`name` can be stale (only refreshed on the bot's guild
   // sync). The session guild list is fetched live from Discord on each request,
@@ -73,7 +82,7 @@ export default async function GuildLayout({
           <ServerSwitcher
             currentId={id}
             current={{ name: currentName, icon: currentIcon }}
-            guilds={guilds}
+            guilds={switchableGuilds}
           />
           {isPremium ? (
             <span className="ml-1 hidden items-center gap-1 rounded-full bg-[var(--color-premium)]/15 px-2.5 py-1 text-xs font-semibold text-[var(--color-premium)] sm:inline-flex">
