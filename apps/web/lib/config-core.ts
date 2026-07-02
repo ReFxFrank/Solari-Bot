@@ -12,6 +12,8 @@ export interface GuildSettingsInput {
   locale: string;
   timezone: string;
   prefix: string;
+  /** Voice channel the bot parks itself in 24/7; null/undefined disables. */
+  stayVoiceChannelId?: string | null;
 }
 
 /** Ensure the guild row exists before writing a config row (FK requirement). */
@@ -121,19 +123,27 @@ export async function applyGuildSettings(
   const prefix = input.prefix.trim().slice(0, 5) || '!';
   const locale = input.locale.trim().slice(0, 10) || 'en-US';
   const timezone = input.timezone.trim().slice(0, 64) || 'UTC';
+  const stayVoiceChannelId = input.stayVoiceChannelId?.trim().slice(0, 25) || null;
 
   await ensureGuild(guildId);
   const before = await prisma.guild.findUnique({
     where: { id: guildId },
-    select: { locale: true, timezone: true, prefix: true },
+    select: { locale: true, timezone: true, prefix: true, stayVoiceChannelId: true },
   });
-  await prisma.guild.update({ where: { id: guildId }, data: { locale, timezone, prefix } });
+  await prisma.guild.update({
+    where: { id: guildId },
+    data: { locale, timezone, prefix, stayVoiceChannelId },
+  });
   await writeAuditLog({
     guildId,
     userId,
     action: 'GUILD_SETTINGS_UPDATED',
     before: before ?? null,
-    after: { locale, timezone, prefix },
+    after: { locale, timezone, prefix, stayVoiceChannelId },
   });
+  // The bot owns joining/leaving; nudge it to reconcile its voice presence.
+  if ((before?.stayVoiceChannelId ?? null) !== stayVoiceChannelId) {
+    await publishLiveCommand(guildId, 'SYNC_STAY_VOICE').catch(() => undefined);
+  }
   return { ok: true };
 }

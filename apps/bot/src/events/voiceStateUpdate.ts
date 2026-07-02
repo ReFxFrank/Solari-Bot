@@ -4,12 +4,20 @@ import { brandedEmbed } from '../lib/embeds';
 import { sendLog } from '../lib/logging';
 import { ensureVoiceXpTick } from '../modules/leveling';
 import { handleTempVoice } from '../modules/tempVoice';
+import { scheduleStayVoiceRejoin } from '../modules/stayVoice';
 
 export default defineEvent({
   name: Events.VoiceStateUpdate,
   async execute(ctx, oldState, newState) {
     const userId = newState.id;
     const guildId = newState.guild.id;
+
+    // Stay-in-voice: if OUR presence left or moved (kicked, channel deleted,
+    // gateway blip), re-sync to the configured channel shortly after. The sync
+    // no-ops when the feature is unset or we're already in the right place.
+    if (userId === ctx.client.user?.id && oldState.channelId !== newState.channelId) {
+      scheduleStayVoiceRejoin(newState.guild, ctx.logger);
+    }
 
     // Temp Voice: create on hub-join / clean up empty temp channels.
     await handleTempVoice(ctx, oldState, newState).catch((err: unknown) =>

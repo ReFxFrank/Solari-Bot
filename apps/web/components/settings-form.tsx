@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from 'react';
 import type { ModerationConfig } from '@solari/shared';
-import type { RoleOption } from '../lib/discord-guild';
+import type { ChannelOption, RoleOption } from '../lib/discord-guild';
 import {
   saveGuildSettings,
   saveModerationConfig,
   type GuildSettingsInput,
 } from '../lib/config-actions';
-import { RoleSelect } from './ui/entity-select';
+import { ChannelSelect, RoleSelect } from './ui/entity-select';
 import { SettingsSection } from './ui/settings-section';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 
@@ -55,11 +55,13 @@ export function SettingsForm({
   initialSettings,
   initialModeration,
   roles,
+  channels,
 }: {
   guildId: string;
   initialSettings: GuildSettingsInput;
   initialModeration: ModerationConfig;
   roles: RoleOption[];
+  channels: ChannelOption[];
 }) {
   const [settings, setSettings] = useState<GuildSettingsInput>(initialSettings);
   const [moderation, setModeration] = useState<ModerationConfig>(initialModeration);
@@ -118,6 +120,26 @@ export function SettingsForm({
               multiple
               selected={moderation.modRoleIds}
               onChange={(ids) => updateModeration('modRoleIds', ids)}
+            />
+          </Field>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Voice Presence"
+        description="Park Solari in a voice channel 24/7 — it joins self-deafened and rejoins automatically if disconnected."
+      >
+        <div className="max-w-md">
+          <Field label="Stay in this voice channel" hint="None = the bot doesn't sit in voice. Needs View Channel + Connect.">
+            <ChannelSelect
+              channels={channels}
+              only="voice"
+              placeholder="None"
+              selected={settings.stayVoiceChannelId ? [settings.stayVoiceChannelId] : []}
+              onChange={(ids) => {
+                setSettings((prev) => ({ ...prev, stayVoiceChannelId: ids[0] ?? null }));
+                setStatus('idle');
+              }}
             />
           </Field>
         </div>

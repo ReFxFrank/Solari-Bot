@@ -149,6 +149,8 @@ model Guild {
   suggestionCounter Int    @default(0)
   /// Slash commands the guild's admins have turned off (dispatch refuses them).
   disabledCommands  String[] @default([])
+  /// Voice channel the bot parks itself in 24/7 (null = don't join anything).
+  stayVoiceChannelId String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

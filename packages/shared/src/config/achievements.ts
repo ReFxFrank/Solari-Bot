@@ -160,6 +160,14 @@ export const ACHIEVEMENT_PRESETS: Omit<Achievement, 'id'>[] = [
     tiers: [bareTier(30), bareTier(60), bareTier(300), bareTier(600)],
   },
   {
+    name: 'Voice Veteran',
+    description: 'Rack up serious hours in voice',
+    type: 'VOICE_MINUTES',
+    enabled: true,
+    // 1 day / 3 days / 1 week / 1 month of accumulated voice time.
+    tiers: [bareTier(1440), bareTier(4320), bareTier(10080), bareTier(43200)],
+  },
+  {
     name: 'Level Legend',
     description: 'Climb the leveling ranks',
     type: 'LEVEL',

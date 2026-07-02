@@ -28,6 +28,7 @@ import {
   runDecisionSideEffects,
 } from '../modules/applications';
 import { endLockdown, lockdownServer } from '../modules/lockdown';
+import { syncStayVoice } from '../modules/stayVoice';
 import { brandedEmbed } from '../lib/embeds';
 import { refreshStatsCounters } from '../modules/statsCounters';
 import { scheduledMessageJobId, type JobService } from './jobs';
@@ -140,6 +141,11 @@ export class LiveCommandService {
       case 'LOCKDOWN_END':
         await this.liftLockdown(message.guildId);
         return;
+      case 'SYNC_STAY_VOICE': {
+        const guild = this.client.guilds.cache.get(message.guildId);
+        if (guild) await syncStayVoice(guild, this.logger);
+        return;
+      }
       case 'REFRESH_STATS':
         await refreshStatsCounters(message.guildId, {
           client: this.client,

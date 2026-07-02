@@ -13,6 +13,7 @@ import { logger } from './logger';
 import { captureError, initSentry } from './services/sentry';
 import { startHeartbeat } from './services/heartbeat';
 import { startInsightsFlush } from './lib/insights';
+import { syncAllStayVoice } from './modules/stayVoice';
 import { ConfigCache } from './services/configCache';
 import { JobService } from './services/jobs';
 import { closeRedis, redis } from './services/redis';
@@ -172,6 +173,7 @@ async function bootstrap(): Promise<void> {
       reconcileSocial(ready, jobs, logger),
       customBots.reconcile(),
       cacheAllGuildInvites(ready.guilds.cache.values()),
+      syncAllStayVoice(ready, logger),
     ]).then((results) => {
       for (const result of results) {
         if (result.status === 'rejected')
