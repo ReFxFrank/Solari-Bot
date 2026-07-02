@@ -12,16 +12,16 @@ const command: Command = {
       s
         .setName('deposit')
         .setDescription('Wallet → bank.')
-        .addIntegerOption((o) =>
-          o.setName('amount').setDescription('How much (leave empty for all)').setMinValue(1),
+        .addStringOption((o) =>
+          o.setName('amount').setDescription('A number, "all", or "half"').setRequired(true),
         ),
     )
     .addSubcommand((s) =>
       s
         .setName('withdraw')
         .setDescription('Bank → wallet.')
-        .addIntegerOption((o) =>
-          o.setName('amount').setDescription('How much (leave empty for all)').setMinValue(1),
+        .addStringOption((o) =>
+          o.setName('amount').setDescription('A number, "all", or "half"').setRequired(true),
         ),
     ),
   module: 'ECONOMY',
@@ -32,14 +32,27 @@ const command: Command = {
     const config = await ctx.config.getConfig(interaction.guildId, 'ECONOMY');
     const eco = await getEconomyUser(interaction.guildId, interaction.user.id, config.startingBalance);
 
-    // No amount = move everything on that side. (If the balance changes between
-    // this read and the move, tryMoveMoney simply fails safely below.)
-    const amount = interaction.options.getInteger('amount') ?? (deposit ? eco.wallet : eco.bank);
+    // "all" / "half" resolve against the source side; otherwise a plain
+    // positive integer (commas tolerated: "1,000"). If the balance changes
+    // between this read and the move, tryMoveMoney fails safely below.
+    const raw = interaction.options.getString('amount', true).trim().toLowerCase();
+    const available = deposit ? eco.wallet : eco.bank;
+    let amount: number;
+    if (raw === 'all' || raw === 'max') amount = available;
+    else if (raw === 'half') amount = Math.floor(available / 2);
+    else {
+      amount = /^[\d,]+$/.test(raw) ? Number(raw.replaceAll(',', '')) : NaN;
+      if (!Number.isSafeInteger(amount) || amount <= 0) {
+        await interaction.reply({
+          embeds: [errorEmbed('Enter a positive number, `all`, or `half`.')],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+    }
     if (amount <= 0) {
       await interaction.reply({
-        embeds: [
-          errorEmbed(deposit ? 'Your wallet is empty.' : 'Your bank is empty.'),
-        ],
+        embeds: [errorEmbed(deposit ? 'Your wallet is empty.' : 'Your bank is empty.')],
         flags: MessageFlags.Ephemeral,
       });
       return;
