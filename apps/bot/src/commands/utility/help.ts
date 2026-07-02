@@ -20,7 +20,7 @@ const command: Command = {
   async execute(interaction) {
     const links = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Dashboard').setURL(`${SITE}/servers`),
-      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Wiki').setURL(`${SITE}/docs`),
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Wiki').setURL('https://wiki.solari.gg'),
       new ButtonBuilder()
         .setStyle(ButtonStyle.Link)
         .setLabel('All commands')

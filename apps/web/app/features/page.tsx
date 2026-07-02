@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { wikiUrl } from '../../lib/wiki-url';
 import { ArrowRight, Crown, Zap } from 'lucide-react';
 import { BRAND } from '@solari/shared';
 import { botInviteUrl } from '../../lib/invite';
@@ -132,7 +133,7 @@ export default function FeaturesPage() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
             <Link
-              href="/docs"
+              href={wikiUrl()}
               className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/[0.06]"
             >
               Open the wiki

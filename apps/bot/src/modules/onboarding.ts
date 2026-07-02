@@ -81,7 +81,7 @@ export async function sendGuildWelcome(guild: Guild): Promise<void> {
       .setStyle(ButtonStyle.Link)
       .setLabel('Open dashboard')
       .setURL(`${SITE}/servers/${guild.id}`),
-    new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Wiki').setURL(`${SITE}/docs`),
+    new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Wiki').setURL('https://wiki.solari.gg'),
   );
 
   await channel.send({ embeds: [embed], components: [links] }).catch(() => undefined);

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { wikiUrl } from '../../lib/wiki-url';
 import { Crown } from 'lucide-react';
 import { BRAND } from '@solari/shared';
 import { auth } from '../../auth';
@@ -34,7 +35,7 @@ export async function SiteNav() {
             Commands
           </Link>
           <Link
-            href="/docs"
+            href={wikiUrl()}
             className="hidden text-sm text-white/60 transition-colors hover:text-white/90 sm:inline"
           >
             Docs

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BRAND } from '@solari/shared';
 import { BrandMark } from './brand-mark';
+import { wikiUrl } from '../../lib/wiki-url';
 
 export function SiteFooter() {
   return (
@@ -21,7 +22,7 @@ export function SiteFooter() {
           <Link href="/commands" className="hover:text-white/80">
             Commands
           </Link>
-          <Link href="/docs" className="hover:text-white/80">
+          <Link href={wikiUrl()} className="hover:text-white/80">
             Docs
           </Link>
           <Link href="/servers" className="hover:text-white/80">

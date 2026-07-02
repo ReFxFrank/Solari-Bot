@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { wikiUrl } from '../lib/wiki-url';
 import { ArrowRight, Check, Crown, Zap } from 'lucide-react';
 import { BRAND } from '@solari/shared';
 import { auth } from '../auth';
@@ -275,7 +276,7 @@ export default async function HomePage() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
             <Link
-              href="/docs"
+              href={wikiUrl()}
               className="rounded-full border border-white/15 px-7 py-3.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/[0.06]"
             >
               Read the docs
