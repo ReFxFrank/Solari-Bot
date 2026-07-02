@@ -35,4 +35,10 @@ describe('tierFromSubscription', () => {
   it('falls back to FREE if the period already lapsed (missed webhook)', () => {
     expect(tierFromSubscription('active', past, now)).toBe('FREE');
   });
+
+  it('grants PREMIUM forever for a lifetime purchase (no period end)', () => {
+    expect(tierFromSubscription('lifetime', null, now)).toBe('PREMIUM');
+    // Even a stale/past period end can't downgrade a lifetime purchase.
+    expect(tierFromSubscription('lifetime', past, now)).toBe('PREMIUM');
+  });
 });

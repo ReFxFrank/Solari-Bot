@@ -10,6 +10,9 @@ import type { Module, PremiumTier } from './enums';
 /** Stripe subscription statuses that grant active premium access. */
 export const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'] as const;
 
+/** GuildSubscription.status for a one-time Lifetime purchase (never expires). */
+export const LIFETIME_STATUS = 'lifetime';
+
 export function isPremiumTier(tier: PremiumTier): boolean {
   return tier === 'PREMIUM';
 }
@@ -30,6 +33,8 @@ export function tierFromSubscription(
   currentPeriodEnd: Date | null | undefined,
   now: number = Date.now(),
 ): PremiumTier {
+  // A Lifetime purchase never expires and has no recurring status to track.
+  if (status === LIFETIME_STATUS) return 'PREMIUM';
   if (!status || !(ACTIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(status)) {
     return 'FREE';
   }

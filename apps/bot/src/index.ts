@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { ShardingManager } from 'discord.js';
 import { env } from './env';
 import { logger } from './logger';
+import { startTopggAutopost } from './services/topggPoster';
 
 /**
  * ShardingManager entry (§4.5). Spawns the per-shard client in `client.ts`.
@@ -28,6 +29,16 @@ async function main(): Promise<void> {
 
   await manager.spawn();
   logger.info({ shards: manager.totalShards }, 'All shards spawned');
+
+  // Optional: keep the top.gg listing's server count current.
+  if (env.TOPGG_TOKEN) {
+    startTopggAutopost(
+      manager,
+      { token: env.TOPGG_TOKEN, botId: env.TOPGG_BOT_ID ?? env.DISCORD_CLIENT_ID },
+      logger,
+    );
+    logger.info('top.gg server-count autopost enabled');
+  }
 }
 
 main().catch((err: unknown) => {

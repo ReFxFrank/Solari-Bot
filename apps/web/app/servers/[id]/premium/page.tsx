@@ -1,10 +1,11 @@
 import { Check, Crown } from 'lucide-react';
 import { prisma } from '@solari/database';
-import { PREMIUM_PERKS, tierFromSubscription } from '@solari/shared';
+import { LIFETIME_STATUS, PREMIUM_PERKS, tierFromSubscription } from '@solari/shared';
 import { guardGuildAccess } from '../../../../lib/auth-guards';
 import { startCheckout, openBillingPortal } from '../../../../lib/billing';
 import { canManageBilling } from '../../../../lib/billing-access';
 import { isBillingConfigured } from '../../../../lib/stripe';
+import { PRICING_TIERS, tierEnabled } from '../../../../lib/pricing';
 import { GlassCard } from '../../../../components/ui/glass-card';
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +31,13 @@ export default async function PremiumPage({
   const paidPremium = tierFromSubscription(sub?.status, sub?.currentPeriodEnd ?? null) === 'PREMIUM';
   const isPremium = paidPremium || guild?.premiumTier === 'PREMIUM';
   const granted = isPremium && !paidPremium;
+  const lifetime = sub?.status === LIFETIME_STATUS;
   const configured = isBillingConfigured();
   // Billing details are private to the purchaser (and the bot owner) — other
-  // guild admins only see that Premium is active.
-  const showBilling = paidPremium && canManageBilling(session, sub?.purchasedBy);
+  // guild admins only see that Premium is active. Lifetime has no recurring
+  // billing to manage, so no portal button.
+  const showBilling = paidPremium && !lifetime && canManageBilling(session, sub?.purchasedBy);
+  const plans = PRICING_TIERS.filter(tierEnabled);
 
   const renews = sub?.currentPeriodEnd
     ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(sub.currentPeriodEnd)
@@ -74,6 +78,11 @@ export default async function PremiumPage({
                 Premium is enabled for this server — every premium module is unlocked. Nothing to
                 manage.
               </p>
+            ) : lifetime ? (
+              <p className="text-sm text-white/50">
+                🎉 <strong className="text-white/80">Lifetime Premium</strong> is active on this
+                server — every premium module is unlocked, forever. Nothing to renew.
+              </p>
             ) : showBilling ? (
               <>
                 {renews && (
@@ -107,14 +116,43 @@ export default async function PremiumPage({
               ))}
             </ul>
             {configured ? (
-              <form action={startCheckout.bind(null, id)}>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-amber-300 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-amber-200"
-                >
-                  Upgrade to Premium
-                </button>
-              </form>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {plans.map((tier) => (
+                  <form
+                    key={tier.id}
+                    action={startCheckout.bind(null, id, tier.id)}
+                    className="flex"
+                  >
+                    <div
+                      className={`flex w-full flex-col gap-2 rounded-xl border p-4 ${
+                        tier.highlighted
+                          ? 'border-amber-300/40 bg-amber-300/[0.06]'
+                          : 'border-white/10 bg-white/[0.02]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-white/90">{tier.name}</span>
+                        {tier.badge && (
+                          <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                            {tier.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{tier.price}</span>
+                        <span className="text-xs text-white/50">{tier.period}</span>
+                      </div>
+                      <p className="text-xs text-white/45">{tier.blurb}</p>
+                      <button
+                        type="submit"
+                        className="mt-1 rounded-lg bg-amber-300 px-3 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-amber-200"
+                      >
+                        Choose {tier.name}
+                      </button>
+                    </div>
+                  </form>
+                ))}
+              </div>
             ) : (
               <p className="text-sm text-white/40">
                 Billing isn’t configured on this instance — set the <code>STRIPE_*</code> environment

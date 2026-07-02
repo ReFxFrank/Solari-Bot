@@ -53,6 +53,8 @@ export const botEnvSchema = baseEnvSchema.extend({
   TWITCH_CLIENT_SECRET: z.string().optional(),
   /** top.gg bot id for the /vote link (defaults to DISCORD_CLIENT_ID). */
   TOPGG_BOT_ID: z.string().optional(),
+  /** top.gg API token — set to auto-post the server count to your listing. */
+  TOPGG_TOKEN: z.string().optional(),
 });
 
 export const webEnvSchema = baseEnvSchema.extend({
@@ -65,8 +67,14 @@ export const webEnvSchema = baseEnvSchema.extend({
    *  flow and the dashboard shows "billing not configured". */
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
-  /** The recurring Price the per-server Premium subscription checks out against. */
+  /** Monthly recurring Price the per-server Premium subscription checks out against. */
   STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
+  /** Yearly recurring Price — enables the Yearly plan when set. */
+  STRIPE_YEARLY_PRICE_ID: z.string().optional(),
+  /** One-time Price — enables the Lifetime plan (checkout in payment mode) when set. */
+  STRIPE_LIFETIME_PRICE_ID: z.string().optional(),
+  /** Shared secret matching the Authorization set in the top.gg webhooks panel. */
+  TOPGG_WEBHOOK_AUTH: z.string().optional(),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;

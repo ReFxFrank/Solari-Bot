@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { prisma } from '@solari/database';
-import { tierFromSubscription } from '@solari/shared';
+import { LIFETIME_STATUS, tierFromSubscription } from '@solari/shared';
 import { getStripe } from '../../../../lib/stripe';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +38,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         if (typeof session.subscription === 'string') {
           const sub = await stripe.subscriptions.retrieve(session.subscription);
           await syncSubscription(sub);
+        } else if (session.mode === 'payment' && session.payment_status === 'paid') {
+          // One-time Lifetime purchase — no subscription to track.
+          await grantLifetime(session);
         }
         break;
       }
@@ -56,6 +59,41 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   return NextResponse.json({ received: true });
+}
+
+/** Grant permanent Premium for a paid one-time (Lifetime) checkout session. */
+async function grantLifetime(session: Stripe.Checkout.Session): Promise<void> {
+  const guildId = session.metadata?.guildId;
+  if (!guildId || session.metadata?.plan !== 'lifetime') return;
+
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+  const purchasedBy = session.metadata?.userId || undefined;
+
+  // premiumTier is the fast flag the bot reads; the sub row records it as a
+  // lifetime purchase (status 'lifetime', no period end) so it never expires.
+  await prisma.guild.upsert({
+    where: { id: guildId },
+    update: { premiumTier: 'PREMIUM' },
+    create: { id: guildId, premiumTier: 'PREMIUM' },
+  });
+  await prisma.guildSubscription.upsert({
+    where: { guildId },
+    update: {
+      status: LIFETIME_STATUS,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      stripePriceId: process.env.STRIPE_LIFETIME_PRICE_ID ?? null,
+      ...(customerId ? { stripeCustomerId: customerId } : {}),
+      ...(purchasedBy ? { purchasedBy } : {}),
+    },
+    create: {
+      guildId,
+      status: LIFETIME_STATUS,
+      stripeCustomerId: customerId ?? null,
+      stripePriceId: process.env.STRIPE_LIFETIME_PRICE_ID ?? null,
+      purchasedBy,
+    },
+  });
 }
 
 async function syncSubscription(sub: Stripe.Subscription): Promise<void> {

@@ -10,19 +10,37 @@ function baseUrl(): string {
   return process.env.AUTH_URL ?? 'http://localhost:3000';
 }
 
+export type PremiumPlan = 'monthly' | 'yearly' | 'lifetime';
+
+/** Resolve a plan to its Stripe price + checkout mode. Lifetime is one-time. */
+function planConfig(plan: PremiumPlan): { priceId: string | undefined; oneTime: boolean } {
+  switch (plan) {
+    case 'yearly':
+      return { priceId: process.env.STRIPE_YEARLY_PRICE_ID, oneTime: false };
+    case 'lifetime':
+      return { priceId: process.env.STRIPE_LIFETIME_PRICE_ID, oneTime: true };
+    default:
+      return { priceId: process.env.STRIPE_PREMIUM_PRICE_ID, oneTime: false };
+  }
+}
+
 /**
- * Start a per-server Premium checkout. Verifies the caller can manage the guild,
- * reuses (or creates) that guild's Stripe customer, and redirects to Stripe
- * Checkout. The subscription carries `metadata.guildId` so the webhook can map
- * it back to the server.
+ * Start a per-server Premium checkout for the chosen plan. Verifies the caller
+ * can manage the guild, reuses (or creates) that guild's Stripe customer, and
+ * redirects to Stripe Checkout. Monthly/Yearly use subscription mode; Lifetime
+ * uses one-time payment mode. The guildId/userId ride in metadata (on the
+ * subscription and the session/payment) so the webhook can map it back.
  */
-export async function startCheckout(guildId: string): Promise<void> {
+export async function startCheckout(
+  guildId: string,
+  plan: PremiumPlan = 'monthly',
+): Promise<void> {
   const session = await requireSession();
   await assertCanManage(session, guildId);
 
   const stripe = getStripe();
-  const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
-  if (!stripe || !priceId) throw new Error('Billing is not configured.');
+  const { priceId, oneTime } = planConfig(plan);
+  if (!stripe || !priceId) throw new Error('That plan is not available.');
 
   const existing = await prisma.guildSubscription.findUnique({ where: { guildId } });
   let customerId = existing?.stripeCustomerId ?? undefined;
@@ -37,13 +55,16 @@ export async function startCheckout(guildId: string): Promise<void> {
     create: { guildId, stripeCustomerId: customerId, purchasedBy: session.user.id },
   });
 
+  const metadata = { guildId, userId: session.user.id, plan };
   const checkout = await stripe.checkout.sessions.create({
-    mode: 'subscription',
+    mode: oneTime ? 'payment' : 'subscription',
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { metadata: { guildId, userId: session.user.id } },
-    metadata: { guildId, userId: session.user.id },
+    metadata,
     allow_promotion_codes: true,
+    ...(oneTime
+      ? { payment_intent_data: { metadata } }
+      : { subscription_data: { metadata } }),
     success_url: `${baseUrl()}/servers/${guildId}/premium?upgraded=1`,
     cancel_url: `${baseUrl()}/servers/${guildId}/premium`,
   });
