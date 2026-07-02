@@ -156,6 +156,7 @@ model Guild {
   customBot         CustomBot?
   userAchievements  UserAchievement[]
   memberStats       MemberStat[]
+  insightsDays      GuildInsightsDay[]
 
   @@index([ownerId])
 }
@@ -183,6 +184,30 @@ model UserAchievement {
 /// other tables (reactions, threads, invites, giveaways, purchases, boost,
 /// birthday). Incremented from the relevant events/commands; read by the
 /// Achievements evaluator. Flags (boosted/birthdaySet) are stored as 0/1.
+/// One row per guild per UTC day (Server Insights). The bot counts activity in
+/// Redis (cheap increments on the hot message path) and a periodic flush job
+/// writes absolute values here; rows older than ~90 days are pruned.
+model GuildInsightsDay {
+  id            String   @id @default(cuid())
+  guildId       String
+  date          DateTime @db.Date
+  messages      Int      @default(0)
+  /// Unique members who sent at least one message (HyperLogLog estimate).
+  activeMembers Int      @default(0)
+  joins         Int      @default(0)
+  leaves        Int      @default(0)
+  /// Member-count snapshot taken at flush time (0 until the first flush).
+  memberCount   Int      @default(0)
+  /// Top channels by messages: [{ channelId, count }, ...] (max ~15).
+  topChannels   Json?
+  updatedAt     DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, date])
+  @@index([guildId, date])
+}
+
 model MemberStat {
   id              String   @id @default(cuid())
   guildId         String

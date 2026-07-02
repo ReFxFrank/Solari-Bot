@@ -8,11 +8,13 @@ import { handleVerificationJoin } from '../modules/verification';
 import { evaluateAchievements } from '../modules/achievements';
 import { brandedEmbed } from '../lib/embeds';
 import { sendLog } from '../lib/logging';
+import { recordMemberFlowInsight } from '../lib/insights';
 
 export default defineEvent({
   name: Events.GuildMemberAdd,
   async execute(ctx, member) {
     scheduleMemberCountSync(member.guild);
+    recordMemberFlowInsight(ctx.redis, member.guild.id, 'joins');
 
     if (await ctx.config.isEnabled(member.guild.id, 'AUTOMOD')) {
       // Raid protection runs before anything else — a member we just kicked or

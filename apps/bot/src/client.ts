@@ -12,6 +12,7 @@ import { env } from './env';
 import { logger } from './logger';
 import { captureError, initSentry } from './services/sentry';
 import { startHeartbeat } from './services/heartbeat';
+import { startInsightsFlush } from './lib/insights';
 import { ConfigCache } from './services/configCache';
 import { JobService } from './services/jobs';
 import { closeRedis, redis } from './services/redis';
@@ -137,6 +138,7 @@ async function bootstrap(): Promise<void> {
 
   let stopMetrics: (() => Promise<void>) | null = null;
   let stopHeartbeat: (() => void) | null = null;
+  let stopInsights: (() => void) | null = null;
 
   client.once(Events.ClientReady, (ready) => {
     logger.info(
@@ -178,6 +180,7 @@ async function bootstrap(): Promise<void> {
     });
     stopMetrics = startMetricsServer(ready.shard?.ids[0] ?? 0);
     stopHeartbeat = startHeartbeat(ready, ready.shard?.ids[0] ?? 0);
+    stopInsights = startInsightsFlush(ready, prisma, redis, logger);
   });
 
   let shuttingDown = false;
@@ -187,6 +190,7 @@ async function bootstrap(): Promise<void> {
     logger.info({ signal }, 'Shutting down shard');
     try {
       if (stopHeartbeat) stopHeartbeat();
+      if (stopInsights) stopInsights();
       await customBots.closeAll();
       await jobs.close();
       if (stopMetrics) await stopMetrics();

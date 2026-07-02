@@ -1,5 +1,6 @@
 import { Events } from 'discord.js';
 import { defineEvent } from '../framework/event';
+import { recordMessageInsight } from '../lib/insights';
 import { handleMessageXp } from '../modules/leveling';
 import { isTicketChannel, touchTicket } from '../modules/tickets';
 import { handleCustomCommandsMessage } from '../modules/customCommands';
@@ -15,6 +16,8 @@ export default defineEvent({
         const acted = await handleAutomodMessage(message, ctx);
         if (acted) return;
       }
+      // Insights counting sits after automod so removed spam doesn't count.
+      recordMessageInsight(ctx.redis, message.guildId, message.channelId, message.author.id);
     }
 
     await handleMessageXp(message, ctx);
