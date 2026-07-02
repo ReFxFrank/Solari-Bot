@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import type Stripe from 'stripe';
 import { prisma } from '@solari/database';
 import { assertCanManage, requireSession } from './auth-guards';
 import { canManageBilling } from './billing-access';
@@ -11,6 +12,29 @@ function baseUrl(): string {
 }
 
 export type PremiumPlan = 'monthly' | 'yearly' | 'lifetime';
+
+/**
+ * Return a usable Stripe customer id for the guild. If one is stored but no
+ * longer exists (created under test-mode keys before switching to live, or a
+ * different/recreated Stripe account), mint a fresh one instead of failing —
+ * the checkout is self-healing against that mismatch.
+ */
+async function ensureCustomer(
+  stripe: Stripe,
+  guildId: string,
+  existingId: string | null | undefined,
+): Promise<string> {
+  if (existingId) {
+    try {
+      const customer = await stripe.customers.retrieve(existingId);
+      if (!(customer as Stripe.DeletedCustomer).deleted) return existingId;
+    } catch {
+      // resource_missing (wrong mode/account) — fall through and create anew.
+    }
+  }
+  const created = await stripe.customers.create({ metadata: { guildId } });
+  return created.id;
+}
 
 /** Resolve a plan to its Stripe price + checkout mode. Lifetime is one-time. */
 function planConfig(plan: PremiumPlan): { priceId: string | undefined; oneTime: boolean } {
@@ -56,11 +80,7 @@ export async function startCheckout(
   let url: string;
   try {
     const existing = await prisma.guildSubscription.findUnique({ where: { guildId } });
-    let customerId = existing?.stripeCustomerId ?? undefined;
-    if (!customerId) {
-      const customer = await stripe.customers.create({ metadata: { guildId } });
-      customerId = customer.id;
-    }
+    const customerId = await ensureCustomer(stripe, guildId, existing?.stripeCustomerId);
     // Record who is purchasing — billing visibility is scoped to them.
     await prisma.guildSubscription.upsert({
       where: { guildId },
