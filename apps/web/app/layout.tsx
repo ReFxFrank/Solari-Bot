@@ -3,13 +3,14 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 // Shown in link previews (Discord/Twitter embeds) and search results.
+const TITLE = 'Solari — The All-in-One Discord Bot';
 const DESCRIPTION =
-  'The all-in-one Discord bot. Moderation, leveling, economy, giveaways and more — set up in minutes from a clean web dashboard.';
+  'Moderation, leveling, economy, giveaways and more — set up in minutes from a clean web dashboard.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://solari.gg'),
   title: {
-    default: 'Solari — Discord Control Panel',
+    default: TITLE,
     template: '%s · Solari',
   },
   description: DESCRIPTION,
@@ -24,14 +25,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'Solari',
-    title: 'Solari — Discord Control Panel',
+    title: TITLE,
     description: DESCRIPTION,
     url: 'https://solari.gg',
     images: [{ url: '/solari-logo.png', width: 512, height: 512, alt: 'Solari' }],
   },
   twitter: {
     card: 'summary',
-    title: 'Solari — Discord Control Panel',
+    title: TITLE,
     description: DESCRIPTION,
     images: ['/solari-logo.png'],
   },
