@@ -132,7 +132,20 @@ export async function handleRaidJoin(member: GuildMember, ctx: BotContext): Prom
   joinWindows.set(member.guild.id, recent);
   if (tripped) {
     // Overwrite is monotonic (now grows), so this only ever extends the window.
-    raidModeUntil.set(member.guild.id, now + raid.raidModeDurationSeconds * 1000);
+    const until = now + raid.raidModeDurationSeconds * 1000;
+    raidModeUntil.set(member.guild.id, until);
+    if (raid.pauseInvites) {
+      // Discord's own incident action: invites stay paused until the raid
+      // window ends and lift automatically — nothing to undo on our side.
+      await member.guild
+        .setIncidentActions({ invitesDisabledUntil: new Date(until) })
+        .catch((err: unknown) =>
+          ctx.logger.warn(
+            { err, guildId: member.guild.id },
+            'Could not pause invites (needs Manage Server)',
+          ),
+        );
+    }
   }
   const armed = now < (raidModeUntil.get(member.guild.id) ?? 0);
   if (armed) await alertOnce(member, raid, ctx);

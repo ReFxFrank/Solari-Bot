@@ -12,6 +12,7 @@ import type { ChannelOption, RoleOption } from '../lib/discord-guild';
 import { saveAutomodConfig } from '../lib/config-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 import { ChannelSelect, RoleSelect } from './ui/entity-select';
+import { Switch } from './ui/switch';
 
 const toList = (value: string): string[] =>
   value
@@ -382,6 +383,17 @@ export function AutomodForm({
                 onChange={(ids) => patchRaid({ alertChannelId: ids[0] ?? '' })}
               />
             </Field>
+            <label className="flex items-center gap-3 text-sm text-white/80">
+              <Switch
+                checked={raid.pauseInvites}
+                onChange={(next) => patchRaid({ pauseInvites: next })}
+                label="Pause invites during a raid"
+              />
+              Pause server invites while raid mode is armed
+              <span className="text-xs text-white/40">
+                (Discord lifts the pause automatically; needs Manage Server)
+              </span>
+            </label>
           </div>
         )}
       </div>

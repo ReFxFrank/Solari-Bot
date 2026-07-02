@@ -47,6 +47,9 @@ export const raidConfigSchema = z.object({
   alertChannelId: z.string().default(''),
   /** Used when an action is `timeout`. */
   timeoutMinutes: z.number().int().min(1).max(10080).default(60),
+  /** Pause server invites while raid mode is armed (Discord incident action —
+   *  auto-lifts when raid mode expires; needs Manage Server). */
+  pauseInvites: z.boolean().default(false),
 });
 export type RaidConfig = z.infer<typeof raidConfigSchema>;
 
