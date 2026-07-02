@@ -39,7 +39,7 @@ export const PRICING_TIERS: readonly PricingTier[] = [
   {
     id: 'monthly',
     name: 'Monthly',
-    price: '$4.99',
+    price: '$9.99',
     period: '/mo',
     blurb: 'Flexible — cancel anytime.',
     priceEnvKey: 'STRIPE_PREMIUM_PRICE_ID',
@@ -47,9 +47,9 @@ export const PRICING_TIERS: readonly PricingTier[] = [
   {
     id: 'yearly',
     name: 'Yearly',
-    price: '$2.49',
+    price: '$4.99',
     period: '/mo',
-    original: '$4.99',
+    original: '$9.99',
     save: 'Save 50%',
     badge: 'Most Popular',
     highlighted: true,
@@ -59,7 +59,7 @@ export const PRICING_TIERS: readonly PricingTier[] = [
   {
     id: 'lifetime',
     name: 'Lifetime',
-    price: '$79',
+    price: '$159',
     period: 'once',
     save: 'Best value',
     blurb: 'Pay once, Premium forever.',
