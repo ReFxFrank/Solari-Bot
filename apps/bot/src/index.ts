@@ -4,6 +4,7 @@ import { ShardingManager } from 'discord.js';
 import { env } from './env';
 import { logger } from './logger';
 import { captureError, flushSentry, initSentry } from './services/sentry';
+import { startDblAutopost } from './services/dblPoster';
 import { startTopggAutopost } from './services/topggPoster';
 
 /**
@@ -43,6 +44,16 @@ async function main(): Promise<void> {
       logger,
     );
     logger.info('top.gg server-count autopost enabled');
+  }
+
+  // Optional: same, for the discordbotlist.com listing.
+  if (env.DBL_TOKEN) {
+    startDblAutopost(
+      manager,
+      { token: env.DBL_TOKEN, botId: env.DBL_BOT_ID ?? env.DISCORD_CLIENT_ID },
+      logger,
+    );
+    logger.info('discordbotlist.com server-count autopost enabled');
   }
 }
 

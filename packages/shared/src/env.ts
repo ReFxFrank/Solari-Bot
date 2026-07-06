@@ -55,6 +55,10 @@ export const botEnvSchema = baseEnvSchema.extend({
   TOPGG_BOT_ID: z.string().optional(),
   /** top.gg API token — set to auto-post the server count to your listing. */
   TOPGG_TOKEN: z.string().optional(),
+  /** discordbotlist.com bot id for stats posting (defaults to DISCORD_CLIENT_ID). */
+  DBL_BOT_ID: z.string().optional(),
+  /** discordbotlist.com API token — set to auto-post the server count there. */
+  DBL_TOKEN: z.string().optional(),
 });
 
 export const webEnvSchema = baseEnvSchema.extend({
@@ -75,6 +79,8 @@ export const webEnvSchema = baseEnvSchema.extend({
   STRIPE_LIFETIME_PRICE_ID: z.string().optional(),
   /** Shared secret matching the Authorization set in the top.gg webhooks panel. */
   TOPGG_WEBHOOK_AUTH: z.string().optional(),
+  /** Shared secret matching the Authorization set in the discordbotlist.com webhook panel. */
+  DBL_WEBHOOK_AUTH: z.string().optional(),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;
