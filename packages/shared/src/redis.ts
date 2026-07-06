@@ -38,6 +38,7 @@ export type LiveCommandType =
   | 'LOCKDOWN_END'
   | 'SYNC_STAY_VOICE'
   | 'REFRESH_COMMAND_TOGGLES'
+  | 'APPLY_SERVER_TEMPLATE'
   | 'RESTART_CUSTOM_BOT';
 
 export interface LiveCommandMessage<TPayload = unknown> {
@@ -83,6 +84,13 @@ export interface LockdownStartPayload {
   /** Moderator who triggered it (dashboard user id), for the audit case. */
   moderatorId: string;
   reason?: string;
+}
+
+export interface ApplyServerTemplatePayload {
+  /** ServerTemplate.id to apply. */
+  templateId: string;
+  /** Dashboard user who triggered it (for the audit trail + summary). */
+  actorId: string;
 }
 
 /** Cache key used by the bot's config cache (§4.2). */

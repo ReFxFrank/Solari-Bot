@@ -10,6 +10,7 @@ import {
   type DeployVerifyPanelPayload,
   type DeployApplicationPanelPayload,
   type ApplicationSideEffectsPayload,
+  type ApplyServerTemplatePayload,
   type LockdownStartPayload,
   type LiveCommandMessage,
   type RolePanelOption,
@@ -28,6 +29,7 @@ import {
   runDecisionSideEffects,
 } from '../modules/applications';
 import { endLockdown, lockdownServer } from '../modules/lockdown';
+import { applyServerTemplate } from '../modules/serverTemplate';
 import { syncStayVoice } from '../modules/stayVoice';
 import { brandedEmbed } from '../lib/embeds';
 import { refreshStatsCounters } from '../modules/statsCounters';
@@ -141,6 +143,22 @@ export class LiveCommandService {
       case 'LOCKDOWN_END':
         await this.liftLockdown(message.guildId);
         return;
+      case 'APPLY_SERVER_TEMPLATE': {
+        const guild = this.client.guilds.cache.get(message.guildId);
+        if (!guild) return;
+        const payload = message.payload as ApplyServerTemplatePayload;
+        const outcome = await applyServerTemplate(guild, payload.templateId, payload.actorId, {
+          logger: this.logger,
+        });
+        // The bot posts its own in-guild summary; just log a dashboard failure.
+        if (!outcome.ok) {
+          this.logger.warn(
+            { guildId: message.guildId, error: outcome.error },
+            'Dashboard server-template apply failed',
+          );
+        }
+        return;
+      }
       case 'SYNC_STAY_VOICE': {
         // Explicit settings change — the only path allowed to disconnect when
         // the stay channel was cleared. (Still yields to an active music player.)

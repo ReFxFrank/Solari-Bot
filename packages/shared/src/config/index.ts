@@ -41,6 +41,7 @@ export * from './achievements';
 export * from './polls';
 export * from './verification';
 export * from './applications';
+export * from './serverTemplates';
 
 /**
  * Registry mapping a module to the zod schema that validates its `config` JSON

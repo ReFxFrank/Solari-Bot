@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { BarChart3, Bot, Crown, Dices, Hash, LayoutDashboard, Settings2, SquareSlash } from 'lucide-react';
+import { BarChart3, Bot, Crown, Dices, Hash, LayoutDashboard, Settings2, SquareSlash, Wand2 } from 'lucide-react';
 import { prisma } from '@solari/database';
 import { guardGuildAccess } from '../../../lib/auth-guards';
 import { groupedModuleMeta, moduleBySlug } from '../../../lib/modules';
@@ -65,6 +65,7 @@ export default async function GuildLayout({
   // boundary, so we must pass `<Icon />`, never `Icon`.
   const serverNav = [
     { href: `/servers/${id}`, label: 'Overview', icon: <LayoutDashboard className="h-4 w-4 shrink-0" /> },
+    { href: `/servers/${id}/setup`, label: 'Server Setup', icon: <Wand2 className="h-4 w-4 shrink-0" /> },
     { href: `/servers/${id}/insights`, label: 'Insights', icon: <BarChart3 className="h-4 w-4 shrink-0" /> },
     { href: `/servers/${id}/settings`, label: 'Settings', icon: <Settings2 className="h-4 w-4 shrink-0" /> },
     { href: `/servers/${id}/slash-commands`, label: 'Slash Commands', icon: <SquareSlash className="h-4 w-4 shrink-0" /> },
