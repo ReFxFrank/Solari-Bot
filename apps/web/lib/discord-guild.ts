@@ -1,15 +1,20 @@
+import { GUILD_ENTITIES_TTL_SECONDS, guildEntitiesKey, type GuildEntityKind } from '@solari/shared';
+import { getRedis } from './redis';
+
 /**
  * Server-side fetch of a guild's roles + channels via the BOT token, so config
  * forms can render real dropdowns instead of asking for raw IDs. Bot-token use
- * is server-only (never shipped to the client). Results are cached briefly to
- * stay well within Discord's rate limits.
+ * is server-only (never shipped to the client).
+ *
+ * Caching: Redis read-through, NOT Next's fetch cache. The bot deletes the key
+ * the moment a gateway role/channel event fires, so a role created in Discord
+ * shows up in pickers on the very next page load — while unchanged guilds keep
+ * the fast cached path (the TTL only covers missed events). Next's fetch cache
+ * couldn't do this: it can't be invalidated from another process, which left
+ * new roles invisible for up to 5 minutes no matter how hard users refreshed.
  */
 
 const DISCORD_API = 'https://discord.com/api/v10';
-// Roles/channels change rarely, but every config page fetches them on navigation.
-// A longer window means most page-to-page moves hit Next's fetch cache instead of
-// round-tripping to Discord — the main source of "clicking Configure feels slow".
-const CACHE_SECONDS = 300;
 
 export interface RoleOption {
   id: string;
@@ -62,7 +67,7 @@ async function botFetch(path: string): Promise<unknown> {
   try {
     const response = await fetch(`${DISCORD_API}${path}`, {
       headers: { Authorization: `Bot ${token}` },
-      next: { revalidate: CACHE_SECONDS },
+      cache: 'no-store', // freshness is governed by the Redis layer below
     });
     if (!response.ok) return null;
     return await response.json();
@@ -71,29 +76,63 @@ async function botFetch(path: string): Promise<unknown> {
   }
 }
 
+/**
+ * Redis read-through for a guild's picker options. Only successful fetches are
+ * cached (an error must not pin an empty list for the TTL), and a Redis outage
+ * degrades to fetching Discord directly rather than breaking the page.
+ */
+async function cachedEntities<T>(
+  kind: GuildEntityKind,
+  guildId: string,
+  load: () => Promise<T | null>,
+): Promise<T | null> {
+  const key = guildEntitiesKey(kind, guildId);
+  try {
+    const hit = await getRedis().get(key);
+    if (hit) return JSON.parse(hit) as T;
+  } catch {
+    // Redis unavailable — serve straight from Discord.
+  }
+  const fresh = await load();
+  if (fresh) {
+    try {
+      await getRedis().set(key, JSON.stringify(fresh), 'EX', GUILD_ENTITIES_TTL_SECONDS);
+    } catch {
+      // Cache write is best-effort.
+    }
+  }
+  return fresh;
+}
+
 /** Roles offered in pickers: excludes @everyone and managed (bot/integration) roles, highest first. */
 export async function getGuildRoles(guildId: string): Promise<RoleOption[]> {
-  const data = await botFetch(`/guilds/${guildId}/roles`);
-  if (!Array.isArray(data)) return [];
-  return (data as RawRole[])
-    .filter((role) => role.id !== guildId && !role.managed)
-    .sort((a, b) => b.position - a.position)
-    .map((role) => ({ id: role.id, name: role.name, color: role.color }));
+  const roles = await cachedEntities<RoleOption[]>('roles', guildId, async () => {
+    const data = await botFetch(`/guilds/${guildId}/roles`);
+    if (!Array.isArray(data)) return null;
+    return (data as RawRole[])
+      .filter((role) => role.id !== guildId && !role.managed)
+      .sort((a, b) => b.position - a.position)
+      .map((role) => ({ id: role.id, name: role.name, color: role.color }));
+  });
+  return roles ?? [];
 }
 
 /** All text/voice/category channels, in Discord's display order. */
 export async function getGuildChannels(guildId: string): Promise<ChannelOption[]> {
-  const data = await botFetch(`/guilds/${guildId}/channels`);
-  if (!Array.isArray(data)) return [];
-  const allowed = new Set<number>([
-    ...TEXTUAL_CHANNEL_TYPES,
-    ...VOICE_CHANNEL_TYPES,
-    CHANNEL_TYPE.category,
-  ]);
-  return (data as RawChannel[])
-    .filter((channel) => allowed.has(channel.type))
-    .sort((a, b) => a.position - b.position)
-    .map((channel) => ({ id: channel.id, name: channel.name, type: channel.type }));
+  const channels = await cachedEntities<ChannelOption[]>('channels', guildId, async () => {
+    const data = await botFetch(`/guilds/${guildId}/channels`);
+    if (!Array.isArray(data)) return null;
+    const allowed = new Set<number>([
+      ...TEXTUAL_CHANNEL_TYPES,
+      ...VOICE_CHANNEL_TYPES,
+      CHANNEL_TYPE.category,
+    ]);
+    return (data as RawChannel[])
+      .filter((channel) => allowed.has(channel.type))
+      .sort((a, b) => a.position - b.position)
+      .map((channel) => ({ id: channel.id, name: channel.name, type: channel.type }));
+  });
+  return channels ?? [];
 }
 
 /** Fetch roles + channels together (parallel) for a config page. */

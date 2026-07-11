@@ -99,6 +99,21 @@ export function configCacheKey(guildId: string, module: Module): string {
 }
 
 /**
+ * Dashboard cache of a guild's role/channel picker options (fetched from the
+ * Discord REST API by the web app). The bot DELs the matching key on gateway
+ * role/channel events, so a role created in Discord appears in dropdowns on
+ * the next page load instead of after a TTL. The TTL is only the fallback for
+ * missed events (e.g. bot briefly down).
+ */
+export type GuildEntityKind = 'roles' | 'channels';
+
+export function guildEntitiesKey(kind: GuildEntityKind, guildId: string): string {
+  return `web:entities:${kind}:${guildId}`;
+}
+
+export const GUILD_ENTITIES_TTL_SECONDS = 300;
+
+/**
  * Bot -> dashboard: each shard refreshes a TTL'd status key every ~30s (bot
  * heartbeat service); /status reads them all. A missing/expired key means the
  * shard is down or can't reach Redis.
