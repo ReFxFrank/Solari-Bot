@@ -59,6 +59,8 @@ export const botEnvSchema = baseEnvSchema.extend({
   DBL_BOT_ID: z.string().optional(),
   /** discordbotlist.com API token — set to auto-post the server count there. */
   DBL_TOKEN: z.string().optional(),
+  /** Invite URL of the official support server (adds a /help button when set). */
+  SUPPORT_SERVER_INVITE: z.string().url().optional(),
 });
 
 export const webEnvSchema = baseEnvSchema.extend({
@@ -81,6 +83,8 @@ export const webEnvSchema = baseEnvSchema.extend({
   TOPGG_WEBHOOK_AUTH: z.string().optional(),
   /** Shared secret matching the Authorization set in the discordbotlist.com webhook panel. */
   DBL_WEBHOOK_AUTH: z.string().optional(),
+  /** Invite URL of the official support server (adds a footer link when set). */
+  SUPPORT_SERVER_INVITE: z.string().url().optional(),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;

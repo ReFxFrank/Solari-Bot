@@ -4,6 +4,9 @@ import { BrandMark } from './brand-mark';
 import { wikiUrl } from '../../lib/wiki-url';
 
 export function SiteFooter() {
+  // Set via .env; every footer-bearing page is force-dynamic, so this is read
+  // at request time (not baked at image build, where .env is absent).
+  const supportInvite = process.env.SUPPORT_SERVER_INVITE;
   return (
     <footer className="border-t border-white/5 px-6 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-white/40 sm:flex-row">
@@ -31,6 +34,16 @@ export function SiteFooter() {
           <Link href="/status" className="hover:text-white/80">
             Status
           </Link>
+          {supportInvite ? (
+            <a
+              href={supportInvite}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white/80"
+            >
+              Discord
+            </a>
+          ) : null}
           <Link href="/terms" className="hover:text-white/80">
             Terms
           </Link>

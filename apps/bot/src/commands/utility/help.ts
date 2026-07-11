@@ -7,6 +7,7 @@ import {
 } from 'discord.js';
 import { BRAND } from '@solari/shared';
 import type { Command } from '../../framework/command';
+import { env } from '../../env';
 import { Cooldown } from '../../lib/permissions';
 import { brandedEmbed } from '../../lib/embeds';
 
@@ -26,6 +27,14 @@ const command: Command = {
         .setLabel('All commands')
         .setURL(`${SITE}/commands`),
     );
+    if (env.SUPPORT_SERVER_INVITE) {
+      links.addComponents(
+        new ButtonBuilder()
+          .setStyle(ButtonStyle.Link)
+          .setLabel('Support server')
+          .setURL(env.SUPPORT_SERVER_INVITE),
+      );
+    }
 
     await interaction.reply({
       embeds: [
