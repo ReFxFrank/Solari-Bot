@@ -52,6 +52,7 @@ export function AutomodForm({
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [pending, startTransition] = useTransition();
   const [lockMsg, setLockMsg] = useState<string | null>(null);
+  const [lockFailed, setLockFailed] = useState(false);
   const [lockPending, startLock] = useTransition();
 
   function doLockdown(): void {
@@ -65,6 +66,7 @@ export function AutomodForm({
     setLockMsg(null);
     startLock(async () => {
       const result = await lockdownNow(guildId);
+      setLockFailed(!result.ok);
       setLockMsg(result.ok ? 'Lockdown requested — the bot is locking channels.' : 'Could not start lockdown.');
     });
   }
@@ -73,6 +75,7 @@ export function AutomodForm({
     setLockMsg(null);
     startLock(async () => {
       const result = await liftLockdown(guildId);
+      setLockFailed(!result.ok);
       setLockMsg(result.ok ? 'Lift requested — channels are being restored.' : 'Could not lift lockdown.');
     });
   }
@@ -484,7 +487,13 @@ export function AutomodForm({
           >
             🔓 Lift lockdown
           </button>
-          {lockMsg && <span className="text-sm text-white/60">{lockMsg}</span>}
+          {lockMsg && (
+            <span
+              className={`text-sm ${lockFailed ? 'font-medium text-[var(--color-danger)]' : 'text-white/60'}`}
+            >
+              {lockMsg}
+            </span>
+          )}
         </div>
       </div>
 

@@ -52,6 +52,7 @@ export function VerificationForm({
   const [config, setConfig] = useState<VerificationConfig>(initial);
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [deployMsg, setDeployMsg] = useState<string | null>(null);
+  const [deployFailed, setDeployFailed] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function update<K extends keyof VerificationConfig>(key: K, value: VerificationConfig[K]): void {
@@ -70,7 +71,14 @@ export function VerificationForm({
     setDeployMsg(null);
     startTransition(async () => {
       const result = await deployVerificationPanel(guildId);
-      setDeployMsg(result.ok ? 'Panel deployed.' : (result.error ?? 'Could not deploy.'));
+      setDeployFailed(!result.ok);
+      // The bot posts the panel asynchronously — "sent" is honest; "deployed"
+      // would claim an outcome the dashboard can't observe.
+      setDeployMsg(
+        result.ok
+          ? 'Deploy sent — the panel should appear in the channel within a second.'
+          : (result.error ?? 'Could not deploy.'),
+      );
     });
   }
 
@@ -280,7 +288,13 @@ export function VerificationForm({
             >
               <Send className="h-4 w-4" /> Deploy panel
             </button>
-            {deployMsg && <span className="text-sm text-white/60">{deployMsg}</span>}
+            {deployMsg && (
+              <span
+                className={`text-sm ${deployFailed ? 'font-medium text-[var(--color-danger)]' : 'text-white/60'}`}
+              >
+                {deployMsg}
+              </span>
+            )}
           </div>
         </div>
       </SettingsSection>

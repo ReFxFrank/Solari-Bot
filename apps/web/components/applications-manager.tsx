@@ -95,6 +95,7 @@ export function ApplicationsManager({
   const [editError, setEditError] = useState<string | null>(null);
   const [panelChannel, setPanelChannel] = useState<string | null>(null);
   const [panelMsg, setPanelMsg] = useState<string | null>(null);
+  const [panelFailed, setPanelFailed] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
@@ -249,7 +250,12 @@ export function ApplicationsManager({
     setPanelMsg(null);
     startTransition(async () => {
       const result = await deployApplicationPanel(guildId, panelChannel);
-      setPanelMsg(result.ok ? 'Panel posted.' : (result.error ?? 'Could not post the panel.'));
+      setPanelFailed(!result.ok);
+      setPanelMsg(
+        result.ok
+          ? 'Deploy sent — the panel should appear in the channel within a second.'
+          : (result.error ?? 'Could not post the panel.'),
+      );
     });
   }
 
@@ -392,7 +398,13 @@ export function ApplicationsManager({
             >
               <Send className="h-4 w-4" /> Post panel
             </button>
-            {panelMsg && <span className="text-sm text-white/60">{panelMsg}</span>}
+            {panelMsg && (
+              <span
+                className={`text-sm ${panelFailed ? 'font-medium text-[var(--color-danger)]' : 'text-white/60'}`}
+              >
+                {panelMsg}
+              </span>
+            )}
           </div>
         </div>
       </SettingsSection>
