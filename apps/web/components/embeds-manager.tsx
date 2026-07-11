@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Plus, Send, Trash2 } from 'lucide-react';
 import type { EmbedSpec } from '@solari/shared';
@@ -61,7 +61,20 @@ export function EmbedsManager({
   const [deployTarget, setDeployTarget] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const [pending, startTransition] = useTransition();
+  // Plain busy flag, NOT useTransition: a transition stays pending until any
+  // router.refresh() inside it fully commits, which left every button disabled
+  // for the whole refetch (or forever, if it stalled). This flag is bounded by
+  // the server action alone.
+  const [busy, setBusy] = useState(false);
+
+  async function run(fn: () => Promise<void>): Promise<void> {
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const channelName = (id: string | null): string | null => {
     if (!id) return null;
@@ -76,7 +89,7 @@ export function EmbedsManager({
   function save(): void {
     if (!editing) return;
     setMsg(null);
-    startTransition(async () => {
+    void run(async () => {
       const spec = draftToSpec(editing.draft) ?? {};
       const result = await saveEmbed(guildId, {
         id: editing.id,
@@ -100,7 +113,6 @@ export function EmbedsManager({
         );
         setEditing(null);
         report(true, 'Embed saved.');
-        router.refresh();
       } else {
         report(false, result.error ?? 'Could not save the embed.');
       }
@@ -112,20 +124,17 @@ export function EmbedsManager({
       return;
     }
     setMsg(null);
-    startTransition(async () => {
+    void run(async () => {
       const result = await deleteEmbed(guildId, embed.id);
       report(result.ok, result.ok ? 'Embed deleted.' : (result.error ?? 'Could not delete.'));
-      if (result.ok) {
-        setItems(items.filter((e) => e.id !== embed.id));
-        router.refresh();
-      }
+      if (result.ok) setItems(items.filter((e) => e.id !== embed.id));
     });
   }
 
   function deploy(embed: SavedEmbedDTO): void {
     const channelId = deployTarget[embed.id] ?? embed.channelId ?? '';
     setMsg(null);
-    startTransition(async () => {
+    void run(async () => {
       const result = await deploySavedEmbed(guildId, embed.id, channelId);
       if (result.ok) {
         const inPlace = Boolean(embed.messageId) && channelId === embed.channelId;
@@ -142,7 +151,9 @@ export function EmbedsManager({
             ? 'Update sent — the posted message is being edited in place.'
             : 'Deploy sent — the embed should appear in the channel within a second.',
         );
-        router.refresh();
+        // Refresh AFTER the bot has posted and stored the message id (~1s),
+        // outside the busy window so the page stays interactive throughout.
+        setTimeout(() => router.refresh(), 1500);
       } else {
         report(false, result.error ?? 'Could not deploy.');
       }
@@ -181,7 +192,7 @@ export function EmbedsManager({
             <button
               type="button"
               onClick={save}
-              disabled={pending}
+              disabled={busy}
               className="rounded-lg bg-[var(--color-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand)] disabled:opacity-40"
             >
               {editing.id ? 'Save changes' : 'Save embed'}
@@ -189,7 +200,7 @@ export function EmbedsManager({
             <button
               type="button"
               onClick={() => setEditing(null)}
-              disabled={pending}
+              disabled={busy}
               className="rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition-colors hover:bg-white/[0.06]"
             >
               Cancel
@@ -245,7 +256,7 @@ export function EmbedsManager({
                         draft: specToDraft(embed.spec),
                       })
                     }
-                    disabled={pending}
+                    disabled={busy}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-sm text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white"
                   >
                     <Pencil className="h-3.5 w-3.5" /> Edit
@@ -253,7 +264,7 @@ export function EmbedsManager({
                   <button
                     type="button"
                     onClick={() => remove(embed)}
-                    disabled={pending}
+                    disabled={busy}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-danger)]/30 px-3 py-1.5 text-sm text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Delete
@@ -273,7 +284,7 @@ export function EmbedsManager({
                 <button
                   type="button"
                   onClick={() => deploy(embed)}
-                  disabled={pending || !target}
+                  disabled={busy || !target}
                   className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                 >
                   <Send className="h-4 w-4" /> {willEditInPlace ? 'Update message' : 'Deploy'}
