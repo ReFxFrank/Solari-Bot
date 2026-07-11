@@ -37,27 +37,34 @@ fi
 echo "▸ Verifying $(du -h "$DUMP" | cut -f1) dump"
 
 # ── 2. Throwaway Postgres (no ports published, no volumes) ──────────────────
-echo "▸ Starting scratch Postgres container"
+# The scratch superuser MUST be named like the live role: pg_dump embeds
+# `ALTER ... OWNER TO <role>` statements, and with ON_ERROR_STOP a missing
+# role aborts the replay. Read it from .env like compose does (default helios).
+PG_USER="$(sed -n 's/^POSTGRES_USER=//p' .env 2>/dev/null | tail -1)"
+PG_USER="${PG_USER%\"}"; PG_USER="${PG_USER#\"}"
+PG_USER="${PG_USER:-helios}"
+
+echo "▸ Starting scratch Postgres container (role: $PG_USER)"
 docker run -d --name "$SCRATCH" \
-  -e POSTGRES_USER=verify -e POSTGRES_PASSWORD=verify -e POSTGRES_DB=verify \
+  -e POSTGRES_USER="$PG_USER" -e POSTGRES_PASSWORD=verify -e POSTGRES_DB=verify \
   postgres:16-alpine >/dev/null
 for _ in $(seq 1 30); do
-  docker exec "$SCRATCH" pg_isready -U verify -d verify >/dev/null 2>&1 && break
+  docker exec "$SCRATCH" pg_isready -U "$PG_USER" -d verify >/dev/null 2>&1 && break
   sleep 1
 done
-docker exec "$SCRATCH" pg_isready -U verify -d verify >/dev/null 2>&1 ||
+docker exec "$SCRATCH" pg_isready -U "$PG_USER" -d verify >/dev/null 2>&1 ||
   { echo "FAIL: scratch Postgres never became ready" >&2; exit 1; }
 
 # ── 3. Replay the dump ───────────────────────────────────────────────────────
 echo "▸ Restoring dump into the scratch database"
-if ! gunzip -c "$DUMP" | docker exec -i "$SCRATCH" psql -U verify -d verify \
+if ! gunzip -c "$DUMP" | docker exec -i "$SCRATCH" psql -U "$PG_USER" -d verify \
   --set ON_ERROR_STOP=1 -q >/dev/null; then
   echo "FAIL: dump did not replay cleanly" >&2
   exit 1
 fi
 
 # ── 4. Sanity checks ─────────────────────────────────────────────────────────
-q() { docker exec "$SCRATCH" psql -U verify -d verify -tA -c "$1" | tr -d '\r'; }
+q() { docker exec "$SCRATCH" psql -U "$PG_USER" -d verify -tA -c "$1" | tr -d '\r'; }
 
 TABLES="$(q "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")"
 MIGRATIONS_IN_DUMP="$(q "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL" 2>/dev/null || echo 0)"
