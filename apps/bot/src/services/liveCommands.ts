@@ -2,8 +2,10 @@ import type { Client, EmbedBuilder } from 'discord.js';
 import { prisma } from '@solari/database';
 import { QUEUE_NAMES } from '@solari/jobs';
 import {
+  embedSpecSchema,
   REDIS_CHANNELS,
   type DeletePanelPayload,
+  type DeployEmbedPayload,
   type DeployPanelPayload,
   type GiveawayActionPayload,
   type DeployTicketPanelPayload,
@@ -32,6 +34,7 @@ import { endLockdown, lockdownServer } from '../modules/lockdown';
 import { applyServerTemplate } from '../modules/serverTemplate';
 import { syncStayVoice } from '../modules/stayVoice';
 import { brandedEmbed } from '../lib/embeds';
+import { buildEmbedFromSpec } from '../lib/embedSpec';
 import { refreshStatsCounters } from '../modules/statsCounters';
 import { scheduledMessageJobId, type JobService } from './jobs';
 import type { ConfigCache } from './configCache';
@@ -72,6 +75,9 @@ export class LiveCommandService {
         return;
       case 'DEPLOY_PANEL':
         await this.deployPanel(message.guildId, message.payload as DeployPanelPayload);
+        return;
+      case 'DEPLOY_EMBED':
+        await this.deployEmbed(message.guildId, message.payload as DeployEmbedPayload);
         return;
       case 'DELETE_PANEL':
         await this.deletePanel(message.guildId, message.payload as DeletePanelPayload);
@@ -212,6 +218,45 @@ export class LiveCommandService {
       });
     } catch (err) {
       this.logger.warn({ err, panelId: panel.id }, 'Deploy panel failed');
+    }
+  }
+
+  /**
+   * Post a SavedEmbed to its channel — or, when it was already posted and the
+   * message still exists, edit that message in place so a deployed read-me can
+   * be updated without a re-post.
+   */
+  private async deployEmbed(guildId: string, payload: DeployEmbedPayload): Promise<void> {
+    const row = await prisma.savedEmbed.findUnique({ where: { id: payload.embedId } });
+    if (!row || row.guildId !== guildId || !row.channelId) return;
+
+    const guild = this.client.guilds.cache.get(guildId);
+    const channel =
+      guild?.channels.cache.get(row.channelId) ??
+      (await guild?.channels.fetch(row.channelId).catch(() => null));
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
+
+    const parsed = embedSpecSchema.safeParse(row.spec);
+    if (!parsed.success) {
+      this.logger.warn({ embedId: row.id }, 'Deploy embed skipped: stored spec invalid');
+      return;
+    }
+    const embed = buildEmbedFromSpec(parsed.data);
+    const content = row.content?.trim() ? row.content : undefined;
+    if (!embed && !content) return; // nothing renderable
+
+    try {
+      if (row.messageId) {
+        const existing = await channel.messages.fetch(row.messageId).catch(() => null);
+        if (existing) {
+          await existing.edit({ content: content ?? null, embeds: embed ? [embed] : [] });
+          return;
+        }
+      }
+      const sent = await channel.send({ content, embeds: embed ? [embed] : [] });
+      await prisma.savedEmbed.update({ where: { id: row.id }, data: { messageId: sent.id } });
+    } catch (err) {
+      this.logger.warn({ err, embedId: row.id }, 'Deploy embed failed');
     }
   }
 

@@ -93,6 +93,11 @@ export interface ApplyServerTemplatePayload {
   actorId: string;
 }
 
+export interface DeployEmbedPayload {
+  /** SavedEmbed.id to post (or edit in place when already posted). */
+  embedId: string;
+}
+
 /** Cache key used by the bot's config cache (§4.2). */
 export function configCacheKey(guildId: string, module: Module): string {
   return `${guildId}:${module}`;

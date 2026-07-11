@@ -180,6 +180,7 @@ model Guild {
   insightsDays      GuildInsightsDay[]
   applicationForms  ApplicationForm[]
   channelLocks      ChannelLock[]
+  savedEmbeds       SavedEmbed[]
 
   @@index([ownerId])
 }
@@ -493,6 +494,31 @@ model ReactionRolePanel {
 
   @@index([guildId])
   @@index([messageId])
+}
+
+/// A dashboard-built embed (standalone Embed Builder page). Deploying posts it
+/// to `channelId`; re-deploying with a stored `messageId` edits that message in
+/// place, so a posted read-me/rules embed can be updated without re-posting.
+model SavedEmbed {
+  id        String   @id @default(cuid())
+  guildId   String
+  name      String
+  /// Optional plain message sent above the embed.
+  content   String?
+  /// EmbedSpec JSON — validated against embedSpecSchema on both sides.
+  spec      Json
+  /// Channel of the last deploy (null = never posted).
+  channelId String?
+  /// Posted message id — the target for in-place edits on re-deploy.
+  messageId String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, name])
+  @@index([guildId])
 }
 
 /// A giveaway (§8G). `requirements` is a JSON blob ({ roleIds: [] }); winners
