@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Folder, Hash, Search, Volume2, X } from 'lucide-react';
 import type { ChannelOption, RoleOption } from '../../lib/discord-guild';
+import { TokenListInput } from './token-list-input';
 
 export interface PickerOption {
   id: string;
@@ -111,21 +112,13 @@ export function EntitySelect({
 
   // Graceful fallback when the bot token isn't available, so the field still works.
   if (options.length === 0) {
-    const text = selected.join(', ');
     return (
-      <input
+      <TokenListInput
         className={`${triggerClass} font-mono`}
-        value={text}
+        value={selected}
+        onChange={onChange}
+        maxItems={multiple ? undefined : 1}
         placeholder={`${kind === 'role' ? 'Role' : 'Channel'} ID${multiple ? 's (comma-separated)' : ''}`}
-        onChange={(e) =>
-          onChange(
-            e.target.value
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
-              .slice(0, multiple ? undefined : 1),
-          )
-        }
       />
     );
   }

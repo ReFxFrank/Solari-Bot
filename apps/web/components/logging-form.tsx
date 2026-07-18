@@ -6,12 +6,7 @@ import type { ChannelOption, RoleOption } from '../lib/discord-guild';
 import { saveLoggingConfig } from '../lib/config-actions';
 import { ChannelSelect, RoleSelect } from './ui/entity-select';
 import { Field, SaveBar, monoInputClass, type SaveStatus } from './ui/form';
-
-const toList = (value: string): string[] =>
-  value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+import { TokenListInput } from './ui/token-list-input';
 
 export function LoggingForm({
   guildId,
@@ -80,10 +75,10 @@ export function LoggingForm({
         />
       </Field>
       <Field label="Ignored users" hint="Comma-separated user IDs to skip.">
-        <input
+        <TokenListInput
           className={monoInputClass}
-          value={config.ignoredUserIds.join(', ')}
-          onChange={(e) => update('ignoredUserIds', toList(e.target.value))}
+          value={config.ignoredUserIds}
+          onChange={(ids) => update('ignoredUserIds', ids)}
         />
       </Field>
 

@@ -13,13 +13,8 @@ import { saveAutomodConfig } from '../lib/config-actions';
 import { liftLockdown, lockdownNow } from '../lib/lockdown-actions';
 import { Field, SaveBar, inputClass, monoInputClass, type SaveStatus } from './ui/form';
 import { ChannelSelect, RoleSelect } from './ui/entity-select';
+import { TokenListInput } from './ui/token-list-input';
 import { Switch } from './ui/switch';
-
-const toList = (value: string): string[] =>
-  value
-    .split(/[\n,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
 
 type FilterKey = 'invites' | 'links' | 'mentions' | 'caps' | 'spam' | 'words';
 interface RuleLike {
@@ -194,10 +189,10 @@ export function AutomodForm({
       {ruleControls(
         'links',
         <Field label="Allowed domains" hint="Comma/newline-separated; everything else is blocked.">
-          <input
+          <TokenListInput
             className={monoInputClass}
-            value={config.links.allowlist.join(', ')}
-            onChange={(e) => patch('links', { allowlist: toList(e.target.value) })}
+            value={config.links.allowlist}
+            onChange={(allowlist) => patch('links', { allowlist })}
           />
         </Field>,
       )}
@@ -278,10 +273,11 @@ export function AutomodForm({
       {ruleControls(
         'words',
         <Field label="Blocked words" hint="Comma/newline-separated. Whole-word, case-insensitive.">
-          <textarea
+          <TokenListInput
+            multiline
             className={`${inputClass} min-h-16 resize-y`}
-            value={config.words.list.join(', ')}
-            onChange={(e) => patch('words', { list: toList(e.target.value) })}
+            value={config.words.list}
+            onChange={(list) => patch('words', { list })}
           />
         </Field>,
       )}
@@ -592,18 +588,11 @@ export function AutomodForm({
                 label="Exempt user IDs"
                 hint="Trusted accounts (e.g. other bots), comma-separated."
               >
-                <input
+                <TokenListInput
                   className={monoInputClass}
-                  value={antiNuke.exemptUserIds.join(', ')}
-                  onChange={(e) =>
-                    patchAntiNuke({
-                      exemptUserIds: e.target.value
-                        .split(',')
-                        .map((part) => part.trim())
-                        .filter(Boolean)
-                        .slice(0, 25),
-                    })
-                  }
+                  value={antiNuke.exemptUserIds}
+                  onChange={(exemptUserIds) => patchAntiNuke({ exemptUserIds })}
+                  maxItems={25}
                 />
               </Field>
             </div>
